@@ -15,19 +15,29 @@ def get_buffer_profiles(access_token: str):
         print(f"[Buffer] Error getting profiles: {e}")
         return []
 
-def post_to_buffer(video_url: str, caption: str, hashtags: list, schedule_timestamp: int = None):
+def post_to_buffer(video_url: str, caption: str, hashtags: list, schedule_timestamp: int = None, exclude_services: list = None):
     """
-    Schedules/Posts a video clip to all connected channels on Buffer (Instagram, TikTok, etc.).
+    Schedules/Posts a video clip to all connected channels on Buffer (Instagram, TikTok, YouTube, etc.).
+    exclude_services: list of service names to skip, e.g. ["youtube"].
     """
     settings = get_settings()
     access_token = settings.get("buffer_access_token") or os.getenv("BUFFER_ACCESS_TOKEN")
     if not access_token:
         return {"success": False, "error": "No Buffer access token configured"}
-        
+
     profiles = get_buffer_profiles(access_token)
     if not profiles:
         return {"success": False, "error": "No connected channels found on your Buffer account"}
-        
+
+    if exclude_services:
+        profiles = [
+            p for p in profiles
+            if not any(s in str(p.get("service", "")).lower() or s in str(p.get("service_username", "")).lower()
+                       for s in exclude_services)
+        ]
+        if not profiles:
+            return {"success": False, "error": "All matching Buffer channels were excluded by your settings"}
+
     profile_ids = [p["id"] for p in profiles]
     full_text = caption + "\n\n" + (" ".join(hashtags) if isinstance(hashtags, list) else hashtags)
     

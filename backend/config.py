@@ -23,10 +23,28 @@ DEFAULT_SETTINGS = {
     "schedule_interval_hours": 3,
     "auto_post_tiktok": False,
     "auto_post_instagram": False,
+    "auto_post_youtube": False,
     "tiktok_session_id": os.getenv("TIKTOK_SESSION_ID", ""),
     "instagram_username": os.getenv("INSTAGRAM_USERNAME", ""),
     "instagram_password": os.getenv("INSTAGRAM_PASSWORD", ""),
     "buffer_access_token": os.getenv("BUFFER_ACCESS_TOKEN", ""),
+    "buffer_post_youtube": True,          # also publish to YouTube channels connected in Buffer
+    # --- Direct YouTube (OAuth) ---
+    "youtube_client_id": os.getenv("YOUTUBE_CLIENT_ID", ""),
+    "youtube_client_secret": os.getenv("YOUTUBE_CLIENT_SECRET", ""),
+    "youtube_access_token": "",
+    "youtube_refresh_token": "",
+    "youtube_channel_title": "",
+    # --- Posting behaviour ---
+    "review_mode": False,                 # ask before auto-posting (scheduler holds scheduled clips)
+    "default_hashtags": "",               # appended to every caption
+    "notify_enabled": False,              # web notification when jobs finish
+    # --- Storage / automation ---
+    "keep_last_clips": 0,                 # keep only the N newest clips (0 = keep all)
+    "max_clip_age_days": 0,               # delete clips older than X days (0 = never)
+    "delete_source_after": False,         # remove uploaded/downloaded source video after clipping
+    # --- Security ---
+    "access_pin_hash": "",                # sha256 of PIN, empty = no lock
     "whisper_model": "tiny", # fast, free, local
     "layout_mode": "auto" # auto: stacks facecam or blurs 9:16
 }

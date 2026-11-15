@@ -97,3 +97,49 @@ def handle_tiktok_callback(code: str):
         return {"success": True, "open_id": open_id}
     return {"success": False, "error": str(data)}
 
+# ----------------- YOUTUBE OAUTH (Direct Shorts upload) -----------------
+YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+
+def get_youtube_auth_url():
+    settings = get_settings()
+    client_id = os.getenv("YOUTUBE_CLIENT_ID") or settings.get("youtube_client_id")
+    if not client_id:
+        return None
+    params = {
+        "client_id": client_id,
+        "redirect_uri": f"{get_base_url()}/auth/youtube/callback",
+        "response_type": "code",
+        "scope": YOUTUBE_SCOPE,
+        "access_type": "offline",   # we need a refresh token for background uploads
+        "prompt": "consent",
+    }
+    return f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
+
+def handle_youtube_callback(code: str):
+    settings = get_settings()
+    client_id = os.getenv("YOUTUBE_CLIENT_ID") or settings.get("youtube_client_id")
+    client_secret = os.getenv("YOUTUBE_CLIENT_SECRET") or settings.get("youtube_client_secret")
+    if not client_id or not client_secret:
+        return {"success": False, "error": "YouTube client ID/secret not configured"}
+
+    r = requests.post("https://oauth2.googleapis.com/token", data={
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": f"{get_base_url()}/auth/youtube/callback",
+    })
+    data = r.json()
+    if "access_token" not in data:
+        return {"success": False, "error": str(data)}
+
+    from .posters.youtube import fetch_channel_title
+    channel = fetch_channel_title(data["access_token"])
+    save_settings({
+        "youtube_access_token": data["access_token"],
+        "youtube_refresh_token": data.get("refresh_token", settings.get("youtube_refresh_token", "")),
+        "youtube_channel_title": channel or "YouTube Channel",
+        "auto_post_youtube": True,
+    })
+    return {"success": True, "channel": channel}
+

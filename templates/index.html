@@ -1,383 +1,632 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Clipy - AI Stream & Short Clipper</title>
+  <title>Clipy — AI Clip Studio</title>
   
-  <!-- PWA Meta Tags for Phone -->
+  <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#09090b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Clipy">
 
-  <!-- TailwindCSS & Phosphor Icons -->
+  <!-- Inter font + Tailwind + Phosphor -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
-            brand: { 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9' }
+            ink: {
+              950: '#09090b', 900: '#0e0e11', 850: '#131316',
+              800: '#18181b', 700: '#232327', 600: '#2e2e33', 500: '#3f3f46'
+            }
           }
         }
       }
     }
   </script>
   <style>
-    body { -webkit-tap-highlight-color: transparent; }
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .card { background: #101013; border: 1px solid #1f1f23; border-radius: 1rem; }
+    .chip { transition: all .15s ease; }
+    input, select, textarea { color-scheme: dark; }
+    select option { background: #18181b; }
+    .fade-in { animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .toast-in { animation: toastIn .25s ease; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-24 md:pb-6">
+<body class="bg-ink-950 text-zinc-100 min-h-screen flex flex-col select-none pb-24 md:pb-6">
 
-  <!-- Header -->
-  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-pink-500 flex items-center justify-center shadow-lg shadow-brand-500/25">
-        <i class="ph-bold ph-scissors text-xl text-white"></i>
+  <!-- ══════════ LOCK SCREEN ══════════ -->
+  <div id="lock-screen" class="fixed inset-0 z-[100] bg-ink-950 hidden items-center justify-center p-6">
+    <div class="w-full max-w-xs text-center space-y-6 fade-in">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-white flex items-center justify-center">
+        <i class="ph-bold ph-scissors text-3xl text-black"></i>
       </div>
       <div>
-        <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Clipy</h1>
-        <p class="text-[10px] text-slate-400 font-medium">AI Stream & Shorts Auto-Clipper</p>
+        <h1 class="text-xl font-bold tracking-tight">Clipy is locked</h1>
+        <p class="text-xs text-zinc-500 mt-1">Enter your PIN to continue</p>
+      </div>
+      <input id="lock-pin" type="password" inputmode="numeric" maxlength="8" placeholder="• • • •"
+        class="w-full text-center tracking-[0.5em] text-lg font-bold px-4 py-3.5 bg-ink-900 border border-ink-600 rounded-xl focus:outline-none focus:border-zinc-400 placeholder-zinc-700">
+      <p id="lock-error" class="text-xs text-red-400 hidden">Wrong PIN, try again</p>
+      <button onclick="unlockApp()" class="w-full py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-xl transition-all active:scale-[0.98]">
+        Unlock
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-xl border-b border-ink-700 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
+        <i class="ph-bold ph-scissors text-xl text-black"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-[17px] tracking-tight leading-none">Clipy</h1>
+        <p class="text-[10px] text-zinc-500 font-medium mt-0.5">AI Clip Studio</p>
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <span id="gemini-status" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Gemini AI Active
-      </span>
+      <a id="gemini-status" href="#" onclick="switchTab('settings'); return false;"
+        class="px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-zinc-400/10 text-zinc-400 border border-ink-600 flex items-center gap-1.5 cursor-pointer hover:border-zinc-500 transition-colors">
+        <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span> AI
+      </a>
+      <button id="lock-btn" onclick="lockApp()" class="hidden w-8 h-8 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors" title="Lock app">
+        <i class="ph ph-lock-simple text-sm"></i>
+      </button>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="flex-1 max-w-3xl w-full mx-auto p-4 space-y-6">
+  <!-- ══════════ MAIN ══════════ -->
+  <main class="flex-1 max-w-3xl w-full mx-auto p-4 space-y-5">
 
-    <!-- TAB 1: CREATE / CLIP -->
+    <!-- ════ TAB 1 · CREATE ════ -->
     <section id="tab-create" class="tab-content space-y-5">
-      <!-- Input Card -->
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-        <h2 class="text-base font-bold text-white flex items-center gap-2">
-          <i class="ph ph-sparkle text-brand-500 text-lg"></i> New Clip / Stream
-        </h2>
+      <div class="card p-5 space-y-4 fade-in">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-bold text-white">New Clip</h2>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 font-semibold">AI AUTO-EDIT</span>
+        </div>
 
-        <!-- Link Input -->
         <div class="space-y-1.5">
-          <label class="text-xs font-medium text-slate-400">Paste YouTube or TikTok Link</label>
+          <label class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Paste a YouTube or TikTok link</label>
           <div class="relative">
-            <i class="ph ph-link absolute left-3.5 top-3.5 text-slate-400 text-lg"></i>
-            <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=... or tiktok.com/..." 
-              class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-white placeholder-slate-500">
+            <i class="ph ph-link absolute left-3.5 top-3.5 text-zinc-500 text-lg"></i>
+            <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=..."
+              class="w-full pl-10 pr-4 py-3 bg-ink-900 border border-ink-600 rounded-xl text-sm focus:outline-none focus:border-zinc-400 transition-all text-white placeholder-zinc-600">
           </div>
         </div>
 
         <div class="flex items-center gap-3">
-          <div class="flex-1 h-px bg-slate-800"></div>
-          <span class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">or upload from phone</span>
-          <div class="flex-1 h-px bg-slate-800"></div>
+          <div class="flex-1 h-px bg-ink-700"></div>
+          <span class="text-[10px] text-zinc-600 font-semibold uppercase tracking-wider">or upload</span>
+          <div class="flex-1 h-px bg-ink-700"></div>
         </div>
 
-        <!-- File Upload Area -->
-        <div id="drop-area" class="border-2 border-dashed border-slate-800 hover:border-brand-500/50 rounded-xl p-5 text-center cursor-pointer bg-slate-950/40 transition-all">
+        <div id="drop-area" class="border border-dashed border-ink-600 hover:border-zinc-500 rounded-xl p-5 text-center cursor-pointer bg-ink-900/50 transition-all">
           <input type="file" id="input-file" accept="video/*" class="hidden">
           <div class="flex flex-col items-center gap-2">
-            <div class="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center text-brand-400">
-              <i class="ph ph-video-camera text-2xl"></i>
+            <div class="w-10 h-10 rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-400">
+              <i class="ph ph-video-camera text-xl"></i>
             </div>
-            <p id="file-label" class="text-xs text-slate-300 font-medium">Tap to pick a video from your phone</p>
-            <p class="text-[10px] text-slate-500">Supports Shorts, clips, or long streams (MP4, MOV)</p>
+            <p id="file-label" class="text-xs text-zinc-300 font-medium">Tap to pick a video</p>
+            <p class="text-[10px] text-zinc-600">Shorts, clips or long streams · MP4 / MOV</p>
           </div>
         </div>
 
-        <!-- Settings Drawer / Options -->
-        <div class="grid grid-cols-2 gap-3 pt-2">
-          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
-            <label class="text-[11px] font-medium text-slate-400 block mb-1">Clips from Stream</label>
-            <select id="select-clips" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-1.5 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="1">1 Clip (For Shorts & Reels)</option>
-              <option value="2">2 Viral Clips</option>
-              <option value="3" selected>3 Viral Clips (Recommended)</option>
-              <option value="4">4 Viral Clips</option>
-              <option value="5">5 Viral Clips</option>
-              <option value="6">6 Viral Clips</option>
-              <option value="7">7 Viral Clips</option>
-              <option value="8">8 Viral Clips</option>
-              <option value="9">9 Viral Clips</option>
-              <option value="10">10 Viral Clips</option>
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div class="bg-ink-900 border border-ink-700 rounded-xl p-3">
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Clips from stream</label>
+            <select id="select-clips" class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="1">1 clip</option>
+              <option value="2">2 clips</option>
+              <option value="3" selected>3 clips</option>
+              <option value="4">4 clips</option>
+              <option value="5">5 clips</option>
+              <option value="6">6 clips</option>
+              <option value="7">7 clips</option>
+              <option value="8">8 clips</option>
+              <option value="9">9 clips</option>
+              <option value="10">10 clips</option>
             </select>
           </div>
-
-          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
-            <label class="text-[11px] font-medium text-slate-400 block mb-1">Posting Schedule</label>
-            <select id="select-interval" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-1.5 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="1">1 clip every 1 hour</option>
-              <option value="3" selected>1 clip every 3 hours</option>
-              <option value="5">1 clip every 5 hours</option>
+          <div class="bg-ink-900 border border-ink-700 rounded-xl p-3">
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Posting schedule</label>
+            <select id="select-interval" class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="1">every 1 hour</option>
+              <option value="3" selected>every 3 hours</option>
+              <option value="5">every 5 hours</option>
+              <option value="8">every 8 hours</option>
             </select>
           </div>
         </div>
 
-        <!-- Submit Button -->
-        <button id="btn-submit" onclick="submitJob()" class="w-full py-3.5 px-4 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transition-all">
-          <i class="ph-bold ph-magic-wand text-lg"></i>
-          <span>Auto-Clip & Schedule</span>
+        <button id="btn-submit" onclick="submitJob()"
+          class="w-full py-3.5 px-4 bg-white hover:bg-zinc-200 active:scale-[0.99] text-black text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all">
+          <i class="ph-bold ph-magic-wand text-base"></i>
+          <span>Auto-Clip &amp; Schedule</span>
         </button>
       </div>
 
-      <!-- Active Processing Jobs Banner -->
+      <!-- Active jobs (progress + cancel) -->
       <div id="jobs-container" class="space-y-3"></div>
     </section>
 
-    <!-- TAB 2: CLIPS & QUEUE -->
+    <!-- ════ TAB 2 · CLIPS ════ -->
     <section id="tab-clips" class="tab-content hidden space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-base font-bold text-white flex items-center gap-2">
-          <i class="ph ph-video text-brand-500 text-lg"></i> Generated Clips & Schedule
+        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="ph ph-film-strip text-zinc-400"></i> Clips
         </h2>
-        <button onclick="loadClips()" class="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
-          <i class="ph ph-arrows-clockwise text-sm"></i> Refresh
+        <button onclick="loadClips()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
+          <i class="ph ph-arrows-clockwise text-xs"></i> Refresh
         </button>
       </div>
 
-      <div id="clips-list" class="space-y-4">
-        <!-- Dynamic Clip Cards -->
+      <!-- Filters -->
+      <div class="flex gap-2 overflow-x-auto hide-scrollbar">
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="all" onclick="setFilter('all')">All</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="ready" onclick="setFilter('ready')">Ready</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="scheduled" onclick="setFilter('scheduled')">Scheduled</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="posted" onclick="setFilter('posted')">Posted</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="failed" onclick="setFilter('failed')">Failed</button>
       </div>
+
+      <div id="clips-list" class="space-y-4"></div>
     </section>
 
-    <!-- TAB 3: ANALYTICS -->
+    <!-- ════ TAB 3 · HISTORY ════ -->
+    <section id="tab-history" class="tab-content hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="ph ph-clock-counter-clockwise text-zinc-400"></i> History
+        </h2>
+        <button onclick="loadHistory()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
+          <i class="ph ph-arrows-clockwise text-xs"></i> Refresh
+        </button>
+      </div>
+      <p class="text-[11px] text-zinc-600 -mt-2">Every video you've processed, with the clips it produced.</p>
+      <div id="history-list" class="space-y-3"></div>
+    </section>
+
+    <!-- ════ TAB 4 · STATS ════ -->
     <section id="tab-analytics" class="tab-content hidden space-y-4">
-      <h2 class="text-base font-bold text-white flex items-center gap-2">
-        <i class="ph ph-chart-line-up text-brand-500 text-lg"></i> Performance & Stats
+      <h2 class="text-sm font-bold text-white flex items-center gap-2">
+        <i class="ph ph-chart-bar text-zinc-400"></i> Stats
       </h2>
 
       <div class="grid grid-cols-2 gap-3">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <p class="text-xs text-slate-400 font-medium">Total Clips Made</p>
-          <p id="stat-total" class="text-2xl font-black text-white mt-1">0</p>
+        <div class="card p-4">
+          <p class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Total Clips</p>
+          <p id="stat-total" class="text-2xl font-extrabold text-white mt-1">0</p>
         </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <p class="text-xs text-slate-400 font-medium">Clips Posted</p>
-          <p id="stat-posted" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+        <div class="card p-4">
+          <p class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Posted</p>
+          <p id="stat-posted" class="text-2xl font-extrabold text-emerald-400 mt-1">0</p>
         </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <p class="text-xs text-slate-400 font-medium">In Posting Queue</p>
-          <p id="stat-scheduled" class="text-2xl font-black text-brand-400 mt-1">0</p>
+        <div class="card p-4">
+          <p class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Scheduled</p>
+          <p id="stat-scheduled" class="text-2xl font-extrabold text-white mt-1">0</p>
         </div>
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-          <p class="text-xs text-slate-400 font-medium">Predicted Retention</p>
-          <p class="text-2xl font-black text-pink-400 mt-1">89%</p>
+        <div class="card p-4">
+          <p class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Post Success</p>
+          <p id="stat-success" class="text-2xl font-extrabold text-white mt-1">—</p>
         </div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-        <h3 class="text-sm font-bold text-white">Social Destinations</h3>
-        <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
-          <div class="flex items-center gap-2.5">
-            <i class="ph ph-tiktok-logo text-xl text-cyan-400"></i>
-            <div>
-              <p class="text-xs font-semibold text-white">TikTok Auto-Post</p>
-              <p class="text-[10px] text-slate-400">Ready for scheduled uploads</p>
-            </div>
-          </div>
-          <span class="text-xs font-bold text-emerald-400">Active</span>
+      <!-- 7-day activity -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xs font-bold text-white">Last 7 days</h3>
+          <span id="stat-avg-score" class="text-[10px] text-zinc-500 font-semibold"></span>
         </div>
+        <div id="week-chart" class="flex items-end justify-between gap-2 h-24"></div>
+      </div>
 
-        <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
-          <div class="flex items-center gap-2.5">
-            <i class="ph ph-instagram-logo text-xl text-pink-400"></i>
-            <div>
-              <p class="text-xs font-semibold text-white">Instagram Reels</p>
-              <p class="text-[10px] text-slate-400">Auto-publish enabled</p>
-            </div>
-          </div>
-          <span class="text-xs font-bold text-emerald-400">Active</span>
-        </div>
+      <!-- Per-platform posts -->
+      <div class="card p-5 space-y-3">
+        <h3 class="text-xs font-bold text-white">Published per platform</h3>
+        <div id="platform-posts" class="space-y-2.5"></div>
+      </div>
+
+      <!-- Connected destinations (real status) -->
+      <div class="card p-5 space-y-3">
+        <h3 class="text-xs font-bold text-white">Destinations</h3>
+        <div id="destinations" class="space-y-2"></div>
       </div>
     </section>
 
-    <!-- TAB 4: SETTINGS -->
+    <!-- ════ TAB 5 · SETTINGS ════ -->
     <section id="tab-settings" class="tab-content hidden space-y-4">
-      <h2 class="text-base font-bold text-white flex items-center gap-2">
-        <i class="ph ph-gear text-brand-500 text-lg"></i> App Settings
+      <h2 class="text-sm font-bold text-white flex items-center gap-2">
+        <i class="ph ph-gear-six text-zinc-400"></i> Settings
       </h2>
 
-      <!-- Gemini API Key -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-        <div>
-          <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
-            <i class="ph ph-cpu text-brand-400"></i> Google Gemini API Key
-          </h3>
-          <p class="text-xs text-slate-400 mt-0.5">Free from Google AI Studio. Used for picking moments, hooks, and hashtags.</p>
-        </div>
-
+      <!-- AI key -->
+      <div class="card p-5 space-y-3">
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-cpu text-zinc-400"></i> Google Gemini API Key</h3>
+        <p class="text-[11px] text-zinc-500">Free from Google AI Studio. Used for picking moments, hooks &amp; hashtags.</p>
         <div class="flex gap-2">
-          <input id="setting-gemini-key" type="password" placeholder="Enter your Gemini API key (AIzaSy...)" 
-            class="flex-1 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500">
-          <button onclick="saveApiKey()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition-all">
-            Save
-          </button>
+          <input id="setting-gemini-key" type="password" placeholder="Paste your key (AIzaSy...)"
+            class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
+          <button onclick="saveApiKey()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
         </div>
-        <p class="text-[11px] text-slate-500">
-          Don't have a key? Get one 100% free in 30 seconds at <a href="https://aistudio.google.com/" target="_blank" class="text-brand-400 underline">aistudio.google.com</a>.
-        </p>
+        <p class="text-[11px] text-zinc-600">Get a free key at <a href="https://aistudio.google.com/" target="_blank" class="text-zinc-300 underline">aistudio.google.com</a></p>
       </div>
 
-      <!-- 1-Click Social Accounts Connection -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+      <!-- Connections -->
+      <div class="card p-5 space-y-3">
         <div>
-          <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
-            <i class="ph ph-share-network text-brand-400"></i> Connect Social Accounts
-          </h3>
-          <p class="text-xs text-slate-400 mt-0.5">Automate uploads across Instagram and TikTok with zero developer headaches.</p>
+          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-share-network text-zinc-400"></i> Connected accounts</h3>
+          <p class="text-[11px] text-zinc-500 mt-0.5">Auto-post your clips to your socials.</p>
         </div>
 
-        <!-- Buffer Connection Card (Recommended) -->
-        <div class="bg-gradient-to-r from-blue-950/60 to-slate-950 p-4 rounded-xl border border-blue-500/30 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25">
-              <i class="ph-bold ph-stack text-2xl"></i>
-            </div>
-            <div>
+        <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-black flex-shrink-0"><i class="ph-bold ph-stack text-lg"></i></div>
+            <div class="min-w-0">
               <div class="flex items-center gap-1.5">
-                <p class="text-xs font-bold text-white">Buffer (Instagram + TikTok)</p>
-                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/30">RECOMMENDED</span>
+                <p class="text-xs font-bold text-white truncate">Buffer</p>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-400/10 text-zinc-400 font-bold flex-shrink-0">EASIEST</span>
               </div>
-              <p id="buffer-status-text" class="text-[11px] text-slate-400">Posts to both accounts automatically</p>
+              <p id="buffer-status-text" class="text-[10px] text-zinc-500 truncate">Instagram + TikTok (+ YouTube) in one step</p>
             </div>
           </div>
-          <div id="buffer-action-area">
-            <button onclick="openSocialModal('buffer')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5">
-              <i class="ph ph-plug"></i> Connect
-            </button>
-          </div>
+          <div id="buffer-action-area" class="flex-shrink-0"></div>
         </div>
 
-        <!-- Instagram Connection Card -->
-        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-pink-500/20">
-              <i class="ph ph-instagram-logo text-2xl"></i>
-            </div>
-            <div>
+        <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-instagram-logo text-lg"></i></div>
+            <div class="min-w-0">
               <p class="text-xs font-bold text-white">Instagram Reels</p>
-              <p id="ig-status-text" class="text-[11px] text-slate-400">Not connected</p>
+              <p id="ig-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
             </div>
           </div>
-          <div id="ig-action-area">
-            <button onclick="openSocialModal('instagram')" class="px-3.5 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-pink-500/20 flex items-center gap-1.5">
-              <i class="ph ph-plug"></i> Connect
-            </button>
-          </div>
+          <div id="ig-action-area" class="flex-shrink-0"></div>
         </div>
 
-        <!-- TikTok Connection Card -->
-        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-cyan-400 shadow-md">
-              <i class="ph ph-tiktok-logo text-2xl"></i>
-            </div>
-            <div>
+        <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-tiktok-logo text-lg"></i></div>
+            <div class="min-w-0">
               <p class="text-xs font-bold text-white">TikTok</p>
-              <p id="tiktok-status-text" class="text-[11px] text-slate-400">Not connected</p>
+              <p id="tiktok-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
             </div>
           </div>
-          <div id="tiktok-action-area">
-            <button onclick="openSocialModal('tiktok')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all border border-slate-700 flex items-center gap-1.5">
-              <i class="ph ph-plug"></i> Connect
-            </button>
+          <div id="tiktok-action-area" class="flex-shrink-0"></div>
+        </div>
+
+        <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-youtube-logo text-lg"></i></div>
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-white">YouTube Shorts</p>
+              <p id="youtube-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
+            </div>
           </div>
+          <div id="youtube-action-area" class="flex-shrink-0"></div>
         </div>
       </div>
 
-      <!-- PWA Install Tip -->
-      <div class="bg-gradient-to-r from-brand-900/30 to-pink-900/30 border border-brand-500/20 rounded-2xl p-4 flex items-center gap-3">
-        <i class="ph ph-device-mobile text-3xl text-brand-400 flex-shrink-0"></i>
+      <!-- Posting preferences -->
+      <div class="card p-5 space-y-4">
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-paper-plane-tilt text-zinc-400"></i> Posting</h3>
+
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <p class="text-xs font-semibold text-white">Review before posting</p>
+            <p class="text-[10px] text-zinc-500">Scheduled clips wait until you tap Post</p>
+          </div>
+          <input id="pref-review" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+        </label>
+
+        <div>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Default hashtags (added to every caption)</label>
+          <input id="pref-hashtags" type="text" placeholder="#gaming #clips #viral"
+            class="w-full px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
+            onkeydown="if(event.key==='Enter')savePrefs()">
+        </div>
+      </div>
+
+      <!-- Automation & storage -->
+      <div class="card p-5 space-y-4">
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-broom text-zinc-400"></i> Storage &amp; automation</h3>
+
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <p class="text-xs font-semibold text-white">Notify when clips are ready</p>
+            <p class="text-[10px] text-zinc-500">Push notification when a job finishes</p>
+          </div>
+          <input id="pref-notify" type="checkbox" onchange="saveNotify()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+        </label>
+
+        <label class="flex items-center justify-between gap-3 cursor-pointer">
+          <div>
+            <p class="text-xs font-semibold text-white">Delete source video after clipping</p>
+            <p class="text-[10px] text-zinc-500">Removes the original upload/download to save space</p>
+          </div>
+          <input id="pref-del-source" type="checkbox" onchange="saveAutomation()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+        </label>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Keep last N clips</label>
+            <input id="pref-keep-n" type="number" min="0" placeholder="0 = all"
+              class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
+              onkeydown="if(event.key==='Enter')saveAutomation()">
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Delete older than (days)</label>
+            <input id="pref-max-age" type="number" min="0" placeholder="0 = never"
+              class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
+              onkeydown="if(event.key==='Enter')saveAutomation()">
+          </div>
+        </div>
+        <button onclick="runCleanupNow()" class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+          <i class="ph ph-broom"></i> Run cleanup now
+        </button>
+        <a href="/api/export/csv" class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+          <i class="ph ph-download-simple"></i> Export all captions (CSV backup)
+        </a>
+      </div>
+
+      <!-- Security -->
+      <div class="card p-5 space-y-3">
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-lock-simple text-zinc-400"></i> App lock (PIN)</h3>
+        <p class="text-[11px] text-zinc-500">Protects your keys, tokens and clips — important when the app runs on a public URL.</p>
+        <div class="flex gap-2">
+          <input id="setting-pin" type="password" inputmode="numeric" maxlength="8" placeholder="4–8 digits"
+            class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600 tracking-widest">
+          <button onclick="savePin()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
+        </div>
+        <button id="btn-remove-pin" onclick="removePin()" class="hidden text-[11px] text-zinc-500 hover:text-red-400 font-semibold flex items-center gap-1">
+          <i class="ph ph-x"></i> Remove PIN
+        </button>
+      </div>
+
+      <!-- PWA tip -->
+      <div class="card p-4 flex items-center gap-3">
+        <i class="ph ph-device-mobile text-2xl text-zinc-400 flex-shrink-0"></i>
         <div>
           <p class="text-xs font-bold text-white">Install on your phone</p>
-          <p class="text-[11px] text-slate-400">On iPhone, tap Share &gt; 'Add to Home Screen'. On Android, tap the three dots &gt; 'Install app'.</p>
+          <p class="text-[10px] text-zinc-500">iPhone: Share → Add to Home Screen · Android: ⋮ → Install app</p>
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- Video Preview Modal -->
-  <div id="video-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="max-w-sm w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-      <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+  <!-- ══════════ VIDEO MODAL ══════════ -->
+  <div id="video-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="p-3 border-b border-ink-700 flex items-center justify-between">
         <h3 id="modal-title" class="text-xs font-bold text-white truncate max-w-[240px]">Preview</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg"><i class="ph ph-x"></i></button>
+        <button onclick="closeModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
       </div>
       <div class="bg-black aspect-[9/16] w-full flex items-center justify-center">
         <video id="modal-video" controls class="w-full h-full object-contain"></video>
       </div>
-      <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-end">
-        <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-lg">Close</button>
+      <div class="p-3 border-t border-ink-700 flex justify-end">
+        <button onclick="closeModal()" class="px-4 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-lg transition-colors">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- Social Connect Modal -->
-  <div id="social-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="max-w-sm w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl p-5 space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 id="social-modal-title" class="text-sm font-bold text-white flex items-center gap-2">Connect Account</h3>
-        <button onclick="closeSocialModal()" class="text-slate-400 hover:text-white text-lg"><i class="ph ph-x"></i></button>
+  <!-- ══════════ EDIT CAPTION MODAL ══════════ -->
+  <div id="edit-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-ink-700 pb-3">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="ph ph-pencil-simple-line text-zinc-400"></i> Edit before posting</h3>
+        <button onclick="closeEditModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
       </div>
-      <div id="social-modal-body" class="space-y-3">
-        <!-- Dynamically populated -->
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hook / title</label>
+          <input id="edit-hook" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
+        </div>
+        <div>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Caption</label>
+          <textarea id="edit-caption" rows="4" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 resize-none"></textarea>
+        </div>
+        <div>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hashtags (space separated)</label>
+          <input id="edit-hashtags" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
+        </div>
       </div>
-      <div class="pt-2 border-t border-slate-800 flex justify-end gap-2">
-        <button onclick="closeSocialModal()" class="px-3.5 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">Cancel</button>
-        <button id="social-modal-save-btn" onclick="saveSocialModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl">Save & Connect</button>
+      <div class="flex justify-end gap-2 pt-1">
+        <button onclick="closeEditModal()" class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
+        <button onclick="saveEdit()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save changes</button>
       </div>
     </div>
   </div>
 
-  <!-- Mobile Bottom Navigation Bar -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-6 py-2.5 flex items-center justify-around">
-    <button onclick="switchTab('create')" class="nav-btn flex flex-col items-center gap-1 text-brand-400" data-tab="create">
-      <i class="ph-fill ph-plus-circle text-2xl"></i>
-      <span class="text-[10px] font-semibold">Clip</span>
+  <!-- ══════════ SOCIAL CONNECT MODAL ══════════ -->
+  <div id="social-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar">
+      <div class="flex items-center justify-between border-b border-ink-700 pb-3">
+        <h3 id="social-modal-title" class="text-sm font-bold text-white">Connect account</h3>
+        <button onclick="closeSocialModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
+      </div>
+      <div id="social-modal-body" class="space-y-3"></div>
+      <div class="pt-2 border-t border-ink-700 flex justify-end gap-2">
+        <button onclick="closeSocialModal()" class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
+        <button id="social-modal-save-btn" onclick="saveSocialModal()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save &amp; connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ CONFIRM MODAL ══════════ -->
+  <div id="confirm-modal" class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="max-w-xs w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 text-center">
+      <div class="w-10 h-10 mx-auto rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300">
+        <i id="confirm-icon" class="ph ph-warning text-lg"></i>
+      </div>
+      <p id="confirm-message" class="text-xs text-zinc-200 font-medium leading-relaxed"></p>
+      <div class="flex gap-2">
+        <button onclick="resolveConfirm(false)" class="flex-1 py-2.5 bg-ink-800 hover:bg-ink-700 text-white text-xs font-bold rounded-xl transition-colors">Cancel</button>
+        <button id="confirm-yes" onclick="resolveConfirm(true)" class="flex-1 py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TOASTS ══════════ -->
+  <div id="toast-area" class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[70] space-y-2 w-[calc(100%-2rem)] max-w-xs pointer-events-none"></div>
+
+  <!-- ══════════ MOBILE NAV ══════════ -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-ink-950/90 backdrop-blur-xl border-t border-ink-700 px-2 py-2 flex items-center justify-around">
+    <button onclick="switchTab('create')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="create">
+      <i class="ph ph-plus-circle text-[22px]"></i>
+      <span class="text-[9px] font-bold tracking-wide">Create</span>
     </button>
-    <button onclick="switchTab('clips')" class="nav-btn flex flex-col items-center gap-1 text-slate-400" data-tab="clips">
-      <i class="ph-bold ph-video text-2xl"></i>
-      <span class="text-[10px] font-semibold">Queue</span>
+    <button onclick="switchTab('clips')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="clips">
+      <i class="ph ph-film-strip text-[22px]"></i>
+      <span class="text-[9px] font-bold tracking-wide">Clips</span>
     </button>
-    <button onclick="switchTab('analytics')" class="nav-btn flex flex-col items-center gap-1 text-slate-400" data-tab="analytics">
-      <i class="ph-bold ph-chart-line-up text-2xl"></i>
-      <span class="text-[10px] font-semibold">Analytics</span>
+    <button onclick="switchTab('history')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="history">
+      <i class="ph ph-clock-counter-clockwise text-[22px]"></i>
+      <span class="text-[9px] font-bold tracking-wide">History</span>
     </button>
-    <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-1 text-slate-400" data-tab="settings">
-      <i class="ph-bold ph-gear text-2xl"></i>
-      <span class="text-[10px] font-semibold">Settings</span>
+    <button onclick="switchTab('analytics')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="analytics">
+      <i class="ph ph-chart-bar text-[22px]"></i>
+      <span class="text-[9px] font-bold tracking-wide">Stats</span>
+    </button>
+    <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="settings">
+      <i class="ph ph-gear-six text-[22px]"></i>
+      <span class="text-[9px] font-bold tracking-wide">Settings</span>
     </button>
   </nav>
 
-  <!-- JavaScript Application Logic -->
   <script>
-    // Tab Switching
+    /* ═══════════════════ STATE & HELPERS ═══════════════════ */
+    const CLIPS = {};            // id -> clip object (avoids inline-string escaping bugs)
+    let JOBS = [];               // all jobs
+    let activeFilter = 'all';
+    let currentEditId = null;
+    let currentModalPlatform = '';
+    let pollInterval = null;
+    let lastRunningCount = 0;
+
+    function esc(s) {
+      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    async function api(url, opts = {}) {
+      const res = await fetch(url, opts);
+      if (res.status === 401) { showLock(); throw new Error('locked'); }
+      return res;
+    }
+
+    /* ── Toasts ── */
+    function showToast(msg, type = 'info') {
+      const area = document.getElementById('toast-area');
+      const colors = {
+        info: 'bg-ink-800 border-ink-600 text-zinc-100',
+        success: 'bg-ink-800 border-emerald-500/40 text-emerald-300',
+        error: 'bg-ink-800 border-red-500/40 text-red-300'
+      };
+      const icons = { info: 'ph-info', success: 'ph-check-circle', error: 'ph-warning-circle' };
+      const el = document.createElement('div');
+      el.className = `toast-in pointer-events-auto flex items-center gap-2.5 px-4 py-3 ${colors[type]} border rounded-xl shadow-xl text-xs font-semibold`;
+      el.innerHTML = `<i class="ph ${icons[type]} text-base flex-shrink-0"></i><span class="leading-snug">${esc(msg)}</span>`;
+      area.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 320); }, 3200);
+    }
+
+    /* ── Confirm dialog (replaces alert/confirm) ── */
+    let confirmResolver = null;
+    function confirmDialog(message, opts = {}) {
+      const modal = document.getElementById('confirm-modal');
+      document.getElementById('confirm-message').textContent = message;
+      const btn = document.getElementById('confirm-yes');
+      btn.textContent = opts.yes || 'Confirm';
+      btn.className = 'flex-1 py-2.5 text-xs font-bold rounded-xl transition-colors text-white ' +
+        (opts.danger === false ? 'bg-white hover:bg-zinc-200 text-black' : 'bg-red-500/90 hover:bg-red-500 text-white');
+      modal.classList.remove('hidden'); modal.classList.add('flex');
+      return new Promise(r => confirmResolver = r);
+    }
+    function resolveConfirm(val) {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      document.getElementById('confirm-modal').classList.remove('flex');
+      if (confirmResolver) { confirmResolver(val); confirmResolver = null; }
+    }
+
+    /* ── Lock screen ── */
+    function showLock() {
+      const el = document.getElementById('lock-screen');
+      el.classList.remove('hidden'); el.classList.add('flex');
+      setTimeout(() => document.getElementById('lock-pin').focus(), 100);
+    }
+    function hideLock() {
+      const el = document.getElementById('lock-screen');
+      el.classList.add('hidden'); el.classList.remove('flex');
+    }
+    async function unlockApp() {
+      const pin = document.getElementById('lock-pin').value.trim();
+      const err = document.getElementById('lock-error');
+      try {
+        const res = await fetch('/api/auth/unlock', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin })
+        });
+        if (res.ok) { err.classList.add('hidden'); hideLock(); startApp(); }
+        else err.classList.remove('hidden');
+      } catch { err.classList.remove('hidden'); }
+    }
+    async function lockApp() {
+      await fetch('/api/auth/lock', { method: 'POST' });
+      showLock();
+    }
+    document.getElementById('lock-pin').addEventListener('keydown', e => { if (e.key === 'Enter') unlockApp(); });
+
+    /* ── Notifications ── */
+    async function notifyUser(title, body) {
+      if (!('Notification' in window)) return;
+      if (Notification.permission !== 'granted') return;
+      try {
+        if (navigator.serviceWorker) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg) { reg.showNotification(title, { body, icon: '/static/icons/icon-192.png' }); return; }
+        }
+      } catch {}
+      try { new Notification(title, { body, icon: '/static/icons/icon-192.png' }); } catch {}
+    }
+
+    /* ═══════════════════ TABS ═══════════════════ */
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      const target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.remove('hidden');
 
       document.querySelectorAll('.nav-btn').forEach(btn => {
-        if (btn.dataset.tab === tabId) {
-          btn.className = 'nav-btn flex flex-col items-center gap-1 text-brand-400';
-        } else {
-          btn.className = 'nav-btn flex flex-col items-center gap-1 text-slate-400';
-        }
+        const active = btn.dataset.tab === tabId;
+        btn.classList.toggle('bg-ink-800', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('text-zinc-500', !active);
       });
 
       if (tabId === 'clips') loadClips();
+      if (tabId === 'history') loadHistory();
       if (tabId === 'analytics') loadAnalytics();
       if (tabId === 'settings') loadSettings();
+      window.scrollTo({ top: 0 });
     }
 
-    // File Drag & Drop
+    /* ═══════════════════ CREATE / SUBMIT ═══════════════════ */
     const dropArea = document.getElementById('drop-area');
     const inputFile = document.getElementById('input-file');
     const fileLabel = document.getElementById('file-label');
@@ -385,12 +634,11 @@
     dropArea.addEventListener('click', () => inputFile.click());
     inputFile.addEventListener('change', () => {
       if (inputFile.files.length > 0) {
-        fileLabel.innerText = "Selected: " + inputFile.files[0].name;
-        dropArea.classList.add('border-brand-500');
+        fileLabel.innerText = inputFile.files[0].name;
+        dropArea.classList.add('border-zinc-400');
       }
     });
 
-    // Submit Job
     async function submitJob() {
       const url = document.getElementById('input-url').value.trim();
       const file = inputFile.files[0];
@@ -398,13 +646,10 @@
       const interval = document.getElementById('select-interval').value;
       const btn = document.getElementById('btn-submit');
 
-      if (!url && !file) {
-        alert("Please paste a link or pick a video file!");
-        return;
-      }
+      if (!url && !file) { showToast('Paste a link or pick a video first', 'error'); return; }
 
       btn.disabled = true;
-      btn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Processing...`;
+      btn.innerHTML = `<i class="ph ph-circle-notch animate-spin text-base"></i><span>Starting…</span>`;
 
       const formData = new FormData();
       if (url) formData.append('url', url);
@@ -413,284 +658,541 @@
       formData.append('interval_hours', interval);
 
       try {
-        const res = await fetch('/api/jobs', { method: 'POST', body: formData });
+        const res = await api('/api/jobs', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.success) {
           document.getElementById('input-url').value = '';
           inputFile.value = '';
-          fileLabel.innerText = "Tap to pick a video from your phone";
-          dropArea.classList.remove('border-brand-500');
+          fileLabel.innerText = 'Tap to pick a video';
+          dropArea.classList.remove('border-zinc-400');
+          showToast(data.message || 'Processing started', 'success');
           switchTab('clips');
           loadClips();
           pollActiveJobs();
-        } else {
-          alert(data.error || "Failed to start job");
-        }
+        } else showToast(data.error || 'Failed to start job', 'error');
       } catch (err) {
-        alert("Error starting job: " + err.message);
+        if (err.message !== 'locked') showToast('Error: ' + err.message, 'error');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="ph-bold ph-magic-wand text-lg"></i><span>Auto-Clip & Schedule</span>`;
+        btn.innerHTML = `<i class="ph-bold ph-magic-wand text-base"></i><span>Auto-Clip &amp; Schedule</span>`;
       }
     }
 
-    function loadJobs() {
-      loadClips();
-    }
-
-    let pollInterval = null;
+    /* ═══════════════════ POLLING + NOTIFICATIONS ═══════════════════ */
     function pollActiveJobs() {
       if (pollInterval) clearInterval(pollInterval);
       pollInterval = setInterval(async () => {
         try {
-          const res = await fetch('/api/jobs');
+          const res = await api('/api/jobs');
           const data = await res.json();
-          const running = (data.jobs || []).some(j => j.status === 'processing' || j.status === 'pending');
+          JOBS = data.jobs || [];
+          const running = JOBS.filter(j => j.status === 'processing' || j.status === 'pending');
           loadClips();
-          if (!running) {
-            clearInterval(pollInterval);
-            pollInterval = null;
+          if (lastRunningCount > 0 && running.length === 0) {
+            notifyUser('Clipy', '✅ Your clips are ready!');
+            showToast('Job finished — clips are ready', 'success');
           }
+          lastRunningCount = running.length;
+          if (running.length === 0) { clearInterval(pollInterval); pollInterval = null; }
         } catch (e) {}
       }, 3500);
     }
 
-    // Load Clips & Active Jobs
+    /* ═══════════════════ CLIPS LIST ═══════════════════ */
+    function setFilter(f) {
+      activeFilter = f;
+      document.querySelectorAll('.filter-chip').forEach(chip => {
+        const on = chip.dataset.filter === f;
+        chip.className = 'filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border ' +
+          (on ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 border-ink-600 hover:border-zinc-500');
+      });
+      loadClips();
+    }
+    setFilter('all');
+
+    const STATUS_META = {
+      ready:     { label: 'Ready',     cls: 'bg-zinc-400/10 text-zinc-300 border-zinc-400/20' },
+      scheduled: { label: 'Scheduled', cls: 'bg-amber-400/10 text-amber-300 border-amber-400/20' },
+      posted:    { label: 'Posted',    cls: 'bg-emerald-400/10 text-emerald-300 border-emerald-400/20' },
+      failed:    { label: 'Failed',    cls: 'bg-red-400/10 text-red-300 border-red-400/20' }
+    };
+
     async function loadClips() {
       const container = document.getElementById('clips-list');
       try {
-        const [clipsRes, jobsRes] = await Promise.all([
-          fetch('/api/clips'),
-          fetch('/api/jobs')
-        ]);
-        const clipsData = await clipsRes.json();
-        const jobsData = await jobsRes.json();
-        
-        const clips = clipsData.clips || [];
-        const activeJobs = (jobsData.jobs || []).filter(j => j.status === 'processing' || j.status === 'pending');
+        const [clipsRes, jobsRes] = await Promise.all([api('/api/clips'), api('/api/jobs')]);
+        const clips = (await clipsRes.json()).clips || [];
+        const jobs = (await jobsRes.json()).jobs || [];
+        JOBS = jobs;
 
-        // Build Live Progress Cards
-        let progressHtml = '';
-        if (activeJobs.length > 0) {
-          progressHtml = activeJobs.map(j => `
-            <div class="bg-gradient-to-r from-slate-900 to-brand-950/60 border border-brand-500/50 rounded-2xl p-4 shadow-xl space-y-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                  <span class="text-xs font-bold text-white uppercase tracking-wider">Live AI Progress</span>
-                </div>
-                <span class="text-xs font-black text-brand-400">${j.progress || 15}%</span>
+        clips.forEach(c => CLIPS[c.id] = c);
+
+        const activeJobs = jobs.filter(j => j.status === 'processing' || j.status === 'pending');
+        const failedJobs = jobs.filter(j => j.status === 'failed' || j.status === 'cancelled');
+        const filtered = activeFilter === 'all' ? clips : clips.filter(c => c.status === activeFilter);
+
+        let html = '';
+
+        // Running jobs with live progress
+        html += activeJobs.map(j => `
+          <div class="card p-4 fade-in">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0">
+                <i class="ph ph-circle-notch animate-spin text-zinc-300"></i>
               </div>
-              <p class="text-xs font-semibold text-slate-200">
-                ${j.step || 'AI is working on your video...'}
-              </p>
-              <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
-                <div class="bg-gradient-to-r from-brand-600 via-pink-500 to-emerald-400 h-2 rounded-full transition-all duration-500" style="width: ${j.progress || 15}%"></div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-white truncate">${esc(j.step || 'Processing…')}</p>
+                <p class="text-[10px] text-zinc-500 truncate">${esc(j.title || '')}</p>
               </div>
+              <span class="text-xs font-extrabold text-white">${j.progress || 0}%</span>
+              <button onclick="cancelJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-400 hover:text-white font-bold flex-shrink-0 transition-colors">Stop</button>
             </div>
-          `).join('');
-        }
+            <div class="h-1.5 bg-ink-800 rounded-full overflow-hidden">
+              <div class="h-full bg-white rounded-full transition-all duration-500" style="width:${j.progress || 0}%"></div>
+            </div>
+          </div>
+        `).join('');
 
-        // Show on Create tab too
-        const jobsContainer = document.getElementById('jobs-container');
-        if (jobsContainer) {
-          jobsContainer.innerHTML = progressHtml;
-        }
+        // Failed / cancelled jobs with retry
+        html += failedJobs.map(j => `
+          <div class="card p-4 border-red-500/20 fade-in">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="ph ph-warning text-red-400"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-white truncate">${j.status === 'cancelled' ? 'Cancelled' : 'Job failed'} · ${esc(j.title || '')}</p>
+                <p class="text-[10px] text-red-300/80 truncate">${esc(j.error || 'Unknown error')}</p>
+              </div>
+              <button onclick="retryJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-white text-black font-bold flex-shrink-0 flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>
+              <button onclick="deleteJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 hover:text-red-400 font-bold flex-shrink-0 transition-colors"><i class="ph ph-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
 
-        let html = progressHtml;
-
-        if (clips.length === 0 && activeJobs.length === 0) {
+        if (filtered.length === 0 && activeJobs.length === 0 && failedJobs.length === 0) {
           container.innerHTML = `
-            <div class="text-center py-12 bg-slate-900 border border-slate-800 rounded-2xl">
-              <i class="ph ph-film-strip text-4xl text-slate-600 mb-2"></i>
-              <p class="text-sm text-slate-400 font-medium">No clips created yet</p>
-              <p class="text-xs text-slate-500">Paste a link or upload a video in the Clip tab!</p>
-            </div>
-          `;
+            <div class="card text-center py-14">
+              <i class="ph ph-film-strip text-4xl text-ink-500 mb-3"></i>
+              <p class="text-sm text-zinc-400 font-semibold">No clips yet</p>
+              <p class="text-xs text-zinc-600 mt-1">Paste a link or upload a video in the Create tab</p>
+            </div>`;
           return;
         }
 
-        html += clips.map(c => {
-          const hashtagsStr = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : c.hashtags;
-          const isPosted = c.status === 'posted';
-          const schedTime = c.scheduled_time ? new Date(c.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now';
+        html += filtered.map(c => renderClipCard(c)).join('');
+        container.innerHTML = html;
+      } catch (e) { if (e.message !== 'locked') console.error(e); }
+    }
 
-          return `
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg p-4 space-y-3">
-              <div class="flex items-start gap-3">
-                <div class="w-20 h-28 bg-slate-950 rounded-xl overflow-hidden relative cursor-pointer flex-shrink-0 group" onclick="openModal('${c.file_path}', '${c.hook_text}')">
-                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20">
-                    <i class="ph-fill ph-play-circle text-3xl text-white"></i>
-                  </div>
-                </div>
-                <div class="flex-1 min-w-0 space-y-1">
-                  <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-500/10 text-brand-400 border border-brand-500/20">Score ${c.score}</span>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isPosted ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">
-                      ${isPosted ? '✓ Posted' : '⏳ Sched: ' + schedTime}
-                    </span>
-                  </div>
-                  <h4 class="text-xs font-bold text-white line-clamp-2">${c.hook_text || c.title}</h4>
-                  <p class="text-[11px] text-slate-400 line-clamp-2">${c.caption}</p>
-                </div>
-              </div>
+    function renderClipCard(c) {
+      const meta = STATUS_META[c.status] || STATUS_META.ready;
+      const hashtagsStr = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
+      const schedTime = c.scheduled_time
+        ? new Date(c.scheduled_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : '';
+      const filename = (c.file_path || '').split(/[\\/]/).pop();
 
-              <!-- Action buttons -->
-              <div class="pt-3 border-t border-slate-800 space-y-2.5">
-                <!-- 1-Tap Mobile Share Bar -->
-                <div class="grid grid-cols-2 gap-2">
-                  <button onclick="shareToSocial('Instagram Reels', '${c.file_path}', '${c.caption}', '${hashtagsStr}')" class="py-2 px-3 bg-gradient-to-r from-pink-600/30 to-purple-600/30 hover:from-pink-600/40 hover:to-purple-600/40 border border-pink-500/30 rounded-xl text-xs font-bold text-pink-300 flex items-center justify-center gap-1.5 transition-all active:scale-95">
-                    <i class="ph ph-instagram-logo text-base"></i> Share to IG
-                  </button>
-                  <button onclick="shareToSocial('TikTok', '${c.file_path}', '${c.caption}', '${hashtagsStr}')" class="py-2 px-3 bg-slate-950 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-cyan-300 flex items-center justify-center gap-1.5 transition-all active:scale-95">
-                    <i class="ph ph-tiktok-logo text-base"></i> Share to TikTok
-                  </button>
-                </div>
+      let actionBtns = '';
+      if (c.status !== 'posted') {
+        actionBtns = `
+          <button onclick="postNow('${c.id}')" class="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black font-bold rounded-lg text-[11px] flex items-center gap-1 transition-colors"><i class="ph ph-paper-plane-tilt"></i> Post</button>
+          <button onclick="openEditModal('${c.id}')" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 font-semibold rounded-lg text-[11px] flex items-center gap-1 transition-colors"><i class="ph ph-pencil-simple-line"></i> Edit</button>`;
+      } else {
+        const links = [];
+        if (c.ig_post_url) links.push(`<a href="${esc(c.ig_post_url)}" target="_blank" class="text-emerald-400 hover:underline">IG</a>`);
+        if (c.tiktok_post_url) links.push(`<a href="${esc(c.tiktok_post_url)}" target="_blank" class="text-emerald-400 hover:underline">TikTok</a>`);
+        if (c.youtube_post_url) links.push(`<a href="${esc(c.youtube_post_url)}" target="_blank" class="text-emerald-400 hover:underline">YT</a>`);
+        actionBtns = `<span class="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">✓ Posted${links.length ? ' · ' + links.join(' · ') : ''}</span>`;
+      }
 
-                <div class="flex items-center justify-between text-xs pt-1">
-                  <button onclick="navigator.clipboard.writeText('${c.caption} ${hashtagsStr}'); alert('Caption & tags copied!');" class="text-slate-400 hover:text-white flex items-center gap-1">
-                    <i class="ph ph-copy"></i> Copy Copy
-                  </button>
-                  <div class="flex items-center gap-2">
-                    <a href="/media/${c.id}.mp4" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1">
-                      <i class="ph ph-download-simple"></i> MP4
-                    </a>
-                    ${!isPosted ? `
-                      <button onclick="postNow('${c.id}')" class="px-3 py-1.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-md shadow-brand-500/20">
-                        <i class="ph ph-paper-plane-tilt"></i> Auto-Post
-                      </button>
-                    ` : `
-                      <span class="text-[11px] text-emerald-400 font-medium">✓ Auto-Posted</span>
-                    `}
-                  </div>
-                </div>
+      return `
+        <div class="card p-4 space-y-3 fade-in">
+          <div class="flex items-start gap-3">
+            <div class="w-20 h-28 bg-black rounded-xl overflow-hidden relative cursor-pointer flex-shrink-0 group border border-ink-700" onclick="openModal('${c.id}')">
+              <div class="absolute inset-0 flex items-center justify-center bg-black/50 group-hover:bg-black/25 transition-colors">
+                <i class="ph-fill ph-play-circle text-3xl text-white/90"></i>
               </div>
             </div>
-          `;
-        }).join('');
-        container.innerHTML = html;
-      } catch (e) {
-        console.error(e);
-      }
+            <div class="flex-1 min-w-0 space-y-1.5">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-ink-800 text-zinc-300 border border-ink-600">Score ${c.score ?? '—'}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${meta.cls}">${meta.label}${c.status === 'scheduled' && schedTime ? ' · ' + esc(schedTime) : ''}</span>
+              </div>
+              <h4 class="text-xs font-bold text-white leading-snug line-clamp-2">${esc(c.hook_text || c.title || 'Untitled clip')}</h4>
+              <p class="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed">${esc(c.caption || '')}</p>
+              ${c.status === 'failed' && c.error ? `<p class="text-[10px] text-red-300/80 leading-snug">${esc(c.error)}</p>` : ''}
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-ink-700 space-y-2.5">
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="shareToSocial('Instagram Reels', '${c.id}')" class="py-2 px-3 bg-ink-800 hover:bg-ink-700 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95">
+                <i class="ph ph-instagram-logo text-sm"></i> Share to IG
+              </button>
+              <button onclick="shareToSocial('TikTok', '${c.id}')" class="py-2 px-3 bg-ink-800 hover:bg-ink-700 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95">
+                <i class="ph ph-tiktok-logo text-sm"></i> Share to TikTok
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+              <button onclick="copyCaption('${c.id}')" class="text-zinc-500 hover:text-white flex items-center gap-1 font-semibold transition-colors">
+                <i class="ph ph-copy"></i> Copy caption
+              </button>
+              <div class="flex items-center gap-2">
+                <a href="/media/${esc(filename)}" download class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 rounded-lg font-semibold flex items-center gap-1 transition-colors">
+                  <i class="ph ph-download-simple"></i> MP4
+                </a>
+                <button onclick="deleteClip('${c.id}')" class="px-2.5 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-500 hover:text-red-400 rounded-lg font-semibold flex items-center transition-colors" title="Delete clip">
+                  <i class="ph ph-trash"></i>
+                </button>
+                ${actionBtns}
+              </div>
+            </div>
+          </div>
+        </div>`;
     }
 
-    // Modal Player
-    function openModal(filePath, title) {
-      const modal = document.getElementById('video-modal');
-      const video = document.getElementById('modal-video');
-      const titleEl = document.getElementById('modal-title');
-      
-      const filename = filePath.split(/[\\\\/]/).pop();
-      video.src = '/media/' + filename;
-      titleEl.innerText = title;
-      modal.classList.remove('hidden');
-      video.play();
-    }
-
-    function closeModal() {
-      const modal = document.getElementById('video-modal');
-      const video = document.getElementById('modal-video');
-      video.pause();
-      video.src = '';
-      modal.classList.add('hidden');
-    }
-
-    // Post Now
+    /* ── Clip actions ── */
     async function postNow(clipId) {
-      if (!confirm("Post this clip to TikTok and Instagram right now?")) return;
+      const ok = await confirmDialog('Post this clip now to every connected platform?', { yes: 'Post now', danger: false });
+      if (!ok) return;
       try {
-        const res = await fetch(`/api/clips/${clipId}/post`, { method: 'POST' });
+        const res = await api(`/api/clips/${clipId}/post`, { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-          alert("Posted successfully!");
+          const err = data.clip && data.clip.error;
+          if (data.clip && data.clip.status === 'failed') showToast(err || 'Posting failed', 'error');
+          else showToast('Posted successfully', 'success');
           loadClips();
         }
-      } catch (err) {
-        alert("Failed to post: " + err.message);
-      }
+      } catch (err) { if (err.message !== 'locked') showToast('Failed to post: ' + err.message, 'error'); }
     }
 
-    // Load Analytics
+    async function deleteClip(clipId) {
+      const ok = await confirmDialog('Delete this clip and its video file? This cannot be undone.');
+      if (!ok) return;
+      await api(`/api/clips/${clipId}`, { method: 'DELETE' });
+      showToast('Clip deleted', 'success');
+      loadClips();
+    }
+
+    function copyCaption(clipId) {
+      const c = CLIPS[clipId];
+      if (!c) return;
+      const tags = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
+      navigator.clipboard.writeText(`${c.caption || ''}\n\n${tags}`).then(
+        () => showToast('Caption & hashtags copied', 'success'),
+        () => showToast('Could not copy', 'error')
+      );
+    }
+
+    /* ── Edit modal ── */
+    function openEditModal(clipId) {
+      const c = CLIPS[clipId];
+      if (!c) return;
+      currentEditId = clipId;
+      document.getElementById('edit-hook').value = c.hook_text || '';
+      document.getElementById('edit-caption').value = c.caption || '';
+      document.getElementById('edit-hashtags').value = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
+      const modal = document.getElementById('edit-modal');
+      modal.classList.remove('hidden'); modal.classList.add('flex');
+    }
+    function closeEditModal() {
+      const modal = document.getElementById('edit-modal');
+      modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+    async function saveEdit() {
+      if (!currentEditId) return;
+      const tags = document.getElementById('edit-hashtags').value.trim().split(/\s+/).filter(Boolean);
+      try {
+        await api(`/api/clips/${currentEditId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hook_text: document.getElementById('edit-hook').value.trim(),
+            caption: document.getElementById('edit-caption').value.trim(),
+            hashtags: tags
+          })
+        });
+        showToast('Clip updated', 'success');
+        closeEditModal();
+        loadClips();
+      } catch (e) { if (e.message !== 'locked') showToast('Save failed', 'error'); }
+    }
+
+    /* ── Job actions ── */
+    async function cancelJob(jobId) {
+      const ok = await confirmDialog('Stop this job? Finished clips from it are removed.', { yes: 'Stop job' });
+      if (!ok) return;
+      await api(`/api/jobs/${jobId}/cancel`, { method: 'POST' });
+      showToast('Cancelling…', 'info');
+      loadClips();
+    }
+    async function retryJob(jobId) {
+      await api(`/api/jobs/${jobId}/retry`, { method: 'POST' });
+      showToast('Retrying…', 'info');
+      pollActiveJobs();
+      loadClips();
+    }
+    async function deleteJob(jobId) {
+      const ok = await confirmDialog('Delete this source and all its clips? This cannot be undone.', { yes: 'Delete all' });
+      if (!ok) return;
+      await api(`/api/jobs/${jobId}`, { method: 'DELETE' });
+      showToast('Deleted', 'success');
+      loadClips();
+      loadHistory();
+    }
+
+    /* ═══════════════════ HISTORY ═══════════════════ */
+    async function loadHistory() {
+      const container = document.getElementById('history-list');
+      try {
+        const res = await api('/api/history');
+        const history = (await res.json()).history || [];
+        if (history.length === 0) {
+          container.innerHTML = `
+            <div class="card text-center py-14">
+              <i class="ph ph-clock-counter-clockwise text-4xl text-ink-500 mb-3"></i>
+              <p class="text-sm text-zinc-400 font-semibold">Nothing processed yet</p>
+              <p class="text-xs text-zinc-600 mt-1">Your clipped videos will show up here</p>
+            </div>`;
+          return;
+        }
+        container.innerHTML = history.map(j => {
+          const isUrl = j.source_type === 'url';
+          const statusCls = j.status === 'completed' ? 'text-emerald-400' : (j.status === 'failed' ? 'text-red-400' : (j.status === 'processing' ? 'text-amber-300' : 'text-zinc-500'));
+          const when = j.created_at ? new Date(j.created_at.replace(' ', 'T')).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+          const isRunning = j.status === 'processing' || j.status === 'pending';
+          return `
+            <div class="card p-4 flex items-center gap-3 fade-in">
+              <div class="w-10 h-10 rounded-xl bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0 ${isUrl ? 'text-zinc-300' : 'text-zinc-300'}">
+                <i class="ph ${isUrl ? 'ph-link' : 'ph-video'} text-lg"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-white truncate">${esc(j.title || 'Untitled source')}</p>
+                <p class="text-[10px] text-zinc-500 truncate">
+                  ${when} · <span class="font-bold ${statusCls}">${j.status}</span> · ${j.clip_count || 0} clip${(j.clip_count || 0) === 1 ? '' : 's'}${j.is_short ? ' · short' : ''}
+                </p>
+              </div>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                ${(j.status === 'failed' || j.status === 'cancelled') ? `
+                  <button onclick="retryJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-white text-black text-[10px] font-bold flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>` : ''}
+                ${isRunning ? `
+                  <button onclick="cancelJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 text-[10px] font-bold hover:text-white transition-colors">Stop</button>` : `
+                  <button onclick="deleteJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-500 hover:text-red-400 text-[10px] font-bold transition-colors" title="Delete source & clips"><i class="ph ph-trash"></i></button>`}
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) { if (e.message !== 'locked') console.error(e); }
+    }
+
+    /* ═══════════════════ ANALYTICS ═══════════════════ */
     async function loadAnalytics() {
       try {
-        const res = await fetch('/api/analytics');
-        const data = await res.json();
-        document.getElementById('stat-total').innerText = data.total_clips;
-        document.getElementById('stat-posted').innerText = data.posted;
-        document.getElementById('stat-scheduled').innerText = data.scheduled;
-      } catch (e) {}
+        const res = await api('/api/analytics');
+        const d = await res.json();
+        document.getElementById('stat-total').innerText = d.total_clips;
+        document.getElementById('stat-posted').innerText = d.posted;
+        document.getElementById('stat-scheduled').innerText = d.scheduled;
+        document.getElementById('stat-success').innerText =
+          d.success_rate === null || d.success_rate === undefined ? '—' : d.success_rate + '%';
+        document.getElementById('stat-avg-score').innerText = d.avg_score ? `Avg viral score · ${d.avg_score}` : '';
+
+        // 7-day bar chart
+        const chart = document.getElementById('week-chart');
+        const days = d.per_day || [];
+        const max = Math.max(1, ...days.map(x => x.count));
+        chart.innerHTML = days.map(x => {
+          const h = Math.max(6, Math.round((x.count / max) * 100));
+          const label = new Date(x.day + 'T00:00:00').toLocaleDateString([], { weekday: 'short' }).slice(0, 2);
+          return `
+            <div class="flex-1 flex flex-col items-center gap-1.5">
+              <span class="text-[9px] font-bold ${x.count ? 'text-zinc-300' : 'text-zinc-700'}">${x.count || ''}</span>
+              <div class="w-full flex items-end h-16">
+                <div class="w-full rounded-md ${x.count ? 'bg-zinc-400' : 'bg-ink-700'} transition-all" style="height:${h}%"></div>
+              </div>
+              <span class="text-[9px] text-zinc-600 font-semibold">${label}</span>
+            </div>`;
+        }).join('');
+
+        // Per-platform published counts
+        const pp = d.platform_posts || {};
+        const rows = [
+          { key: 'ig', name: 'Instagram', icon: 'ph-instagram-logo' },
+          { key: 'tiktok', name: 'TikTok', icon: 'ph-tiktok-logo' },
+          { key: 'youtube', name: 'YouTube', icon: 'ph-youtube-logo' }
+        ];
+        const maxP = Math.max(1, ...rows.map(r => pp[r.key] || 0));
+        document.getElementById('platform-posts').innerHTML = rows.map(r => `
+          <div class="flex items-center gap-3">
+            <i class="ph ${r.icon} text-zinc-400 text-base w-5"></i>
+            <span class="text-[11px] text-zinc-300 font-semibold w-16">${r.name}</span>
+            <div class="flex-1 h-2 bg-ink-800 rounded-full overflow-hidden">
+              <div class="h-full bg-zinc-400 rounded-full" style="width:${Math.round(((pp[r.key] || 0) / maxP) * 100)}%"></div>
+            </div>
+            <span class="text-[11px] text-white font-extrabold w-5 text-right">${pp[r.key] || 0}</span>
+          </div>`).join('') + `
+          <div class="flex items-center gap-3 pt-1 border-t border-ink-700">
+            <i class="ph ph-x-circle text-red-400/70 text-base w-5"></i>
+            <span class="text-[11px] text-zinc-500 font-semibold flex-1">Failed posts</span>
+            <span class="text-[11px] text-red-300 font-extrabold">${pp.failed || 0}</span>
+          </div>`;
+
+        // Real destination status
+        const conn = d.connections || {};
+        const dest = [
+          { name: 'Buffer (multi-platform)', on: conn.buffer },
+          { name: 'Instagram Reels', on: conn.instagram },
+          { name: 'TikTok', on: conn.tiktok },
+          { name: 'YouTube Shorts', on: conn.youtube }
+        ];
+        document.getElementById('destinations').innerHTML = dest.map(x => `
+          <div class="flex items-center justify-between px-3.5 py-2.5 bg-ink-900 rounded-xl border border-ink-700">
+            <span class="text-[11px] font-semibold text-zinc-200">${x.name}</span>
+            ${x.on
+              ? '<span class="text-[10px] font-bold text-emerald-400 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Connected</span>'
+              : '<span class="text-[10px] font-bold text-zinc-600">Not connected</span>'}
+          </div>`).join('');
+      } catch (e) { if (e.message !== 'locked') console.error(e); }
     }
 
-    // Load Settings
+    /* ═══════════════════ SETTINGS ═══════════════════ */
+    function connectBtn(platform) {
+      const colors = {
+        buffer: 'bg-white hover:bg-zinc-200 text-black',
+        instagram: 'bg-white hover:bg-zinc-200 text-black',
+        tiktok: 'bg-white hover:bg-zinc-200 text-black',
+        youtube: 'bg-white hover:bg-zinc-200 text-black'
+      };
+      return `<button onclick="openSocialModal('${platform}')" class="px-3 py-1.5 ${colors[platform]} text-[11px] font-bold rounded-lg flex items-center gap-1 transition-colors"><i class="ph ph-plug"></i> Connect</button>`;
+    }
+    function disconnectBtn(platform) {
+      return `<button onclick="disconnectAccount('${platform}')" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-400 hover:text-red-400 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-colors"><i class="ph ph-plug-x"></i> Disconnect</button>`;
+    }
+
     async function loadSettings() {
       try {
-        const res = await fetch('/api/settings');
-        const data = await res.json();
-        if (data.gemini_api_key_masked) {
-          document.getElementById('setting-gemini-key').placeholder = data.gemini_api_key_masked;
+        const res = await api('/api/settings');
+        const s = await res.json();
+
+        if (s.gemini_api_key_masked) {
+          document.getElementById('setting-gemini-key').placeholder = 'Saved: ' + s.gemini_api_key_masked;
         }
 
-        // Buffer Status
-        const bufText = document.getElementById('buffer-status-text');
-        const bufAction = document.getElementById('buffer-action-area');
-        if (data.buffer_access_token) {
-          bufText.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Connected (Active on Buffer)</span>`;
-          bufAction.innerHTML = `
-            <button onclick="disconnectAccount('buffer')" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/40 text-rose-400 border border-slate-700 hover:border-rose-800 text-xs font-semibold rounded-lg transition-all">
-              Disconnect
-            </button>
-          `;
+        // header AI chip
+        const chip = document.getElementById('gemini-status');
+        if (s.gemini_api_key_masked) {
+          chip.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> AI Ready';
+          chip.className = 'px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20 flex items-center gap-1.5 cursor-pointer hover:border-emerald-400/40 transition-colors';
         } else {
-          bufText.innerText = 'Posts to both accounts automatically';
-          bufAction.innerHTML = `
-            <button onclick="openSocialModal('buffer')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5">
-              <i class="ph ph-plug"></i> Connect
-            </button>
-          `;
+          chip.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Add API key';
+          chip.className = 'px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-red-400/10 text-red-300 border border-red-400/20 flex items-center gap-1.5 cursor-pointer hover:border-red-400/40 transition-colors';
         }
 
-        // Instagram Status
-        const igText = document.getElementById('ig-status-text');
-        const igAction = document.getElementById('ig-action-area');
-        if (data.instagram_access_token) {
-          igText.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Connected (${data.instagram_username || 'Active'})</span>`;
-          igAction.innerHTML = `
-            <button onclick="disconnectAccount('instagram')" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/40 text-rose-400 border border-slate-700 hover:border-rose-800 text-xs font-semibold rounded-lg transition-all">
-              Disconnect
-            </button>
-          `;
-        } else {
-          igText.innerText = 'Not connected';
-          igAction.innerHTML = `
-            <button onclick="openSocialModal('instagram')" class="px-3.5 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-pink-500/20 flex items-center gap-1.5">
-              <i class="ph ph-plug"></i> Connect
-            </button>
-          `;
-        }
+        // lock button visibility
+        const lockBtn = document.getElementById('lock-btn');
+        if (s.has_access_pin) { lockBtn.classList.remove('hidden'); lockBtn.classList.add('flex'); }
+        else { lockBtn.classList.add('hidden'); lockBtn.classList.remove('flex'); }
 
-        // TikTok Status
-        const ttText = document.getElementById('tiktok-status-text');
-        const ttAction = document.getElementById('tiktok-action-area');
-        if (data.tiktok_access_token || data.tiktok_session_id) {
-          ttText.innerHTML = `<span class="text-cyan-400 font-semibold">✓ Connected (${data.tiktok_username || 'Active'})</span>`;
-          ttAction.innerHTML = `
-            <button onclick="disconnectAccount('tiktok')" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/40 text-rose-400 border border-slate-700 hover:border-rose-800 text-xs font-semibold rounded-lg transition-all">
-              Disconnect
-            </button>
-          `;
-        } else {
-          ttText.innerText = 'Not connected';
-          ttAction.innerHTML = `
-            <button onclick="openSocialModal('tiktok')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all border border-slate-700 flex items-center gap-1.5">
-              <i class="ph ph-plug"></i> Connect
-            </button>
-          `;
-        }
-      } catch (e) {}
+        // remove-pin button
+        const rmPin = document.getElementById('btn-remove-pin');
+        if (s.has_access_pin) { rmPin.classList.remove('hidden'); rmPin.classList.add('flex'); }
+        else { rmPin.classList.add('hidden'); rmPin.classList.remove('flex'); }
+
+        // connections
+        const c = s.connections || {};
+        setText('buffer-status-text', c.buffer ? '✓ Connected — posts to all linked channels' : 'Instagram + TikTok (+ YouTube) in one step');
+        setAction('buffer-action-area', c.buffer ? disconnectBtn('buffer') : connectBtn('buffer'));
+        setText('ig-status-text', c.instagram ? `✓ Connected${s.instagram_username && !s.instagram_username.startsWith('User_') ? ' · ' + s.instagram_username : ''}` : 'Not connected');
+        setAction('ig-action-area', c.instagram ? disconnectBtn('instagram') : connectBtn('instagram'));
+        setText('tiktok-status-text', c.tiktok ? '✓ Connected' : 'Not connected');
+        setAction('tiktok-action-area', c.tiktok ? disconnectBtn('tiktok') : connectBtn('tiktok'));
+        setText('youtube-status-text', c.youtube ? `✓ Connected${s.youtube_channel_title ? ' · ' + s.youtube_channel_title : ''}` : 'Not connected');
+        setAction('youtube-action-area', c.youtube ? disconnectBtn('youtube') : connectBtn('youtube'));
+
+        // preferences
+        document.getElementById('pref-review').checked = !!s.review_mode;
+        document.getElementById('pref-hashtags').value = s.default_hashtags || '';
+        document.getElementById('pref-notify').checked = localStorage.getItem('clipy_notify') === '1';
+        document.getElementById('pref-del-source').checked = !!s.delete_source_after;
+        document.getElementById('pref-keep-n').value = s.keep_last_clips || 0;
+        document.getElementById('pref-max-age').value = s.max_clip_age_days || 0;
+      } catch (e) { if (e.message !== 'locked') console.error(e); }
     }
 
-    let currentModalPlatform = '';
+    function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+    function setAction(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
 
+    async function saveApiKey() {
+      const key = document.getElementById('setting-gemini-key').value.trim();
+      if (!key) { showToast('Paste a key first', 'error'); return; }
+      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gemini_api_key: key }) });
+      document.getElementById('setting-gemini-key').value = '';
+      showToast('API key saved', 'success');
+      loadSettings();
+    }
+
+    async function savePrefs() {
+      const payload = {
+        review_mode: document.getElementById('pref-review').checked,
+        default_hashtags: document.getElementById('pref-hashtags').value.trim()
+      };
+      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      showToast('Posting preferences saved', 'success');
+    }
+
+    async function saveAutomation() {
+      const payload = {
+        delete_source_after: document.getElementById('pref-del-source').checked,
+        keep_last_clips: parseInt(document.getElementById('pref-keep-n').value || '0', 10) || 0,
+        max_clip_age_days: parseInt(document.getElementById('pref-max-age').value || '0', 10) || 0
+      };
+      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      showToast('Storage rules saved', 'success');
+    }
+
+    async function saveNotify() {
+      const on = document.getElementById('pref-notify').checked;
+      if (on && 'Notification' in window && Notification.permission !== 'granted') {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          document.getElementById('pref-notify').checked = false;
+          showToast('Notification permission denied', 'error');
+          return;
+        }
+      }
+      localStorage.setItem('clipy_notify', on ? '1' : '0');
+      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notify_enabled: on }) });
+      showToast(on ? 'Notifications on' : 'Notifications off', 'success');
+    }
+
+    async function savePin() {
+      const pin = document.getElementById('setting-pin').value.trim();
+      if (!pin) { showToast('Enter a PIN first', 'error'); return; }
+      const res = await api('/api/settings/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('setting-pin').value = '';
+        showToast('PIN saved — app is now locked for others', 'success');
+        loadSettings();
+      } else showToast(data.error || 'Invalid PIN', 'error');
+    }
+
+    async function removePin() {
+      const ok = await confirmDialog('Remove the PIN? Anyone with the link can access the app.', { yes: 'Remove' });
+      if (!ok) return;
+      await api('/api/settings/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: '' }) });
+      showToast('PIN removed', 'success');
+      loadSettings();
+    }
+
+    async function runCleanupNow() {
+      const res = await api('/api/cleanup', { method: 'POST' });
+      const data = await res.json();
+      showToast(data.removed ? `Cleaned up ${data.removed} old clip${data.removed === 1 ? '' : 's'}` : 'Nothing to clean up', 'success');
+    }
+
+    /* ── Social connect modals ── */
     function openSocialModal(platform) {
       currentModalPlatform = platform;
       const modal = document.getElementById('social-modal');
@@ -698,112 +1200,155 @@
       const body = document.getElementById('social-modal-body');
 
       if (platform === 'buffer') {
-        title.innerHTML = '<i class="ph-bold ph-stack text-blue-400 text-lg"></i> Connect Buffer Account';
+        title.innerHTML = '<i class="ph-bold ph-stack text-lg"></i> Connect Buffer';
         body.innerHTML = `
-          <div class="space-y-3">
-            <p class="text-xs text-slate-300">Connects <b>both Instagram & TikTok</b> in one step!</p>
-            <div class="p-3 bg-slate-950 rounded-xl border border-blue-500/30 space-y-2">
-              <span class="text-xs font-bold text-white">How to get your Buffer Access Token (Takes 30s):</span>
-              <ol class="text-[11px] text-slate-400 space-y-1 list-decimal list-inside">
-                <li>Make sure your Instagram and TikTok are connected in your Buffer dashboard.</li>
-                <li>Go to <a href="https://buffer.com/developers/apps/create" target="_blank" class="text-blue-400 underline font-semibold">buffer.com/developers/apps/create</a>.</li>
-                <li>Type App Name: <b>Clipy</b>, URL: <b>https://clipy-0o5j.onrender.com</b>.</li>
-                <li>Click <b>Create Application</b> and copy your <b>Access Token</b>!</li>
-              </ol>
-              <input id="modal-input-token" type="password" placeholder="Paste Buffer Access Token (starts with 1/...)" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500">
-            </div>
-          </div>
-        `;
+          <p class="text-xs text-zinc-400">One token posts to <b class="text-white">all channels connected in your Buffer account</b> — Instagram, TikTok and YouTube.</p>
+          <div class="p-3.5 bg-ink-800 rounded-xl border border-ink-600 space-y-2">
+            <p class="text-xs font-bold text-white">Get your token (30 seconds)</p>
+            <ol class="text-[11px] text-zinc-500 space-y-1 list-decimal list-inside leading-relaxed">
+              <li>Connect your accounts in your Buffer dashboard first.</li>
+              <li>Go to <a href="https://buffer.com/developers/apps/create" target="_blank" class="text-zinc-300 underline font-semibold">buffer.com/developers/apps/create</a></li>
+              <li>Name it <b class="text-zinc-300">Clipy</b> and create the app.</li>
+              <li>Copy the <b class="text-zinc-300">Access Token</b> and paste it below.</li>
+            </ol>
+            <input id="modal-input-token" type="password" placeholder="Paste Buffer access token (1/…)" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
+            <label class="flex items-center gap-2.5 pt-1 cursor-pointer">
+              <input id="modal-buffer-youtube" type="checkbox" checked class="w-4 h-4 accent-zinc-300">
+              <span class="text-[11px] text-zinc-300 font-semibold">Also post to YouTube channels connected in Buffer</span>
+            </label>
+          </div>`;
       } else if (platform === 'instagram') {
-        title.innerHTML = '<i class="ph ph-instagram-logo text-pink-500 text-lg"></i> Connect Instagram';
+        title.innerHTML = '<i class="ph ph-instagram-logo text-lg"></i> Connect Instagram';
         body.innerHTML = `
-          <div class="space-y-3">
-            <p class="text-xs text-slate-300 font-medium">Choose how you want to post to Instagram:</p>
-            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-              <span class="text-xs font-bold text-emerald-400">⚡ Method 1: 1-Tap Mobile Share (Zero Setup)</span>
-              <p class="text-[11px] text-slate-400">Under any clip in your Queue, simply tap <b>"Share to IG"</b>. It copies the caption & tags and opens Instagram Reels on your phone!</p>
-            </div>
-            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-              <span class="text-xs font-bold text-white">🤖 Method 2: Automatic Cloud Schedule</span>
-              <p class="text-[11px] text-slate-400">Enter your Meta Graph Access Token for hands-free background uploads:</p>
-              <input id="modal-input-token" type="password" placeholder="Paste Instagram Access Token" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-pink-500">
-              <div class="pt-1">
-                <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-xs text-pink-400 hover:text-pink-300 font-semibold inline-flex items-center gap-1 underline">
-                  <i class="ph ph-arrow-square-out"></i> Get Token from Meta Graph API Explorer
-                </a>
-                <p class="text-[10px] text-slate-500 mt-1 leading-tight">Requires a free Instagram Professional/Creator account. Select your app, add <b>instagram_content_publish</b> permission, click Generate Token, and paste it above.</p>
-              </div>
-            </div>
+          <div class="p-3 bg-ink-800 rounded-xl border border-ink-600">
+            <p class="text-[11px] font-bold text-white">⚡ Zero setup</p>
+            <p class="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">Use the <b class="text-zinc-300">Share to IG</b> button on any clip — it copies the caption and opens Instagram on your phone.</p>
           </div>
-        `;
-      } else {
-        title.innerHTML = '<i class="ph ph-tiktok-logo text-cyan-400 text-lg"></i> Connect TikTok';
+          <div class="p-3.5 bg-ink-800 rounded-xl border border-ink-600 space-y-2">
+            <p class="text-xs font-bold text-white">🤖 Automatic posting</p>
+            <p class="text-[10px] text-zinc-500 leading-relaxed">Paste a Meta Graph access token with <b class="text-zinc-400">instagram_content_publish</b> permission:</p>
+            <input id="modal-input-token" type="password" placeholder="Paste Instagram access token" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
+            <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-[11px] text-zinc-300 hover:text-white underline font-semibold inline-flex items-center gap-1"><i class="ph ph-arrow-square-out"></i> Get a token from Graph Explorer</a>
+          </div>`;
+      } else if (platform === 'tiktok') {
+        title.innerHTML = '<i class="ph ph-tiktok-logo text-lg"></i> Connect TikTok';
         body.innerHTML = `
-          <div class="space-y-3">
-            <p class="text-xs text-slate-300 font-medium">Choose how you want to post to TikTok:</p>
-            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
-              <span class="text-xs font-bold text-cyan-400">⚡ Method 1: 1-Tap Mobile Share (Zero Setup)</span>
-              <p class="text-[11px] text-slate-400">Under any clip in your Queue, simply tap <b>"Share to TikTok"</b>. It copies your hashtags and opens TikTok on your phone!</p>
-            </div>
-            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-              <span class="text-xs font-bold text-white">🤖 Method 2: Automatic Cloud Schedule</span>
-              <p class="text-[11px] text-slate-400">Paste your TikTok <b>sessionid</b> cookie for background uploads:</p>
-              <input id="modal-input-token" type="password" placeholder="Paste TikTok sessionid cookie" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500">
-              <div class="pt-1">
-                <a href="https://www.tiktok.com" target="_blank" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold inline-flex items-center gap-1 underline">
-                  <i class="ph ph-arrow-square-out"></i> Open TikTok.com
-                </a>
-                <p class="text-[10px] text-slate-500 mt-1 leading-tight">Log into tiktok.com on your PC browser &gt; press F12 &gt; Application tab &gt; Cookies &gt; copy the <b>sessionid</b> value and paste it above.</p>
-              </div>
-            </div>
+          <div class="p-3 bg-ink-800 rounded-xl border border-ink-600">
+            <p class="text-[11px] font-bold text-white">⚡ Zero setup</p>
+            <p class="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">Use the <b class="text-zinc-300">Share to TikTok</b> button on any clip — caption copied, TikTok opens.</p>
           </div>
-        `;
+          <div class="p-3.5 bg-ink-800 rounded-xl border border-ink-600 space-y-2">
+            <p class="text-xs font-bold text-white">🤖 Automatic posting</p>
+            <p class="text-[10px] text-zinc-500 leading-relaxed">Log into tiktok.com on PC → F12 → Application → Cookies → copy the <b class="text-zinc-400">sessionid</b> value:</p>
+            <input id="modal-input-token" type="password" placeholder="Paste TikTok sessionid" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
+          </div>`;
+      } else if (platform === 'youtube') {
+        title.innerHTML = '<i class="ph ph-youtube-logo text-lg"></i> Connect YouTube';
+        body.innerHTML = `
+          <p class="text-xs text-zinc-400">Uploads clips as <b class="text-white">public YouTube Shorts</b> via Google OAuth.</p>
+          <div class="p-3.5 bg-ink-800 rounded-xl border border-ink-600 space-y-2">
+            <p class="text-xs font-bold text-white">One-time setup (free)</p>
+            <ol class="text-[11px] text-zinc-500 space-y-1 list-decimal list-inside leading-relaxed">
+              <li>Create a project at <a href="https://console.cloud.google.com/" target="_blank" class="text-zinc-300 underline font-semibold">console.cloud.google.com</a></li>
+              <li>Enable the <b class="text-zinc-300">YouTube Data API v3</b>.</li>
+              <li>Create an <b class="text-zinc-300">OAuth client (Web app)</b>.</li>
+              <li>Add this exact redirect URI: <code class="text-zinc-300 bg-ink-900 px-1 rounded" id="yt-redirect-uri">…</code></li>
+              <li>Paste the Client ID &amp; Secret below, then press Connect.</li>
+            </ol>
+            <input id="modal-input-yt-id" type="text" placeholder="Google OAuth Client ID" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
+            <input id="modal-input-token" type="password" placeholder="Google OAuth Client Secret" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
+          </div>
+          <button onclick="window.location.href='/auth/youtube/login'" class="w-full py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5"><i class="ph ph-sign-in"></i> Connect with Google</button>`;
+        fetch('/api/settings').then(r => r.json()).then(s => {
+          const base = location.origin;
+          const el = document.getElementById('yt-redirect-uri');
+          if (el) el.textContent = base + '/auth/youtube/callback';
+          if (s.youtube_client_id_masked) document.getElementById('modal-input-yt-id').placeholder = 'Saved: ' + s.youtube_client_id_masked;
+        }).catch(() => {});
       }
-      modal.classList.remove('hidden');
+      modal.classList.remove('hidden'); modal.classList.add('flex');
     }
 
     function closeSocialModal() {
-      document.getElementById('social-modal').classList.add('hidden');
+      const modal = document.getElementById('social-modal');
+      modal.classList.add('hidden'); modal.classList.remove('flex');
     }
 
     async function saveSocialModal() {
       const input = document.getElementById('modal-input-token');
       const val = input ? input.value.trim() : '';
-      if (!val) {
-        alert("Tip: You can use the 1-Tap Mobile Share buttons directly on your clips in the Queue!");
-        closeSocialModal();
-        return;
-      }
-
       const payload = {};
+
       if (currentModalPlatform === 'buffer') {
+        if (!val) { showToast('Paste your Buffer token first', 'error'); return; }
         payload.buffer_access_token = val;
+        payload.buffer_post_youtube = document.getElementById('modal-buffer-youtube').checked;
       } else if (currentModalPlatform === 'instagram') {
+        if (!val) { showToast('Tip: the Share to IG button works with zero setup', 'info'); closeSocialModal(); return; }
         payload.instagram_access_token = val;
         payload.auto_post_instagram = true;
       } else if (currentModalPlatform === 'tiktok') {
+        if (!val) { showToast('Tip: the Share to TikTok button works with zero setup', 'info'); closeSocialModal(); return; }
         payload.tiktok_session_id = val;
         payload.auto_post_tiktok = true;
+      } else if (currentModalPlatform === 'youtube') {
+        const cid = document.getElementById('modal-input-yt-id').value.trim();
+        const csec = val;
+        if (!cid && !csec) { showToast('Enter your Google Client ID & Secret, then press Connect', 'info'); closeSocialModal(); return; }
+        if (cid) payload.youtube_client_id = cid;
+        if (csec) payload.youtube_client_secret = csec;
+        if (cid || csec) {
+          await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          showToast('Credentials saved — now press "Connect with Google"', 'success');
+          closeSocialModal();
+          loadSettings();
+          return;
+        }
       }
 
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      alert(`${currentModalPlatform} connected successfully!`);
+      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      showToast(currentModalPlatform + ' connected', 'success');
       closeSocialModal();
       loadSettings();
     }
 
-    async function shareToSocial(platform, filePath, caption, hashtags) {
-      const filename = filePath.split(/[\\\\/]/).pop();
-      const videoUrl = '/media/' + filename;
-      const fullText = caption + '\n\n' + hashtags;
+    async function disconnectAccount(platform) {
+      const ok = await confirmDialog('Disconnect ' + platform + '?', { yes: 'Disconnect' });
+      if (!ok) return;
+      await api(`/auth/disconnect/${platform}`, { method: 'POST' });
+      showToast(platform + ' disconnected', 'success');
+      loadSettings();
+    }
 
-      try {
-        await navigator.clipboard.writeText(fullText);
-      } catch (e) {}
+    /* ═══════════════════ VIDEO PLAYER ═══════════════════ */
+    function openModal(clipId) {
+      const c = CLIPS[clipId];
+      if (!c) return;
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('modal-video');
+      const filename = (c.file_path || '').split(/[\\/]/).pop();
+      video.src = '/media/' + filename;
+      document.getElementById('modal-title').innerText = c.hook_text || c.title || 'Preview';
+      modal.classList.remove('hidden'); modal.classList.add('flex');
+      video.play();
+    }
+    function closeModal() {
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('modal-video');
+      video.pause(); video.src = '';
+      modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+
+    /* ═══════════════════ 1-TAP MOBILE SHARE ═══════════════════ */
+    async function shareToSocial(platform, clipId) {
+      const c = CLIPS[clipId];
+      if (!c) return;
+      const filename = (c.file_path || '').split(/[\\/]/).pop();
+      const videoUrl = '/media/' + filename;
+      const tags = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
+      const fullText = (c.caption || '') + '\n\n' + tags;
+
+      try { await navigator.clipboard.writeText(fullText); } catch (e) {}
 
       if (navigator.canShare) {
         try {
@@ -811,62 +1356,43 @@
           const blob = await resp.blob();
           const file = new File([blob], filename, { type: 'video/mp4' });
           if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: caption,
-              text: fullText
-            });
+            await navigator.share({ files: [file], title: c.hook_text || platform, text: fullText });
             return;
           }
-        } catch (err) {
-          console.log('Share error:', err);
-        }
+        } catch (err) { if (err.name === 'AbortError') return; }
       }
-
-      alert(`Caption and hashtags copied to clipboard! Downloading ${filename} so you can post it to ${platform}...`);
+      showToast('Caption copied — downloading video for ' + platform, 'info');
       const a = document.createElement('a');
-      a.href = videoUrl;
-      a.download = filename;
-      a.click();
+      a.href = videoUrl; a.download = filename; a.click();
     }
 
-    async function disconnectAccount(platform) {
-      if (!confirm(`Disconnect ${platform}?`)) return;
-      await fetch(`/auth/disconnect/${platform}`, { method: 'POST' });
+    /* ═══════════════════ BOOT ═══════════════════ */
+    function startApp() {
       loadSettings();
+      loadClips();
+      pollActiveJobs();
+      // deep link ?tab=settings&connected=…
+      const params = new URLSearchParams(location.search);
+      const tab = params.get('tab');
+      if (params.get('connected')) showToast(params.get('connected') + ' connected successfully', 'success');
+      if (params.get('error')) showToast('Connection failed: ' + params.get('error').replace(/_/g, ' '), 'error');
+      if (tab) switchTab(tab); else switchTab('create');
+      if (params.get('modal')) openSocialModal(params.get('modal'));
+      history.replaceState(null, '', location.pathname);
     }
 
-    async function saveApiKey() {
-      const key = document.getElementById('setting-gemini-key').value.trim();
-      if (!key) return;
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gemini_api_key: key })
-      });
-      alert("Gemini API key saved!");
-      loadSettings();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
-    async function saveSocials() {
-      const tiktok = document.getElementById('setting-tiktok-session').value.trim();
-      const ig = document.getElementById('setting-ig-token').value.trim();
-      const payload = {};
-      if (tiktok) payload.tiktok_session_id = tiktok;
-      if (ig) payload.instagram_access_token = ig;
-
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      alert("Social settings saved!");
-    }
-
-    // Initial load
-    loadClips();
-    pollActiveJobs();
+    (async function init() {
+      try {
+        const res = await fetch('/api/auth/status');
+        const st = await res.json();
+        if (st.locked) showLock();
+        else startApp();
+      } catch { startApp(); }
+    })();
   </script>
 </body>
 </html>
-
