@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Clipy - AI Stream & Short Clipper</title>
+  
+  <!-- PWA Meta Tags for Phone -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Clipy">
+
+  <!-- TailwindCSS & Phosphor Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-24 md:pb-6">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-pink-500 flex items-center justify-center shadow-lg shadow-brand-500/25">
+        <i class="ph-bold ph-scissors text-xl text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Clipy</h1>
+        <p class="text-[10px] text-slate-400 font-medium">AI Stream & Shorts Auto-Clipper</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="gemini-status" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Gemini AI Active
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-3xl w-full mx-auto p-4 space-y-6">
+
+    <!-- TAB 1: CREATE / CLIP -->
+    <section id="tab-create" class="tab-content space-y-5">
+      <!-- Input Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="ph ph-sparkle text-brand-500 text-lg"></i> New Clip / Stream
+        </h2>
+
+        <!-- Link Input -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-medium text-slate-400">Paste YouTube or TikTok Link</label>
+          <div class="relative">
+            <i class="ph ph-link absolute left-3.5 top-3.5 text-slate-400 text-lg"></i>
+            <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=... or tiktok.com/..." 
+              class="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-white placeholder-slate-500">
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex-1 h-px bg-slate-800"></div>
+          <span class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">or upload from phone</span>
+          <div class="flex-1 h-px bg-slate-800"></div>
+        </div>
+
+        <!-- File Upload Area -->
+        <div id="drop-area" class="border-2 border-dashed border-slate-800 hover:border-brand-500/50 rounded-xl p-5 text-center cursor-pointer bg-slate-950/40 transition-all">
+          <input type="file" id="input-file" accept="video/*" class="hidden">
+          <div class="flex flex-col items-center gap-2">
+            <div class="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center text-brand-400">
+              <i class="ph ph-video-camera text-2xl"></i>
+            </div>
+            <p id="file-label" class="text-xs text-slate-300 font-medium">Tap to pick a video from your phone</p>
+            <p class="text-[10px] text-slate-500">Supports Shorts, clips, or long streams (MP4, MOV)</p>
+          </div>
+        </div>
+
+        <!-- Settings Drawer / Options -->
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+            <label class="text-[11px] font-medium text-slate-400 block mb-1">Clips from Stream</label>
+            <select id="select-clips" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-1.5 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="1">1 Clip (For Shorts)</option>
+              <option value="3" selected>3 Viral Clips</option>
+              <option value="5">5 Viral Clips</option>
+            </select>
+          </div>
+
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+            <label class="text-[11px] font-medium text-slate-400 block mb-1">Posting Schedule</label>
+            <select id="select-interval" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-1.5 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="1">1 clip every 1 hour</option>
+              <option value="3" selected>1 clip every 3 hours</option>
+              <option value="5">1 clip every 5 hours</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button id="btn-submit" onclick="submitJob()" class="w-full py-3.5 px-4 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 active:scale-[0.99] text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transition-all">
+          <i class="ph-bold ph-magic-wand text-lg"></i>
+          <span>Auto-Clip & Schedule</span>
+        </button>
+      </div>
+
+      <!-- Active Processing Jobs Banner -->
+      <div id="jobs-container" class="space-y-3"></div>
+    </section>
+
+    <!-- TAB 2: CLIPS & QUEUE -->
+    <section id="tab-clips" class="tab-content hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="ph ph-video text-brand-500 text-lg"></i> Generated Clips & Schedule
+        </h2>
+        <button onclick="loadClips()" class="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
+          <i class="ph ph-arrows-clockwise text-sm"></i> Refresh
+        </button>
+      </div>
+
+      <div id="clips-list" class="space-y-4">
+        <!-- Dynamic Clip Cards -->
+      </div>
+    </section>
+
+    <!-- TAB 3: ANALYTICS -->
+    <section id="tab-analytics" class="tab-content hidden space-y-4">
+      <h2 class="text-base font-bold text-white flex items-center gap-2">
+        <i class="ph ph-chart-line-up text-brand-500 text-lg"></i> Performance & Stats
+      </h2>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Total Clips Made</p>
+          <p id="stat-total" class="text-2xl font-black text-white mt-1">0</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Clips Posted</p>
+          <p id="stat-posted" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-medium">In Posting Queue</p>
+          <p id="stat-scheduled" class="text-2xl font-black text-brand-400 mt-1">0</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Predicted Retention</p>
+          <p class="text-2xl font-black text-pink-400 mt-1">89%</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+        <h3 class="text-sm font-bold text-white">Social Destinations</h3>
+        <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <i class="ph ph-tiktok-logo text-xl text-cyan-400"></i>
+            <div>
+              <p class="text-xs font-semibold text-white">TikTok Auto-Post</p>
+              <p class="text-[10px] text-slate-400">Ready for scheduled uploads</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-emerald-400">Active</span>
+        </div>
+
+        <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <i class="ph ph-instagram-logo text-xl text-pink-400"></i>
+            <div>
+              <p class="text-xs font-semibold text-white">Instagram Reels</p>
+              <p class="text-[10px] text-slate-400">Auto-publish enabled</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold text-emerald-400">Active</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: SETTINGS -->
+    <section id="tab-settings" class="tab-content hidden space-y-4">
+      <h2 class="text-base font-bold text-white flex items-center gap-2">
+        <i class="ph ph-gear text-brand-500 text-lg"></i> App Settings
+      </h2>
+
+      <!-- Gemini API Key -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
+            <i class="ph ph-cpu text-brand-400"></i> Google Gemini API Key
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">Free from Google AI Studio. Used for picking moments, hooks, and hashtags.</p>
+        </div>
+
+        <div class="flex gap-2">
+          <input id="setting-gemini-key" type="password" placeholder="Enter your Gemini API key (AIzaSy...)" 
+            class="flex-1 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500">
+          <button onclick="saveApiKey()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition-all">
+            Save
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-500">
+          Don't have a key? Get one 100% free in 30 seconds at <a href="https://aistudio.google.com/" target="_blank" class="text-brand-400 underline">aistudio.google.com</a>.
+        </p>
+      </div>
+
+      <!-- Social Account Connection -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+        <h3 class="text-sm font-bold text-white">Social Accounts (Free Uploads)</h3>
+        
+        <div class="space-y-1">
+          <label class="text-xs text-slate-400">TikTok Session ID / Cookies</label>
+          <input id="setting-tiktok-session" type="password" placeholder="Paste session cookie or leave blank for demo"
+            class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none">
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs text-slate-400">Instagram Access Token</label>
+          <input id="setting-ig-token" type="password" placeholder="Paste Meta Graph Token or leave blank for demo"
+            class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none">
+        </div>
+
+        <button onclick="saveSocials()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all">
+          Save Social Settings
+        </button>
+      </div>
+
+      <!-- PWA Install Tip -->
+      <div class="bg-gradient-to-r from-brand-900/30 to-pink-900/30 border border-brand-500/20 rounded-2xl p-4 flex items-center gap-3">
+        <i class="ph ph-device-mobile text-3xl text-brand-400 flex-shrink-0"></i>
+        <div>
+          <p class="text-xs font-bold text-white">Install on your phone</p>
+          <p class="text-[11px] text-slate-400">On iPhone, tap Share &gt; 'Add to Home Screen'. On Android, tap the three dots &gt; 'Install app'.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Video Preview Modal -->
+  <div id="video-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="max-w-sm w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="p-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="modal-title" class="text-xs font-bold text-white truncate max-w-[240px]">Preview</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="bg-black aspect-[9/16] w-full flex items-center justify-center">
+        <video id="modal-video" controls class="w-full h-full object-contain"></video>
+      </div>
+      <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-end">
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-6 py-2.5 flex items-center justify-around">
+    <button onclick="switchTab('create')" class="nav-btn flex flex-col items-center gap-1 text-brand-400" data-tab="create">
+      <i class="ph-fill ph-plus-circle text-2xl"></i>
+      <span class="text-[10px] font-semibold">Clip</span>
+    </button>
+    <button onclick="switchTab('clips')" class="nav-btn flex flex-col items-center gap-1 text-slate-400" data-tab="clips">
+      <i class="ph-bold ph-video text-2xl"></i>
+      <span class="text-[10px] font-semibold">Queue</span>
+    </button>
+    <button onclick="switchTab('analytics')" class="nav-btn flex flex-col items-center gap-1 text-slate-400" data-tab="analytics">
+      <i class="ph-bold ph-chart-line-up text-2xl"></i>
+      <span class="text-[10px] font-semibold">Analytics</span>
+    </button>
+    <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-1 text-slate-400" data-tab="settings">
+      <i class="ph-bold ph-gear text-2xl"></i>
+      <span class="text-[10px] font-semibold">Settings</span>
+    </button>
+  </nav>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.tab === tabId) {
+          btn.className = 'nav-btn flex flex-col items-center gap-1 text-brand-400';
+        } else {
+          btn.className = 'nav-btn flex flex-col items-center gap-1 text-slate-400';
+        }
+      });
+
+      if (tabId === 'clips') loadClips();
+      if (tabId === 'analytics') loadAnalytics();
+      if (tabId === 'settings') loadSettings();
+    }
+
+    // File Drag & Drop
+    const dropArea = document.getElementById('drop-area');
+    const inputFile = document.getElementById('input-file');
+    const fileLabel = document.getElementById('file-label');
+
+    dropArea.addEventListener('click', () => inputFile.click());
+    inputFile.addEventListener('change', () => {
+      if (inputFile.files.length > 0) {
+        fileLabel.innerText = "Selected: " + inputFile.files[0].name;
+        dropArea.classList.add('border-brand-500');
+      }
+    });
+
+    // Submit Job
+    async function submitJob() {
+      const url = document.getElementById('input-url').value.trim();
+      const file = inputFile.files[0];
+      const numClips = document.getElementById('select-clips').value;
+      const interval = document.getElementById('select-interval').value;
+      const btn = document.getElementById('btn-submit');
+
+      if (!url && !file) {
+        alert("Please paste a link or pick a video file!");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="ph ph-spinner animate-spin text-lg"></i> Processing...`;
+
+      const formData = new FormData();
+      if (url) formData.append('url', url);
+      if (file) formData.append('file', file);
+      formData.append('num_clips', numClips);
+      formData.append('interval_hours', interval);
+
+      try {
+        const res = await fetch('/api/jobs', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('input-url').value = '';
+          inputFile.value = '';
+          fileLabel.innerText = "Tap to pick a video from your phone";
+          dropArea.classList.remove('border-brand-500');
+          switchTab('clips');
+          loadJobs();
+        } else {
+          alert(data.error || "Failed to start job");
+        }
+      } catch (err) {
+        alert("Error starting job: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="ph-bold ph-magic-wand text-lg"></i><span>Auto-Clip & Schedule</span>`;
+      }
+    }
+
+    // Load Clips
+    async function loadClips() {
+      const container = document.getElementById('clips-list');
+      try {
+        const res = await fetch('/api/clips');
+        const data = await res.json();
+        const clips = data.clips || [];
+
+        if (clips.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12 bg-slate-900 border border-slate-800 rounded-2xl">
+              <i class="ph ph-film-strip text-4xl text-slate-600 mb-2"></i>
+              <p class="text-sm text-slate-400 font-medium">No clips created yet</p>
+              <p class="text-xs text-slate-500">Paste a link or upload a video in the Clip tab!</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = clips.map(c => {
+          const hashtagsStr = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : c.hashtags;
+          const isPosted = c.status === 'posted';
+          const schedTime = c.scheduled_time ? new Date(c.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now';
+
+          return `
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg p-4 space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="w-20 h-28 bg-slate-950 rounded-xl overflow-hidden relative cursor-pointer flex-shrink-0 group" onclick="openModal('${c.file_path}', '${c.hook_text}')">
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/20">
+                    <i class="ph-fill ph-play-circle text-3xl text-white"></i>
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0 space-y-1">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-500/10 text-brand-400 border border-brand-500/20">Score ${c.score}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isPosted ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">
+                      ${isPosted ? '✓ Posted' : '⏳ Sched: ' + schedTime}
+                    </span>
+                  </div>
+                  <h4 class="text-xs font-bold text-white line-clamp-2">${c.hook_text || c.title}</h4>
+                  <p class="text-[11px] text-slate-400 line-clamp-2">${c.caption}</p>
+                </div>
+              </div>
+
+              <!-- Action buttons -->
+              <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                <button onclick="navigator.clipboard.writeText('${c.caption} ${hashtagsStr}'); alert('Caption & tags copied!');" class="text-slate-400 hover:text-white flex items-center gap-1">
+                  <i class="ph ph-copy"></i> Copy Copy
+                </button>
+                <div class="flex items-center gap-2">
+                  <a href="/media/${c.id}.mp4" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1">
+                    <i class="ph ph-download-simple"></i> MP4
+                  </a>
+                  ${!isPosted ? `
+                    <button onclick="postNow('${c.id}')" class="px-3 py-1.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-md shadow-brand-500/20">
+                      <i class="ph ph-paper-plane-tilt"></i> Post Now
+                    </button>
+                  ` : `
+                    <span class="text-[11px] text-emerald-400 font-medium">Auto-posted to IG & TikTok</span>
+                  `}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Modal Player
+    function openModal(filePath, title) {
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('modal-video');
+      const titleEl = document.getElementById('modal-title');
+      
+      const filename = filePath.split(/[\\\\/]/).pop();
+      video.src = '/media/' + filename;
+      titleEl.innerText = title;
+      modal.classList.remove('hidden');
+      video.play();
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('modal-video');
+      video.pause();
+      video.src = '';
+      modal.classList.add('hidden');
+    }
+
+    // Post Now
+    async function postNow(clipId) {
+      if (!confirm("Post this clip to TikTok and Instagram right now?")) return;
+      try {
+        const res = await fetch(`/api/clips/${clipId}/post`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          alert("Posted successfully!");
+          loadClips();
+        }
+      } catch (err) {
+        alert("Failed to post: " + err.message);
+      }
+    }
+
+    // Load Analytics
+    async function loadAnalytics() {
+      try {
+        const res = await fetch('/api/analytics');
+        const data = await res.json();
+        document.getElementById('stat-total').innerText = data.total_clips;
+        document.getElementById('stat-posted').innerText = data.posted;
+        document.getElementById('stat-scheduled').innerText = data.scheduled;
+      } catch (e) {}
+    }
+
+    // Load Settings
+    async function loadSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data.gemini_api_key_masked) {
+          document.getElementById('setting-gemini-key').placeholder = data.gemini_api_key_masked;
+        }
+        if (data.tiktok_session_id) {
+          document.getElementById('setting-tiktok-session').placeholder = "••••••••••••••••";
+        }
+      } catch (e) {}
+    }
+
+    async function saveApiKey() {
+      const key = document.getElementById('setting-gemini-key').value.trim();
+      if (!key) return;
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gemini_api_key: key })
+      });
+      alert("Gemini API key saved!");
+      loadSettings();
+    }
+
+    async function saveSocials() {
+      const tiktok = document.getElementById('setting-tiktok-session').value.trim();
+      const ig = document.getElementById('setting-ig-token').value.trim();
+      const payload = {};
+      if (tiktok) payload.tiktok_session_id = tiktok;
+      if (ig) payload.instagram_access_token = ig;
+
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      alert("Social settings saved!");
+    }
+
+    // Initial load
+    loadClips();
+  </script>
+</body>
+</html>
+
