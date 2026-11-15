@@ -36,9 +36,10 @@ def probe_video(video_path: Path):
         return {"width": 1920, "height": 1080, "duration": 0, "aspect": 1.77}
 
 def download_video(url: str, output_dir: Path):
-    """Downloads a video or stream using yt-dlp."""
+    """Downloads a video or stream using yt-dlp with multi-client fallbacks for datacenter IPs."""
     import yt_dlp
     
+    settings = get_settings()
     output_template = str(output_dir / "%(id)s.%(ext)s")
     base_opts = {
         'outtmpl': output_template,
@@ -48,10 +49,31 @@ def download_video(url: str, output_dir: Path):
         'socket_timeout': 30,
     }
 
+    is_youtube = any(d in url.lower() for d in ("youtube.com", "youtu.be"))
+    is_tiktok = "tiktok.com" in url.lower()
+
+    # Check for cookies file
+    cookie_candidates = [
+        output_dir.parent.parent / "cookies.txt",
+        Path("cookies.txt"),
+        Path("data/cookies.txt"),
+    ]
+    for cf in cookie_candidates:
+        if cf.is_file() and cf.stat().st_size > 0:
+            base_opts['cookiefile'] = str(cf)
+            break
+
+    # If user provided raw YouTube cookies in settings
+    yt_cookies_text = (settings.get("youtube_cookies") or "").strip()
+    if yt_cookies_text and is_youtube:
+        c_path = output_dir / "yt_cookies.txt"
+        c_path.write_text(yt_cookies_text, encoding="utf-8")
+        base_opts['cookiefile'] = str(c_path)
+
     # TikTok often blocks anonymous/datacenter IPs - attach the user's session cookie when available
     try:
-        session_id = (get_settings().get("tiktok_session_id") or "").strip()
-        if session_id:
+        session_id = (settings.get("tiktok_session_id") or "").strip()
+        if session_id and is_tiktok:
             import http.cookiejar
             jar = http.cookiejar.CookieJar()
             jar.set_cookie(http.cookiejar.Cookie(
@@ -68,35 +90,67 @@ def download_video(url: str, output_dir: Path):
 
     def _short_err(e) -> str:
         msg = " ".join(str(e).split())  # collapse newlines/indentation
+        if "sign in to confirm" in msg.lower():
+            return "YouTube requested bot verification. Try another video, or upload the MP4 directly."
         return msg[:300] or type(e).__name__
 
     errors = []
     title = ""
-    try:
-        ydl_opts = {**base_opts,
-                    'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
-                    'merge_output_format': 'mp4'}
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            if info:
-                title = info.get("title", "")
-    except Exception as e:
-        errors.append(_short_err(e))
-        print(f"[yt-dlp] Direct download error, trying generic fallback: {errors[-1]}")
+
+    # Strategy 1: Mobile clients (android, ios, web) with best quality up to 1080p
+    strategy_1 = {
+        **base_opts,
+        'format': 'bestvideo[height<=1080]+bestaudio/bestvideo*+bestaudio/best[height<=1080]/best',
+        'merge_output_format': 'mp4',
+    }
+    if is_youtube:
+        strategy_1['extractor_args'] = {
+            'youtube': {
+                'player_client': ['android', 'ios', 'web'],
+                'player_skip': ['configs', 'webpage'],
+            }
+        }
+
+    # Strategy 2: Embedded player / TV clients with generic format fallback
+    strategy_2 = {
+        **base_opts,
+        'format': 'bestvideo*+bestaudio/best',
+        'merge_output_format': 'mp4',
+    }
+    if is_youtube:
+        strategy_2['extractor_args'] = {
+            'youtube': {
+                'player_client': ['tv_embedded', 'web_embedded', 'android', 'ios'],
+            }
+        }
+
+    # Strategy 3: Any available stream without strict filters
+    strategy_3 = {
+        **base_opts,
+        'format': 'bestvideo*+bestaudio/best/all',
+    }
+
+    for strat in [strategy_1, strategy_2, strategy_3]:
         try:
-            with yt_dlp.YoutubeDL(base_opts) as ydl:
+            with yt_dlp.YoutubeDL(strat) as ydl:
                 info = ydl.extract_info(url, download=True)
                 if info:
                     title = info.get("title", "")
-        except Exception as e2:
-            errors.append(_short_err(e2))
-            print(f"[yt-dlp] Fallback also failed: {errors[-1]}")
-                
-    # Find the downloaded file
+            # Check if any video file was created
+            for pattern in ("*.mp4", "*.mkv", "*.webm", "*.mov", "*.m4a"):
+                files = sorted(output_dir.glob(pattern))
+                if files:
+                    return files[0], title
+        except Exception as e:
+            errors.append(_short_err(e))
+            print(f"[yt-dlp] Strategy error: {errors[-1]}")
+
+    # Final check for any downloaded file
     for pattern in ("*.mp4", "*.mkv", "*.webm", "*.mov", "*.m4a"):
         files = sorted(output_dir.glob(pattern))
         if files:
             return files[0], title
+
     detail = errors[-1] if errors else "yt-dlp returned no video file (unsupported or private link?)"
     raise RuntimeError(f"Download failed: {detail}")
 
