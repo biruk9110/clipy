@@ -1115,8 +1115,20 @@
 
         // connections
         const c = s.connections || {};
-        setText('buffer-status-text', c.buffer ? '✓ Connected — posts to all linked channels' : 'Instagram + TikTok (+ YouTube) in one step');
+        setText('buffer-status-text', c.buffer ? '✓ Connected — checking channels…' : 'Instagram + TikTok (+ YouTube) in one step');
         setAction('buffer-action-area', c.buffer ? disconnectBtn('buffer') : connectBtn('buffer'));
+        if (c.buffer) {
+          api('/api/buffer/channels').then(r => r.json()).then(data => {
+            if (data.channels && data.channels.length > 0) {
+              const names = data.channels.map(ch => ch.service ? ch.service.charAt(0).toUpperCase() + ch.service.slice(1) : ch.name).join(', ');
+              setText('buffer-status-text', `✓ Connected (${data.channels.length} channels: ${names})`);
+            } else if (data.error) {
+              setText('buffer-status-text', `⚠️ ${data.error.slice(0, 50)}`);
+            } else {
+              setText('buffer-status-text', '✓ Connected — posts to linked channels');
+            }
+          }).catch(() => {});
+        }
         setText('ig-status-text', c.instagram ? `✓ Connected${s.instagram_username && !s.instagram_username.startsWith('User_') ? ' · ' + s.instagram_username : ''}` : 'Not connected');
         setAction('ig-action-area', c.instagram ? disconnectBtn('instagram') : connectBtn('instagram'));
         setText('tiktok-status-text', c.tiktok ? '✓ Connected' : 'Not connected');
@@ -1322,8 +1334,23 @@
       }
 
       await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      showToast(currentModalPlatform + ' connected', 'success');
       closeSocialModal();
+      if (currentModalPlatform === 'buffer') {
+        try {
+          const r = await api('/api/buffer/channels');
+          const d = await r.json();
+          if (d.channels && d.channels.length > 0) {
+            const names = d.channels.map(ch => ch.service ? ch.service.charAt(0).toUpperCase() + ch.service.slice(1) : ch.name).join(', ');
+            showToast(`Buffer connected! Found ${d.channels.length} channels (${names})`, 'success');
+          } else if (d.error) {
+            showToast(d.error, 'error');
+          } else {
+            showToast('Buffer connected', 'success');
+          }
+        } catch (_) { showToast('Buffer connected', 'success'); }
+      } else {
+        showToast(currentModalPlatform + ' connected', 'success');
+      }
       loadSettings();
     }
 

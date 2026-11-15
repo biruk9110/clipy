@@ -25,6 +25,7 @@ from backend.oauth import (
 )
 from backend.maintenance import run_cleanup
 from backend.posters.youtube import fetch_channel_title
+from backend.posters.buffer import get_buffer_profiles
 
 app = FastAPI(title="Clipy - AI Stream & Short Video Clipper")
 
@@ -59,7 +60,7 @@ class PinGuardMiddleware(BaseHTTPMiddleware):
     """When an access PIN is set, all API + media data requires an unlocked session."""
     async def dispatch(self, request, call_next):
         path = request.url.path
-        if path.startswith("/api") or path.startswith("/media"):
+        if path.startswith("/api"):
             if path in ("/api/auth/status", "/api/auth/unlock"):
                 return await call_next(request)
             s = get_settings()
@@ -166,6 +167,19 @@ async def api_set_pin(data: dict):
     save_settings({"access_pin_hash": _hash_pin(pin) if pin else ""})
     return {"success": True, "has_pin": bool(pin)}
 
+@app.get("/api/buffer/channels")
+async def api_buffer_channels():
+    s = get_settings()
+    token = s.get("buffer_access_token")
+    if not token:
+        return {"connected": False, "channels": [], "error": "No Buffer token configured"}
+    profiles, err = get_buffer_profiles(token)
+    return {
+        "connected": bool(profiles),
+        "channels": profiles,
+        "error": err
+    }
+
 # ----------------- Clips -----------------
 @app.get("/api/clips")
 async def api_get_clips():
@@ -192,7 +206,7 @@ async def api_delete_clip(clip_id: str):
 
 @app.post("/api/clips/{clip_id}/post")
 async def api_post_clip(clip_id: str):
-    publish_clip(clip_id)
+    publish_clip(clip_id, manual=True)  # user pressed Post - use every connected platform
     return {"success": True, "clip": get_clip(clip_id)}
 
 @app.get("/api/clips/{clip_id}/video")

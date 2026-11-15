@@ -57,7 +57,9 @@ def check_and_post_scheduled_clips():
     for clip in pending:
         publish_clip(clip["id"])
 
-def publish_clip(clip_id: str):
+def publish_clip(clip_id: str, manual: bool = False):
+    """Posts a clip. manual=True is the user pressing 'Post' - then every platform
+    with real credentials is used regardless of the auto-post toggles."""
     clip = get_clip(clip_id)
     if not clip or clip.get("status") == "posted":
         return
@@ -77,6 +79,17 @@ def publish_clip(clip_id: str):
     succeeded = 0
     errors = []
 
+    # In manual mode a platform counts as "wants posting" when it has real credentials,
+    # even if its auto-post toggle is off.
+    want_ig = settings.get("auto_post_instagram", True) if not manual else bool(
+        settings.get("instagram_access_token") and settings.get("instagram_user_id"))
+    want_tiktok = settings.get("auto_post_tiktok", True) if not manual else bool(
+        settings.get("tiktok_access_token") or settings.get("tiktok_session_id"))
+    want_youtube = (settings.get("auto_post_youtube") and
+                    (settings.get("youtube_access_token") or settings.get("youtube_refresh_token")))
+    if manual:
+        want_youtube = bool(settings.get("youtube_access_token") or settings.get("youtube_refresh_token"))
+
     # Merge user's default hashtag preset into every caption
     default_tags = [t for t in (settings.get("default_hashtags") or "").replace(",", " ").split() if t]
     clip_tags = clip.get("hashtags") if isinstance(clip.get("hashtags"), list) else []
@@ -93,7 +106,7 @@ def publish_clip(clip_id: str):
         else:
             errors.append(f"Buffer: {buffer_res.get('error', 'failed')}")
 
-    if settings.get("auto_post_instagram", True):
+    if want_ig:
         attempted += 1
         ig_res = post_to_instagram(video_path, clip["caption"], final_hashtags)
         if ig_res.get("success"):
@@ -101,7 +114,7 @@ def publish_clip(clip_id: str):
         else:
             errors.append(f"Instagram: {ig_res.get('error', 'failed')}")
         
-    if settings.get("auto_post_tiktok", True):
+    if want_tiktok:
         attempted += 1
         tiktok_res = post_to_tiktok(video_path, clip["caption"], final_hashtags)
         if tiktok_res.get("success"):
@@ -109,7 +122,7 @@ def publish_clip(clip_id: str):
         else:
             errors.append(f"TikTok: {tiktok_res.get('error', 'failed')}")
 
-    if settings.get("auto_post_youtube") and (settings.get("youtube_access_token") or settings.get("youtube_refresh_token")):
+    if want_youtube:
         attempted += 1
         youtube_res = post_to_youtube(
             video_path, clip["caption"], final_hashtags,
@@ -121,6 +134,15 @@ def publish_clip(clip_id: str):
             errors.append(f"YouTube: {youtube_res.get('error', 'failed')}")
 
     if attempted == 0:
+        if manual:
+            # User pressed Post but nothing real is connected - tell them clearly.
+            update_clip(
+                clip_id,
+                status="failed",
+                error="No platform is connected. Connect Buffer, Instagram, TikTok or YouTube in Settings first.",
+                ig_status="skipped", tiktok_status="skipped", youtube_status="skipped",
+            )
+            return
         # Nothing is configured to auto-post - leave the clip ready for manual sharing.
         update_clip(clip_id, status="ready", error="No platform connected for auto-posting")
         return
@@ -136,15 +158,20 @@ def publish_clip(clip_id: str):
         )
         return
 
+    buf_channels = [c.lower() for c in (buffer_res.get("channels") or [])]
+    is_buf_ig = "instagram" in buf_channels
+    is_buf_tt = "tiktok" in buf_channels
+    is_buf_yt = "youtube" in buf_channels
+
     update_clip(
         clip_id,
         status="posted",
         error="",
-        ig_status="posted" if ig_res.get("success") and ig_res.get("mode") != "skipped" else ("skipped" if ig_res.get("mode") == "skipped" else "failed"),
+        ig_status="posted" if is_buf_ig or (ig_res.get("success") and ig_res.get("mode") != "skipped") else ("skipped" if ig_res.get("mode") == "skipped" else "failed"),
         ig_post_url=ig_res.get("url", ""),
-        tiktok_status="posted" if tiktok_res.get("success") and tiktok_res.get("mode") != "skipped" else ("skipped" if tiktok_res.get("mode") == "skipped" else "failed"),
+        tiktok_status="posted" if is_buf_tt or (tiktok_res.get("success") and tiktok_res.get("mode") != "skipped") else ("skipped" if tiktok_res.get("mode") == "skipped" else "failed"),
         tiktok_post_url=tiktok_res.get("url", ""),
-        youtube_status="posted" if youtube_res.get("success") and youtube_res.get("mode") != "skipped" else ("skipped" if youtube_res.get("mode") == "skipped" else "failed"),
+        youtube_status="posted" if is_buf_yt or (youtube_res.get("success") and youtube_res.get("mode") != "skipped") else ("skipped" if youtube_res.get("mode") == "skipped" else "failed"),
         youtube_post_url=youtube_res.get("url", ""),
     )
 
