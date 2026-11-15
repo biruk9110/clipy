@@ -26,6 +26,7 @@ DEFAULT_SETTINGS = {
     "tiktok_session_id": os.getenv("TIKTOK_SESSION_ID", ""),
     "instagram_username": os.getenv("INSTAGRAM_USERNAME", ""),
     "instagram_password": os.getenv("INSTAGRAM_PASSWORD", ""),
+    "buffer_access_token": os.getenv("BUFFER_ACCESS_TOKEN", ""),
     "whisper_model": "tiny", # fast, free, local
     "layout_mode": "auto" # auto: stacks facecam or blurs 9:16
 }

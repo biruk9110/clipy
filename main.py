@@ -170,6 +170,10 @@ async def auth_disconnect(platform: str):
             "tiktok_username": "",
             "auto_post_tiktok": False
         })
+    elif platform == "buffer":
+        save_settings({
+            "buffer_access_token": ""
+        })
     return {"success": True, "settings": get_settings()}
 
 if __name__ == "__main__":

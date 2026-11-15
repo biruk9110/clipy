@@ -14,6 +14,7 @@ from .transcriber import extract_audio, transcribe_audio
 from .gemini_director import pick_stream_moments, polish_short_video
 from .posters.instagram import post_to_instagram
 from .posters.tiktok import post_to_tiktok
+from .posters.buffer import post_to_buffer
 
 _scheduler_running = False
 
@@ -52,7 +53,14 @@ def publish_clip(clip_id: str):
     settings = get_settings()
     ig_res = {"success": True, "mode": "skipped"}
     tiktok_res = {"success": True, "mode": "skipped"}
+    buffer_res = {"success": False}
     
+    # If Buffer is configured, post to Buffer (handles both IG & TikTok)
+    if settings.get("buffer_access_token"):
+        base_url = os.getenv("RENDER_EXTERNAL_URL") or "https://clipy-0o5j.onrender.com"
+        video_url = f"{base_url}/media/{video_path.name}"
+        buffer_res = post_to_buffer(video_url, clip["caption"], clip["hashtags"])
+
     if settings.get("auto_post_instagram", True):
         ig_res = post_to_instagram(video_path, clip["caption"], clip["hashtags"])
         

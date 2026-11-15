@@ -222,9 +222,30 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
         <div>
           <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
-            <i class="ph ph-share-network text-brand-400"></i> Connect Social Accounts (1-Click)
+            <i class="ph ph-share-network text-brand-400"></i> Connect Social Accounts
           </h3>
-          <p class="text-xs text-slate-400 mt-0.5">Click to log in directly. No cookies or developer tokens needed!</p>
+          <p class="text-xs text-slate-400 mt-0.5">Automate uploads across Instagram and TikTok with zero developer headaches.</p>
+        </div>
+
+        <!-- Buffer Connection Card (Recommended) -->
+        <div class="bg-gradient-to-r from-blue-950/60 to-slate-950 p-4 rounded-xl border border-blue-500/30 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/25">
+              <i class="ph-bold ph-stack text-2xl"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <p class="text-xs font-bold text-white">Buffer (Instagram + TikTok)</p>
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-blue-500/20 text-blue-300 border border-blue-500/30">RECOMMENDED</span>
+              </div>
+              <p id="buffer-status-text" class="text-[11px] text-slate-400">Posts to both accounts automatically</p>
+            </div>
+          </div>
+          <div id="buffer-action-area">
+            <button onclick="openSocialModal('buffer')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5">
+              <i class="ph ph-plug"></i> Connect
+            </button>
+          </div>
         </div>
 
         <!-- Instagram Connection Card -->
@@ -543,6 +564,25 @@
           document.getElementById('setting-gemini-key').placeholder = data.gemini_api_key_masked;
         }
 
+        // Buffer Status
+        const bufText = document.getElementById('buffer-status-text');
+        const bufAction = document.getElementById('buffer-action-area');
+        if (data.buffer_access_token) {
+          bufText.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Connected (Active on Buffer)</span>`;
+          bufAction.innerHTML = `
+            <button onclick="disconnectAccount('buffer')" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/40 text-rose-400 border border-slate-700 hover:border-rose-800 text-xs font-semibold rounded-lg transition-all">
+              Disconnect
+            </button>
+          `;
+        } else {
+          bufText.innerText = 'Posts to both accounts automatically';
+          bufAction.innerHTML = `
+            <button onclick="openSocialModal('buffer')" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5">
+              <i class="ph ph-plug"></i> Connect
+            </button>
+          `;
+        }
+
         // Instagram Status
         const igText = document.getElementById('ig-status-text');
         const igAction = document.getElementById('ig-action-area');
@@ -591,7 +631,24 @@
       const title = document.getElementById('social-modal-title');
       const body = document.getElementById('social-modal-body');
 
-      if (platform === 'instagram') {
+      if (platform === 'buffer') {
+        title.innerHTML = '<i class="ph-bold ph-stack text-blue-400 text-lg"></i> Connect Buffer Account';
+        body.innerHTML = `
+          <div class="space-y-3">
+            <p class="text-xs text-slate-300">Connects <b>both Instagram & TikTok</b> in one step!</p>
+            <div class="p-3 bg-slate-950 rounded-xl border border-blue-500/30 space-y-2">
+              <span class="text-xs font-bold text-white">How to get your Buffer Access Token (Takes 30s):</span>
+              <ol class="text-[11px] text-slate-400 space-y-1 list-decimal list-inside">
+                <li>Make sure your Instagram and TikTok are connected in your Buffer dashboard.</li>
+                <li>Go to <a href="https://buffer.com/developers/apps/create" target="_blank" class="text-blue-400 underline font-semibold">buffer.com/developers/apps/create</a>.</li>
+                <li>Type App Name: <b>Clipy</b>, URL: <b>https://clipy-0o5j.onrender.com</b>.</li>
+                <li>Click <b>Create Application</b> and copy your <b>Access Token</b>!</li>
+              </ol>
+              <input id="modal-input-token" type="password" placeholder="Paste Buffer Access Token (starts with 1/...)" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500">
+            </div>
+          </div>
+        `;
+      } else if (platform === 'instagram') {
         title.innerHTML = '<i class="ph ph-instagram-logo text-pink-500 text-lg"></i> Connect Instagram';
         body.innerHTML = `
           <div class="space-y-3">
@@ -653,7 +710,9 @@
       }
 
       const payload = {};
-      if (currentModalPlatform === 'instagram') {
+      if (currentModalPlatform === 'buffer') {
+        payload.buffer_access_token = val;
+      } else if (currentModalPlatform === 'instagram') {
         payload.instagram_access_token = val;
         payload.auto_post_instagram = true;
       } else if (currentModalPlatform === 'tiktok') {
