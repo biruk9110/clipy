@@ -84,6 +84,10 @@ async def index(request: Request):
     except TypeError:
         return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/health")
+async def health():
+    return {"ok": True}
+
 @app.get("/manifest.json")
 async def manifest():
     return FileResponse(STATIC_DIR / "manifest.json", media_type="application/manifest+json")

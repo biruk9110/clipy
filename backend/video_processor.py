@@ -40,45 +40,65 @@ def download_video(url: str, output_dir: Path):
     import yt_dlp
     
     output_template = str(output_dir / "%(id)s.%(ext)s")
-    ydl_opts = {
+    base_opts = {
         'outtmpl': output_template,
-        'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
-        'merge_output_format': 'mp4',
         'noplaylist': True,
         'quiet': True,
         'no_warnings': True,
+        'socket_timeout': 30,
     }
-    
+
+    # TikTok often blocks anonymous/datacenter IPs - attach the user's session cookie when available
+    try:
+        session_id = (get_settings().get("tiktok_session_id") or "").strip()
+        if session_id:
+            import http.cookiejar
+            jar = http.cookiejar.CookieJar()
+            jar.set_cookie(http.cookiejar.Cookie(
+                version=0, name="sessionid", value=session_id,
+                port=None, port_specified=False,
+                domain=".tiktok.com", domain_specified=True, domain_initial_dot=True,
+                path="/", path_specified=True,
+                secure=True, expires=None, discard=False,
+                comment=None, comment_url=None, rest={}, rfc2109=False,
+            ))
+            base_opts['cookiejar'] = jar
+    except Exception as e:
+        print(f"[yt-dlp] Cookie setup skipped: {e}")
+
+    def _short_err(e) -> str:
+        msg = " ".join(str(e).split())  # collapse newlines/indentation
+        return msg[:300] or type(e).__name__
+
+    errors = []
     title = ""
     try:
+        ydl_opts = {**base_opts,
+                    'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
+                    'merge_output_format': 'mp4'}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             if info:
                 title = info.get("title", "")
     except Exception as e:
-        print(f"[yt-dlp] Direct download error, trying generic fallback: {e}")
-        ydl_opts_fallback = {
-            'outtmpl': output_template,
-            'noplaylist': True,
-            'quiet': True,
-            'no_warnings': True,
-        }
+        errors.append(_short_err(e))
+        print(f"[yt-dlp] Direct download error, trying generic fallback: {errors[-1]}")
         try:
-            with yt_dlp.YoutubeDL(ydl_opts_fallback) as ydl:
+            with yt_dlp.YoutubeDL(base_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 if info:
                     title = info.get("title", "")
         except Exception as e2:
-            print(f"[yt-dlp] Fallback also failed: {e2}")
+            errors.append(_short_err(e2))
+            print(f"[yt-dlp] Fallback also failed: {errors[-1]}")
                 
     # Find the downloaded file
-    mp4s = list(output_dir.glob("*.mp4"))
-    if not mp4s:
-        files = [f for f in output_dir.iterdir() if f.suffix.lower() in [".mp4", ".mkv", ".webm"]]
+    for pattern in ("*.mp4", "*.mkv", "*.webm", "*.mov", "*.m4a"):
+        files = sorted(output_dir.glob(pattern))
         if files:
             return files[0], title
-        raise RuntimeError("Download completed but no video file found.")
-    return mp4s[0], title
+    detail = errors[-1] if errors else "yt-dlp returned no video file (unsupported or private link?)"
+    raise RuntimeError(f"Download failed: {detail}")
 
 FONTS_DIR = Path(__file__).resolve().parent / "fonts"
 
@@ -119,6 +139,12 @@ def create_hook_image(hook_text: str, output_path: Path, width=1080, height=200)
     card_rect = [card_margin_x, card_margin_y, width - card_margin_x, height - card_margin_y]
     draw.rounded_rectangle(card_rect, radius=24, fill=(15, 17, 26, 235), outline=(250, 204, 21, 245), width=4)
     
+    # Strip emoji glyphs the banner font has no artwork for (they render as empty boxes)
+    hook_text = re.sub(
+        "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U00002B00-\U00002BFF\U0000FE00-\U0000FE0F\U0000200D]+",
+        "", hook_text or ""
+    ).strip() or "Wait for it!"
+
     words = hook_text.split()
     max_w = (width - card_margin_x * 2) - 60
     
