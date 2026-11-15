@@ -595,7 +595,7 @@
         title.innerHTML = '<i class="ph ph-instagram-logo text-pink-500 text-lg"></i> Connect Instagram';
         body.innerHTML = `
           <div class="space-y-3">
-            <p class="text-xs text-slate-300">Choose how you want to post to Instagram:</p>
+            <p class="text-xs text-slate-300 font-medium">Choose how you want to post to Instagram:</p>
             <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
               <span class="text-xs font-bold text-emerald-400">⚡ Method 1: 1-Tap Mobile Share (Zero Setup)</span>
               <p class="text-[11px] text-slate-400">Under any clip in your Queue, simply tap <b>"Share to IG"</b>. It copies the caption & tags and opens Instagram Reels on your phone!</p>
@@ -603,7 +603,13 @@
             <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
               <span class="text-xs font-bold text-white">🤖 Method 2: Automatic Cloud Schedule</span>
               <p class="text-[11px] text-slate-400">Enter your Meta Graph Access Token for hands-free background uploads:</p>
-              <input id="modal-input-token" type="password" placeholder="Paste Instagram Access Token" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none">
+              <input id="modal-input-token" type="password" placeholder="Paste Instagram Access Token" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-pink-500">
+              <div class="pt-1">
+                <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-xs text-pink-400 hover:text-pink-300 font-semibold inline-flex items-center gap-1 underline">
+                  <i class="ph ph-arrow-square-out"></i> Get Token from Meta Graph API Explorer
+                </a>
+                <p class="text-[10px] text-slate-500 mt-1 leading-tight">Requires a free Instagram Professional/Creator account. Select your app, add <b>instagram_content_publish</b> permission, click Generate Token, and paste it above.</p>
+              </div>
             </div>
           </div>
         `;
@@ -611,15 +617,21 @@
         title.innerHTML = '<i class="ph ph-tiktok-logo text-cyan-400 text-lg"></i> Connect TikTok';
         body.innerHTML = `
           <div class="space-y-3">
-            <p class="text-xs text-slate-300">Choose how you want to post to TikTok:</p>
+            <p class="text-xs text-slate-300 font-medium">Choose how you want to post to TikTok:</p>
             <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
               <span class="text-xs font-bold text-cyan-400">⚡ Method 1: 1-Tap Mobile Share (Zero Setup)</span>
               <p class="text-[11px] text-slate-400">Under any clip in your Queue, simply tap <b>"Share to TikTok"</b>. It copies your hashtags and opens TikTok on your phone!</p>
             </div>
             <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
               <span class="text-xs font-bold text-white">🤖 Method 2: Automatic Cloud Schedule</span>
-              <p class="text-[11px] text-slate-400">Paste your TikTok <b>sessionid</b> cookie (from F12 &gt; Application &gt; Cookies):</p>
-              <input id="modal-input-token" type="password" placeholder="Paste TikTok sessionid cookie" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none">
+              <p class="text-[11px] text-slate-400">Paste your TikTok <b>sessionid</b> cookie for background uploads:</p>
+              <input id="modal-input-token" type="password" placeholder="Paste TikTok sessionid cookie" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500">
+              <div class="pt-1">
+                <a href="https://www.tiktok.com" target="_blank" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold inline-flex items-center gap-1 underline">
+                  <i class="ph ph-arrow-square-out"></i> Open TikTok.com
+                </a>
+                <p class="text-[10px] text-slate-500 mt-1 leading-tight">Log into tiktok.com on your PC browser &gt; press F12 &gt; Application tab &gt; Cookies &gt; copy the <b>sessionid</b> value and paste it above.</p>
+              </div>
             </div>
           </div>
         `;
