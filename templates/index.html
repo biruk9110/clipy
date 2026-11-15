@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Clipy — AI Clip Studio</title>
-  
+
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
@@ -26,7 +27,7 @@
           fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
             ink: {
-              950: '#09090b', 900: '#0e0e11', 850: '#131316',
+              950: '#09090b', 900: '#0e11', 850: '#131316',
               800: '#18181b', 700: '#232327', 600: '#2e2e33', 500: '#3f3f46'
             }
           }
@@ -35,26 +36,84 @@
     }
   </script>
   <style>
-    * { -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .card { background: #101013; border: 1px solid #1f1f23; border-radius: 1rem; }
-    .chip { transition: all .15s ease; }
-    input, select, textarea { color-scheme: dark; }
-    select option { background: #18181b; }
-    .fade-in { animation: fadeIn .25s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-    .toast-in { animation: toastIn .25s ease; }
-    @keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .card {
+      background: #101013;
+      border: 1px solid #1f1f23;
+      border-radius: 1rem;
+    }
+
+    .chip {
+      transition: all .15s ease;
+    }
+
+    input,
+    select,
+    textarea {
+      color-scheme: dark;
+    }
+
+    select option {
+      background: #18181b;
+    }
+
+    .fade-in {
+      animation: fadeIn .25s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .toast-in {
+      animation: toastIn .25s ease;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
   </style>
 </head>
+
 <body class="bg-ink-950 text-zinc-100 min-h-screen flex flex-col select-none pb-24 md:pb-6">
 
   <!-- ══════════ LOCK SCREEN ══════════ -->
   <div id="lock-screen" class="fixed inset-0 z-[100] bg-ink-950 hidden items-center justify-center p-6">
     <div class="w-full max-w-xs text-center space-y-5 fade-in">
-      <img src="/static/icons/apple-touch-icon.png" alt="Clipy" class="w-16 h-16 mx-auto rounded-2xl shadow-xl shadow-purple-500/20 border border-ink-600">
+      <img src="/static/icons/apple-touch-icon.png" alt="Clipy"
+        class="w-16 h-16 mx-auto rounded-2xl shadow-xl shadow-purple-500/20 border border-ink-600">
       <div>
         <h1 class="text-xl font-bold tracking-tight">Clipy is locked</h1>
         <p class="text-xs text-zinc-500 mt-1">Authenticate to continue</p>
@@ -62,7 +121,8 @@
 
       <!-- Fingerprint / Biometric Button -->
       <div id="biometric-area" class="hidden space-y-3">
-        <button onclick="unlockWithBiometrics()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/40 hover:to-teal-600/40 border border-emerald-500/40 text-emerald-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+        <button onclick="unlockWithBiometrics()"
+          class="w-full py-3.5 bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/40 hover:to-teal-600/40 border border-emerald-500/40 text-emerald-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
           <i class="ph-bold ph-fingerprint text-2xl text-emerald-400"></i>
           <span>Unlock with Fingerprint / Face ID</span>
         </button>
@@ -76,16 +136,19 @@
       <input id="lock-pin" type="password" inputmode="numeric" maxlength="8" placeholder="• • • •"
         class="w-full text-center tracking-[0.5em] text-lg font-bold px-4 py-3.5 bg-ink-900 border border-ink-600 rounded-xl focus:outline-none focus:border-zinc-400 placeholder-zinc-700">
       <p id="lock-error" class="text-xs text-red-400 hidden">Wrong PIN, try again</p>
-      <button onclick="unlockApp()" class="w-full py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-xl transition-all active:scale-[0.98]">
+      <button onclick="unlockApp()"
+        class="w-full py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-xl transition-all active:scale-[0.98]">
         Unlock
       </button>
     </div>
   </div>
 
   <!-- ══════════ HEADER ══════════ -->
-  <header class="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-xl border-b border-ink-700 px-4 py-3 flex items-center justify-between">
+  <header
+    class="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-xl border-b border-ink-700 px-4 py-3 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
-      <img src="/static/icons/apple-touch-icon.png" alt="Clipy" class="w-9 h-9 rounded-xl shadow-md shadow-purple-500/20 object-cover border border-ink-600">
+      <img src="/static/icons/apple-touch-icon.png" alt="Clipy"
+        class="w-9 h-9 rounded-xl shadow-md shadow-purple-500/20 object-cover border border-ink-600">
       <div>
         <h1 class="font-bold text-[17px] tracking-tight leading-none">Clipy</h1>
         <p class="text-[10px] text-zinc-500 font-medium mt-0.5">AI Clip Studio</p>
@@ -96,7 +159,9 @@
         class="px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-zinc-400/10 text-zinc-400 border border-ink-600 flex items-center gap-1.5 cursor-pointer hover:border-zinc-500 transition-colors">
         <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span> AI
       </a>
-      <button id="lock-btn" onclick="lockApp()" class="hidden w-8 h-8 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors" title="Lock app">
+      <button id="lock-btn" onclick="lockApp()"
+        class="hidden w-8 h-8 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors"
+        title="Lock app">
         <i class="ph ph-lock-simple text-sm"></i>
       </button>
     </div>
@@ -110,11 +175,14 @@
       <div class="card p-5 space-y-4 fade-in">
         <div class="flex items-center gap-2">
           <h2 class="text-sm font-bold text-white">New Clip</h2>
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 font-semibold">AI AUTO-EDIT</span>
+          <span
+            class="text-[10px] px-2 py-0.5 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 font-semibold">AI
+            AUTO-EDIT</span>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Paste a YouTube or TikTok link</label>
+          <label class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Paste a YouTube or TikTok
+            link</label>
           <div class="relative">
             <i class="ph ph-link absolute left-3.5 top-3.5 text-zinc-500 text-lg"></i>
             <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=..."
@@ -128,10 +196,12 @@
           <div class="flex-1 h-px bg-ink-700"></div>
         </div>
 
-        <div id="drop-area" class="border border-dashed border-ink-600 hover:border-zinc-500 rounded-xl p-5 text-center cursor-pointer bg-ink-900/50 transition-all">
+        <div id="drop-area"
+          class="border border-dashed border-ink-600 hover:border-zinc-500 rounded-xl p-5 text-center cursor-pointer bg-ink-900/50 transition-all">
           <input type="file" id="input-file" accept="video/*" class="hidden">
           <div class="flex flex-col items-center gap-2">
-            <div class="w-10 h-10 rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-400">
+            <div
+              class="w-10 h-10 rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-400">
               <i class="ph ph-video-camera text-xl"></i>
             </div>
             <p id="file-label" class="text-xs text-zinc-300 font-medium">Tap to pick a video</p>
@@ -141,8 +211,10 @@
 
         <div class="grid grid-cols-2 gap-3 pt-1">
           <div class="bg-ink-900 border border-ink-700 rounded-xl p-3">
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Clips from stream</label>
-            <select id="select-clips" class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Clips from
+              stream</label>
+            <select id="select-clips"
+              class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
               <option value="1">1 clip</option>
               <option value="2">2 clips</option>
               <option value="3" selected>3 clips</option>
@@ -156,8 +228,10 @@
             </select>
           </div>
           <div class="bg-ink-900 border border-ink-700 rounded-xl p-3">
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Posting schedule</label>
-            <select id="select-interval" class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Posting
+              schedule</label>
+            <select id="select-interval"
+              class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
               <option value="1">every 1 hour</option>
               <option value="3" selected>every 3 hours</option>
               <option value="5">every 5 hours</option>
@@ -183,18 +257,24 @@
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
           <i class="ph ph-film-strip text-zinc-400"></i> Clips
         </h2>
-        <button onclick="loadClips()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
+        <button onclick="loadClips()"
+          class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
           <i class="ph ph-arrows-clockwise text-xs"></i> Refresh
         </button>
       </div>
 
       <!-- Filters -->
       <div class="flex gap-2 overflow-x-auto hide-scrollbar">
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="all" onclick="setFilter('all')">All</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="ready" onclick="setFilter('ready')">Ready</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="scheduled" onclick="setFilter('scheduled')">Scheduled</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="posted" onclick="setFilter('posted')">Posted</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="failed" onclick="setFilter('failed')">Failed</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
+          data-filter="all" onclick="setFilter('all')">All</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
+          data-filter="ready" onclick="setFilter('ready')">Ready</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
+          data-filter="scheduled" onclick="setFilter('scheduled')">Scheduled</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
+          data-filter="posted" onclick="setFilter('posted')">Posted</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
+          data-filter="failed" onclick="setFilter('failed')">Failed</button>
       </div>
 
       <div id="clips-list" class="space-y-4"></div>
@@ -206,7 +286,8 @@
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
           <i class="ph ph-clock-counter-clockwise text-zinc-400"></i> History
         </h2>
-        <button onclick="loadHistory()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
+        <button onclick="loadHistory()"
+          class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
           <i class="ph ph-arrows-clockwise text-xs"></i> Refresh
         </button>
       </div>
@@ -269,32 +350,40 @@
 
       <!-- AI key -->
       <div class="card p-5 space-y-3">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-cpu text-zinc-400"></i> Google Gemini API Key</h3>
-        <p class="text-[11px] text-zinc-500">Free from Google AI Studio. Used for picking moments, hooks &amp; hashtags.</p>
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-cpu text-zinc-400"></i>
+          Google Gemini API Key</h3>
+        <p class="text-[11px] text-zinc-500">Free from Google AI Studio. Used for picking moments, hooks &amp; hashtags.
+        </p>
         <div class="flex gap-2">
           <input id="setting-gemini-key" type="password" placeholder="Paste your key (AIzaSy...)"
             class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
-          <button onclick="saveApiKey()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
+          <button onclick="saveApiKey()"
+            class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
         </div>
-        <p class="text-[11px] text-zinc-600">Get a free key at <a href="https://aistudio.google.com/" target="_blank" class="text-zinc-300 underline">aistudio.google.com</a></p>
+        <p class="text-[11px] text-zinc-600">Get a free key at <a href="https://aistudio.google.com/" target="_blank"
+            class="text-zinc-300 underline">aistudio.google.com</a></p>
       </div>
 
       <!-- Connections -->
       <div class="card p-5 space-y-3">
         <div>
-          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-share-network text-zinc-400"></i> Connected accounts</h3>
+          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i
+              class="ph ph-share-network text-zinc-400"></i> Connected accounts</h3>
           <p class="text-[11px] text-zinc-500 mt-0.5">Auto-post your clips to your socials.</p>
         </div>
 
         <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-black flex-shrink-0"><i class="ph-bold ph-stack text-lg"></i></div>
+            <div class="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-black flex-shrink-0"><i
+                class="ph-bold ph-stack text-lg"></i></div>
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
                 <p class="text-xs font-bold text-white truncate">Buffer</p>
-                <span class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-400/10 text-zinc-400 font-bold flex-shrink-0">EASIEST</span>
+                <span
+                  class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-400/10 text-zinc-400 font-bold flex-shrink-0">EASIEST</span>
               </div>
-              <p id="buffer-status-text" class="text-[10px] text-zinc-500 truncate">Instagram + TikTok (+ YouTube) in one step</p>
+              <p id="buffer-status-text" class="text-[10px] text-zinc-500 truncate">Instagram + TikTok (+ YouTube) in
+                one step</p>
             </div>
           </div>
           <div id="buffer-action-area" class="flex-shrink-0"></div>
@@ -302,7 +391,9 @@
 
         <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-instagram-logo text-lg"></i></div>
+            <div
+              class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0">
+              <i class="ph ph-instagram-logo text-lg"></i></div>
             <div class="min-w-0">
               <p class="text-xs font-bold text-white">Instagram Reels</p>
               <p id="ig-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
@@ -313,7 +404,9 @@
 
         <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-tiktok-logo text-lg"></i></div>
+            <div
+              class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0">
+              <i class="ph ph-tiktok-logo text-lg"></i></div>
             <div class="min-w-0">
               <p class="text-xs font-bold text-white">TikTok</p>
               <p id="tiktok-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
@@ -324,7 +417,9 @@
 
         <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-youtube-logo text-lg"></i></div>
+            <div
+              class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0">
+              <i class="ph ph-youtube-logo text-lg"></i></div>
             <div class="min-w-0">
               <p class="text-xs font-bold text-white">YouTube Shorts</p>
               <p id="youtube-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
@@ -336,18 +431,21 @@
 
       <!-- Posting preferences -->
       <div class="card p-5 space-y-4">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-paper-plane-tilt text-zinc-400"></i> Posting</h3>
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i
+            class="ph ph-paper-plane-tilt text-zinc-400"></i> Posting</h3>
 
         <label class="flex items-center justify-between gap-3 cursor-pointer">
           <div>
             <p class="text-xs font-semibold text-white">Review before posting</p>
             <p class="text-[10px] text-zinc-500">Scheduled clips wait until you tap Post</p>
           </div>
-          <input id="pref-review" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+          <input id="pref-review" type="checkbox" onchange="savePrefs()"
+            class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
         </label>
 
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Default hashtags (added to every caption)</label>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Default hashtags
+            (added to every caption)</label>
           <input id="pref-hashtags" type="text" placeholder="#gaming #clips #viral"
             class="w-full px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
             onkeydown="if(event.key==='Enter')savePrefs()">
@@ -356,14 +454,16 @@
 
       <!-- Automation & storage -->
       <div class="card p-5 space-y-4">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-broom text-zinc-400"></i> Storage &amp; automation</h3>
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-broom text-zinc-400"></i>
+          Storage &amp; automation</h3>
 
         <label class="flex items-center justify-between gap-3 cursor-pointer">
           <div>
             <p class="text-xs font-semibold text-white">Notify when clips are ready</p>
             <p class="text-[10px] text-zinc-500">Push notification when a job finishes</p>
           </div>
-          <input id="pref-notify" type="checkbox" onchange="saveNotify()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+          <input id="pref-notify" type="checkbox" onchange="saveNotify()"
+            class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
         </label>
 
         <label class="flex items-center justify-between gap-3 cursor-pointer">
@@ -371,27 +471,32 @@
             <p class="text-xs font-semibold text-white">Delete source video after clipping</p>
             <p class="text-[10px] text-zinc-500">Removes the original upload/download to save space</p>
           </div>
-          <input id="pref-del-source" type="checkbox" onchange="saveAutomation()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+          <input id="pref-del-source" type="checkbox" onchange="saveAutomation()"
+            class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
         </label>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Keep last N clips</label>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Keep last N
+              clips</label>
             <input id="pref-keep-n" type="number" min="0" placeholder="0 = all"
               class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
               onkeydown="if(event.key==='Enter')saveAutomation()">
           </div>
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Delete older than (days)</label>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Delete older
+              than (days)</label>
             <input id="pref-max-age" type="number" min="0" placeholder="0 = never"
               class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
               onkeydown="if(event.key==='Enter')saveAutomation()">
           </div>
         </div>
-        <button onclick="runCleanupNow()" class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+        <button onclick="runCleanupNow()"
+          class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
           <i class="ph ph-broom"></i> Run cleanup now
         </button>
-        <a href="/api/export/csv" class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+        <a href="/api/export/csv"
+          class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
           <i class="ph ph-download-simple"></i> Export all captions (CSV backup)
         </a>
       </div>
@@ -399,21 +504,28 @@
       <!-- Security & App Lock -->
       <div class="card p-5 space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-lock-simple text-zinc-400"></i> App Lock & Biometrics</h3>
-          <span id="lock-status-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-ink-800 text-zinc-400 border border-ink-600">No PIN</span>
+          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i
+              class="ph ph-lock-simple text-zinc-400"></i> App Lock & Biometrics</h3>
+          <span id="lock-status-badge"
+            class="px-2 py-0.5 rounded text-[10px] font-bold bg-ink-800 text-zinc-400 border border-ink-600">No
+            PIN</span>
         </div>
-        <p class="text-[11px] text-zinc-500">Protect your keys, social tokens and clips with PIN and native Fingerprint / Face ID authentication.</p>
-        
+        <p class="text-[11px] text-zinc-500">Protect your keys, social tokens and clips with PIN and native Fingerprint
+          / Face ID authentication.</p>
+
         <!-- PIN Input -->
         <div class="space-y-1.5">
           <label class="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Master PIN</label>
           <div class="flex gap-2">
             <input id="setting-pin" type="password" inputmode="numeric" maxlength="8" placeholder="4–8 digits"
               class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600 tracking-widest">
-            <button onclick="savePin()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save PIN</button>
+            <button onclick="savePin()"
+              class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save
+              PIN</button>
           </div>
         </div>
-        <button id="btn-remove-pin" onclick="removePin()" class="hidden text-[11px] text-zinc-500 hover:text-red-400 font-semibold flex items-center gap-1">
+        <button id="btn-remove-pin" onclick="removePin()"
+          class="hidden text-[11px] text-zinc-500 hover:text-red-400 font-semibold flex items-center gap-1">
           <i class="ph ph-x"></i> Remove PIN
         </button>
 
@@ -425,7 +537,8 @@
             </p>
             <p class="text-[10px] text-zinc-500">Fast 1-tap unlock using your device's biometric sensor</p>
           </div>
-          <button id="btn-toggle-biometric" onclick="toggleBiometricSetting()" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5">
+          <button id="btn-toggle-biometric" onclick="toggleBiometricSetting()"
+            class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5">
             <span id="biometric-btn-text">Enable</span>
           </button>
         </div>
@@ -434,11 +547,15 @@
       <!-- Device Storage & Offline Cache -->
       <div class="card p-5 space-y-3">
         <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph-bold ph-hard-drive text-emerald-400"></i> Saved on Device</h3>
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Synced Locally</span>
+          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i
+              class="ph-bold ph-hard-drive text-emerald-400"></i> Saved on Device</h3>
+          <span
+            class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Synced
+            Locally</span>
         </div>
         <p class="text-[11px] text-zinc-400 leading-relaxed">
-          All your clips, hooks, captions, queued jobs and settings are automatically saved and cached locally on this phone/device. You can view your clips anytime even when offline.
+          All your clips, hooks, captions, queued jobs and settings are automatically saved and cached locally on this
+          phone/device. You can view your clips anytime even when offline.
         </p>
         <div class="grid grid-cols-2 gap-2 pt-1">
           <div class="p-3 bg-ink-900 border border-ink-700/80 rounded-xl">
@@ -450,7 +567,8 @@
             <p class="text-base font-extrabold text-emerald-400 mt-0.5">Active</p>
           </div>
         </div>
-        <button onclick="clearDeviceCache()" class="w-full py-2 bg-ink-900 hover:bg-ink-800 border border-ink-700 text-zinc-400 hover:text-zinc-200 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5">
+        <button onclick="clearDeviceCache()"
+          class="w-full py-2 bg-ink-900 hover:bg-ink-800 border border-ink-700 text-zinc-400 hover:text-zinc-200 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5">
           <i class="ph ph-trash-simple"></i> Clear local device cache
         </button>
       </div>
@@ -478,7 +596,8 @@
         <video id="modal-video" controls class="w-full h-full object-contain"></video>
       </div>
       <div class="p-3 border-t border-ink-700 flex justify-end">
-        <button onclick="closeModal()" class="px-4 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-lg transition-colors">Close</button>
+        <button onclick="closeModal()"
+          class="px-4 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-lg transition-colors">Close</button>
       </div>
     </div>
   </div>
@@ -487,81 +606,108 @@
   <div id="edit-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4">
       <div class="flex items-center justify-between border-b border-ink-700 pb-3">
-        <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="ph ph-pencil-simple-line text-zinc-400"></i> Edit before posting</h3>
-        <button onclick="closeEditModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
+        <h3 class="text-sm font-bold text-white flex items-center gap-2"><i
+            class="ph ph-pencil-simple-line text-zinc-400"></i> Edit before posting</h3>
+        <button onclick="closeEditModal()" class="text-zinc-400 hover:text-white"><i
+            class="ph ph-x text-lg"></i></button>
       </div>
       <div class="space-y-3">
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hook / title</label>
-          <input id="edit-hook" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hook /
+            title</label>
+          <input id="edit-hook"
+            class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
         </div>
         <div>
           <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Caption</label>
-          <textarea id="edit-caption" rows="4" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 resize-none"></textarea>
+          <textarea id="edit-caption" rows="4"
+            class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 resize-none"></textarea>
         </div>
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hashtags (space separated)</label>
-          <input id="edit-hashtags" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hashtags (space
+            separated)</label>
+          <input id="edit-hashtags"
+            class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
         </div>
       </div>
       <div class="flex justify-end gap-2 pt-1">
-        <button onclick="closeEditModal()" class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
-        <button onclick="saveEdit()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save changes</button>
+        <button onclick="closeEditModal()"
+          class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
+        <button onclick="saveEdit()"
+          class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save
+          changes</button>
       </div>
     </div>
   </div>
 
   <!-- ══════════ SOCIAL CONNECT MODAL ══════════ -->
   <div id="social-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar">
+    <div
+      class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar">
       <div class="flex items-center justify-between border-b border-ink-700 pb-3">
         <h3 id="social-modal-title" class="text-sm font-bold text-white">Connect account</h3>
-        <button onclick="closeSocialModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
+        <button onclick="closeSocialModal()" class="text-zinc-400 hover:text-white"><i
+            class="ph ph-x text-lg"></i></button>
       </div>
       <div id="social-modal-body" class="space-y-3"></div>
       <div class="pt-2 border-t border-ink-700 flex justify-end gap-2">
-        <button onclick="closeSocialModal()" class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
-        <button id="social-modal-save-btn" onclick="saveSocialModal()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save &amp; connect</button>
+        <button onclick="closeSocialModal()"
+          class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
+        <button id="social-modal-save-btn" onclick="saveSocialModal()"
+          class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save
+          &amp; connect</button>
       </div>
     </div>
   </div>
 
   <!-- ══════════ CONFIRM MODAL ══════════ -->
-  <div id="confirm-modal" class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+  <div id="confirm-modal"
+    class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="max-w-xs w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 text-center">
-      <div class="w-10 h-10 mx-auto rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300">
+      <div
+        class="w-10 h-10 mx-auto rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300">
         <i id="confirm-icon" class="ph ph-warning text-lg"></i>
       </div>
       <p id="confirm-message" class="text-xs text-zinc-200 font-medium leading-relaxed"></p>
       <div class="flex gap-2">
-        <button onclick="resolveConfirm(false)" class="flex-1 py-2.5 bg-ink-800 hover:bg-ink-700 text-white text-xs font-bold rounded-xl transition-colors">Cancel</button>
-        <button id="confirm-yes" onclick="resolveConfirm(true)" class="flex-1 py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Confirm</button>
+        <button onclick="resolveConfirm(false)"
+          class="flex-1 py-2.5 bg-ink-800 hover:bg-ink-700 text-white text-xs font-bold rounded-xl transition-colors">Cancel</button>
+        <button id="confirm-yes" onclick="resolveConfirm(true)"
+          class="flex-1 py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Confirm</button>
       </div>
     </div>
   </div>
 
   <!-- ══════════ TOASTS ══════════ -->
-  <div id="toast-area" class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[70] space-y-2 w-[calc(100%-2rem)] max-w-xs pointer-events-none"></div>
+  <div id="toast-area"
+    class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[70] space-y-2 w-[calc(100%-2rem)] max-w-xs pointer-events-none">
+  </div>
 
   <!-- ══════════ MOBILE NAV ══════════ -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-ink-950/90 backdrop-blur-xl border-t border-ink-700 px-2 py-2 flex items-center justify-around">
-    <button onclick="switchTab('create')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="create">
+  <nav
+    class="fixed bottom-0 left-0 right-0 z-40 bg-ink-950/90 backdrop-blur-xl border-t border-ink-700 px-2 py-2 flex items-center justify-around">
+    <button onclick="switchTab('create')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
+      data-tab="create">
       <i class="ph ph-plus-circle text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">Create</span>
     </button>
-    <button onclick="switchTab('clips')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="clips">
+    <button onclick="switchTab('clips')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
+      data-tab="clips">
       <i class="ph ph-film-strip text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">Clips</span>
     </button>
-    <button onclick="switchTab('history')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="history">
+    <button onclick="switchTab('history')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
+      data-tab="history">
       <i class="ph ph-clock-counter-clockwise text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">History</span>
     </button>
-    <button onclick="switchTab('analytics')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="analytics">
+    <button onclick="switchTab('analytics')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
+      data-tab="analytics">
       <i class="ph ph-chart-bar text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">Stats</span>
     </button>
-    <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="settings">
+    <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
+      data-tab="settings">
       <i class="ph ph-gear-six text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">Settings</span>
     </button>
@@ -627,15 +773,14 @@
       const el = document.getElementById('lock-screen');
       el.classList.remove('hidden'); el.classList.add('flex');
       
-      const bioEnabled = localStorage.getItem('clipy_biometric_enabled') === '1';
+      const bioEnabled = localStorage.getItem('clipy_biometric_enable d') === '1';
       const bioArea = document.getElementById('biometric-area');
       if (bioEnabled && window.PublicKeyCredential) {
         if (bioArea) bioArea.classList.remove('hidden');
         // Auto-prompt biometric sensor after short delay for seamless unlock
         setTimeout(() => { unlockWithBiometrics(); }, 350);
       } else {
-        if (bioArea) bioArea.classList.add('hidden');
-      }
+        if (bioArea) bioArea.classList.add('hid     }
       setTimeout(() => document.getElementById('lock-pin').focus(), 150);
     }
 
@@ -810,7 +955,7 @@
     }
 
     async function lockApp() {
-      await fetch('/api/auth/lock', { method: 'POST' });
+      awtch('/api/auth/lock', { method: 'POST' });
       showLock();
     }
     document.getElementById('lock-pin').addEventListener('keydown', e => { if (e.key === 'Enter') unlockApp(); });
@@ -840,7 +985,7 @@
         btn.classList.toggle('text-white', active);
         btn.classList.toggle('text-zinc-500', !active);
       });
-
+ 
       if (tabId === 'clips') loadClips();
       if (tabId === 'history') loadHistory();
       if (tabId === 'analytics') loadAnalytics();
@@ -929,7 +1074,7 @@
       activeFilter = f;
       document.querySelectorAll('.filter-chip').forEach(chip => {
         const on = chip.dataset.filter === f;
-        chip.className = 'filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border ' +
+        c hip.className = 'filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border ' +
           (on ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 border-ink-600 hover:border-zinc-500');
       });
       loadClips();
@@ -1056,7 +1201,7 @@
         const links = [];
         if (c.ig_post_url) links.push(`<a href="${esc(c.ig_post_url)}" target="_blank" class="text-emerald-400 hover:underline">IG</a>`);
         if (c.tiktok_post_url) links.push(`<a href="${esc(c.tiktok_post_url)}" target="_blank" class="text-emerald-400 hover:underline">TikTok</a>`);
-        if (c.youtube_post_url) links.push(`<a href="${esc(c.youtube_post_url)}" target="_blank" class="text-emerald-400 hover:underline">YT</a>`);
+        if (c.youtube_post_url)  links.push(`<a href="${esc(c.youtube_post_url)}" target="_blank" class="text-emerald-400 hover:underline">YT</a>`);
         actionBtns = `<span class="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">✓ Posted${links.length ? ' · ' + links.join(' · ') : ''}</span>`;
       }
 
@@ -1081,7 +1226,7 @@
 
           <div class="pt-3 border-t border-ink-700 space-y-2.5">
             <div class="grid grid-cols-2 gap-2">
-              <button onclick="shareToSocial('Instagram Reels', '${c.id}')" class="py-2 px-3 bg-ink-800 hover:bg-ink-700 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95">
+              <button onclick="shareToSocial('Instagram Reels', '${c.id}')" class="py-2 px-3 bg-ink-800 hover:bg-ink-700 border border-k-6ded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95">
                 <i class="ph ph-instagram-logo text-sm"></i> Share to IG
               </button>
               <button onclick="shareToSocial('TikTok', '${c.id}')" class="py-2 px-3 bg-ink-800 hover:bg-ink-700 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95">
@@ -1766,4 +1911,5 @@
     })();
   </script>
 </body>
+
 </html>

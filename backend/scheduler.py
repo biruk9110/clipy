@@ -201,10 +201,11 @@ def process_job_async(job_id: str, source_type: str, source_url: str = "", file_
                 
                 # Immediate post schedule
                 sched_time = now.isoformat()
+                clip_title = polish.get("hook_text") or (real_title if 'real_title' in locals() and real_title else "Viral Short")
                 add_clip({
                     "id": clip_id,
                     "job_id": job_id,
-                    "title": "Short Video",
+                    "title": clip_title,
                     "hook_text": polish.get("hook_text", ""),
                     "caption": polish.get("caption", ""),
                     "hashtags": polish.get("hashtags", []),

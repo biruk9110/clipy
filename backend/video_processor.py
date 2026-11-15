@@ -36,32 +36,44 @@ def probe_video(video_path: Path):
         return {"width": 1920, "height": 1080, "duration": 0, "aspect": 1.77}
 
 def download_video(url: str, output_dir: Path):
-    """Downloads a video or stream using yt-dlp with parallel fragments."""
+    """Downloads a video or stream using yt-dlp."""
+    import yt_dlp
+    
     output_template = str(output_dir / "%(id)s.%(ext)s")
-    cmd = [
-        "python", "-m", "yt_dlp",
-        "--no-playlist",
-        "-f", "bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo[height<=1080]+bestaudio/best",
-        "--merge-output-format", "mp4",
-        "--concurrent-fragments", "5",
-        "--print", "title",
-        "-o", output_template,
-        url
-    ]
+    ydl_opts = {
+        'outtmpl': output_template,
+        'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/best',
+        'merge_output_format': 'mp4',
+        'noplaylist': True,
+        'quiet': True,
+        'no_warnings': True,
+    }
+    
     title = ""
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        out_lines = (res.stdout or "").strip().split("\n")
-        if out_lines and out_lines[0].strip():
-            title = out_lines[0].strip()
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            if info:
+                title = info.get("title", "")
     except Exception as e:
-        print(f"[yt-dlp] Fast download error, falling back: {e}")
-        subprocess.run(["python", "-m", "yt_dlp", "--no-playlist", "-o", output_template, url], check=True)
-    
+        print(f"[yt-dlp] Direct download error, trying generic fallback: {e}")
+        ydl_opts_fallback = {
+            'outtmpl': output_template,
+            'noplaylist': True,
+            'quiet': True,
+            'no_warnings': True,
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts_fallback) as ydl:
+                info = ydl.extract_info(url, download=True)
+                if info:
+                    title = info.get("title", "")
+        except Exception as e2:
+            print(f"[yt-dlp] Fallback also failed: {e2}")
+                
     # Find the downloaded file
     mp4s = list(output_dir.glob("*.mp4"))
     if not mp4s:
-        # Fallback any video file
         files = [f for f in output_dir.iterdir() if f.suffix.lower() in [".mp4", ".mkv", ".webm"]]
         if files:
             return files[0], title
