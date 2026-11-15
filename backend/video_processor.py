@@ -265,42 +265,46 @@ def render_clip(
     
     facecam = detect_facecam(source_video, start_time, duration) if not is_vertical_already else {"has_cam": False}
     
+    has_subs = bool(words and len(words) > 0)
+    
     if is_vertical_already:
         # Already 9:16, just scale to 1080x1920 and overlay hook + subs
+        subs_filter = f";[vwithhook]ass='{ass_escaped}'[vout]" if has_subs else ""
+        out_tag = "[vwithhook]" if not has_subs else "[vout]"
         filtergraph = (
             f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[base];"
             f"[1:v]scale=1080:220[hook];"
-            f"[base][hook]overlay=0:120[vwithhook];"
-            f"[vwithhook]ass='{ass_escaped}'[vout]"
+            f"[base][hook]overlay=0:120{out_tag}{subs_filter}"
         )
     elif facecam["has_cam"]:
         # Facecam on top 35%, gameplay bottom 65%
-        # Crop cam box (expanded around face)
         cx, cy, cw, ch = facecam["x"], facecam["y"], facecam["w"], facecam["h"]
         cam_pad_w = int(cw * 2.8)
         cam_pad_h = int(ch * 2.5)
         crop_x = max(0, cx - int(cw * 0.9))
         crop_y = max(0, cy - int(ch * 0.7))
         
+        subs_filter = f";[vwithhook]ass='{ass_escaped}'[vout]" if has_subs else ""
+        out_tag = "[vwithhook]" if not has_subs else "[vout]"
         filtergraph = (
             f"[0:v]split=2[vcam][vgame];"
             f"[vcam]crop={cam_pad_w}:{cam_pad_h}:{crop_x}:{crop_y},scale=1080:680:force_original_aspect_ratio=increase,crop=1080:680[camtop];"
             f"[vgame]scale=1080:1240:force_original_aspect_ratio=increase,crop=1080:1240[gamebot];"
             f"[camtop][gamebot]vstack=inputs=2[stacked];"
             f"[1:v]scale=1080:220[hook];"
-            f"[stacked][hook]overlay=0:570[vwithhook];"
-            f"[vwithhook]ass='{ass_escaped}'[vout]"
+            f"[stacked][hook]overlay=0:570{out_tag}{subs_filter}"
         )
     else:
         # Fit 16:9 gameplay in middle with blurred background on top & bottom
+        subs_filter = f";[vwithhook]ass='{ass_escaped}'[vout]" if has_subs else ""
+        out_tag = "[vwithhook]" if not has_subs else "[vout]"
         filtergraph = (
             f"[0:v]split=2[bg][fg];"
             f"[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:5[bgblur];"
             f"[fg]scale=1080:608[fgscaled];"
             f"[bgblur][fgscaled]overlay=0:(1920-608)/2[composed];"
             f"[1:v]scale=1080:220[hook];"
-            f"[composed][hook]overlay=0:480[vwithhook];"
-            f"[vwithhook]ass='{ass_escaped}'[vout]"
+            f"[composed][hook]overlay=0:480{out_tag}{subs_filter}"
         )
         
     cmd = [

@@ -113,12 +113,20 @@ def polish_short_video(transcript_text: str, duration: float):
     if not model:
         return fallback_short_polish(duration)
     
-    prompt = SHORT_POLISH_PROMPT.format(transcript=transcript_text[:4000])
+    clean_transcript = transcript_text.strip() if transcript_text else ""
+    if not clean_transcript or len(clean_transcript) < 8:
+        clean_transcript = f"(High-energy visual video clip with background audio/music, duration {duration:.1f} seconds)"
+    
+    prompt = SHORT_POLISH_PROMPT.format(transcript=clean_transcript[:4000])
     try:
         resp = model.generate_content(prompt)
         cleaned = clean_json_response(resp.text)
         data = json.loads(cleaned)
         if isinstance(data, dict):
+            hook = data.get("hook_text", "")
+            # Filter out any hallucinated missing transcript messages
+            if not hook or "TRANSCRIPT" in hook.upper() or "MISSING" in hook.upper():
+                data["hook_text"] = "Wait FOR THE END! 😱"
             return data
     except Exception as e:
         print(f"[Gemini] Error polishing short: {e}")

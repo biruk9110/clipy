@@ -1,4 +1,4 @@
-const CACHE_NAME = 'clipy-v3';
+const CACHE_NAME = 'clipy-v4';
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',
@@ -38,7 +38,21 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Stale-while-revalidate for app shell and icons
+  // For HTML page navigation, network first with cache fallback
+  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    e.respondWith(
+      fetch(e.request).then((resp) => {
+        if (resp && resp.status === 200) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for static icons & assets
   e.respondWith(
     caches.match(e.request).then((cached) => {
       const networked = fetch(e.request).then((resp) => {

@@ -187,6 +187,20 @@ async def api_post_clip(clip_id: str):
     publish_clip(clip_id)
     return {"success": True, "clip": get_clip(clip_id)}
 
+@app.get("/api/clips/{clip_id}/video")
+async def api_get_clip_video(clip_id: str):
+    c = get_clip(clip_id)
+    if not c or not c.get("file_path"):
+        return JSONResponse(status_code=404, content={"error": "Clip not found"})
+    p = Path(c["file_path"])
+    if not p.exists():
+        matches = list(OUTPUT_DIR.glob(f"**/{clip_id}.mp4"))
+        if matches:
+            p = matches[0]
+        else:
+            return JSONResponse(status_code=404, content={"error": "Video file not found on server"})
+    return FileResponse(p, media_type="video/mp4", filename=f"{clip_id}.mp4")
+
 # ----------------- Jobs -----------------
 @app.get("/api/jobs")
 async def api_get_jobs():

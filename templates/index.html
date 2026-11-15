@@ -27,7 +27,7 @@
           fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
             ink: {
-              950: '#09090b', 900: '#0e11', 850: '#131316',
+              950: '#09090b', 900: '#0e0e11', 850: '#131316',
               800: '#18181b', 700: '#232327', 600: '#2e2e33', 500: '#3f3f46'
             }
           }
@@ -955,7 +955,7 @@
     }
 
     async function lockApp() {
-      awtch('/api/auth/lock', { method: 'POST' });
+      await fetch('/api/auth/lock', { method: 'POST' });
       showLock();
     }
     document.getElementById('lock-pin').addEventListener('keydown', e => { if (e.key === 'Enter') unlockApp(); });
@@ -1238,7 +1238,7 @@
                 <i class="ph ph-copy"></i> Copy caption
               </button>
               <div class="flex items-center gap-2">
-                <a href="/media/${esc(filename)}" download="${esc(filename)}" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-200 rounded-lg font-semibold flex items-center gap-1.5 transition-colors" title="Download and save clip to device storage">
+                <a href="/api/clips/${c.id}/video" download="${esc(c.hook_text || c.title || 'clip')}.mp4" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-200 rounded-lg font-semibold flex items-center gap-1.5 transition-colors" title="Download and save clip to device storage">
                   <i class="ph-bold ph-download-simple text-emerald-400 text-xs"></i> Save to Device
                 </a>
                 <button onclick="deleteClip('${c.id}')" class="px-2.5 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-500 hover:text-red-400 rounded-lg font-semibold flex items-center transition-colors" title="Delete clip">
@@ -1841,11 +1841,10 @@
       if (!c) return;
       const modal = document.getElementById('video-modal');
       const video = document.getElementById('modal-video');
-      const filename = (c.file_path || '').split(/[\\/]/).pop();
-      video.src = '/media/' + filename;
+      video.src = '/api/clips/' + c.id + '/video';
       document.getElementById('modal-title').innerText = c.hook_text || c.title || 'Preview';
       modal.classList.remove('hidden'); modal.classList.add('flex');
-      video.play();
+      video.play().catch(() => {});
     }
     function closeModal() {
       const modal = document.getElementById('video-modal');
@@ -1858,8 +1857,8 @@
     async function shareToSocial(platform, clipId) {
       const c = CLIPS[clipId];
       if (!c) return;
-      const filename = (c.file_path || '').split(/[\\/]/).pop();
-      const videoUrl = '/media/' + filename;
+      const filename = (c.file_path || '').split(/[\\/]/).pop() || (c.id + '.mp4');
+      const videoUrl = '/api/clips/' + c.id + '/video';
       const tags = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
       const fullText = (c.caption || '') + '\n\n' + tags;
 
