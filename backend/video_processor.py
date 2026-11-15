@@ -80,62 +80,105 @@ def download_video(url: str, output_dir: Path):
         raise RuntimeError("Download completed but no video file found.")
     return mp4s[0], title
 
-def create_hook_image(hook_text: str, output_path: Path, width=1080, height=220):
+FONTS_DIR = Path(__file__).resolve().parent / "fonts"
+
+def get_hook_font(size: int):
+    """Finds the best bold font for viral hook banners across environments."""
+    candidates = [
+        FONTS_DIR / "Anton.ttf",
+        FONTS_DIR / "Inter.ttf",
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+        Path("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"),
+        Path("C:/Windows/Fonts/arialbd.ttf"),
+        Path("C:/Windows/Fonts/impact.ttf"),
+        Path("C:/Windows/Fonts/arial.ttf"),
+    ]
+    for p in candidates:
+        if p.is_file():
+            try:
+                return ImageFont.truetype(str(p), size)
+            except Exception:
+                pass
+    try:
+        return ImageFont.truetype("arialbd.ttf", size)
+    except Exception:
+        pass
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:
+        return ImageFont.load_default()
+
+def create_hook_image(hook_text: str, output_path: Path, width=1080, height=200):
     """Creates a viral bold hook banner with Pillow."""
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
     # Rounded background card
-    card_margin_x = 40
-    card_margin_y = 20
+    card_margin_x = 44
+    card_margin_y = 14
     card_rect = [card_margin_x, card_margin_y, width - card_margin_x, height - card_margin_y]
-    draw.rounded_rectangle(card_rect, radius=28, fill=(15, 15, 20, 235), outline=(255, 215, 0, 240), width=4)
+    draw.rounded_rectangle(card_rect, radius=24, fill=(15, 17, 26, 235), outline=(250, 204, 21, 245), width=4)
     
-    # Font setup
-    font_size = 46
-    try:
-        font = ImageFont.truetype("arialbd.ttf", font_size)
-    except Exception:
-        font = ImageFont.load_default()
-        
     words = hook_text.split()
-    lines = []
-    curr = []
-    for w in words:
-        curr.append(w)
-        test_line = " ".join(curr)
-        bbox = draw.textbbox((0, 0), test_line, font=font)
-        if (bbox[2] - bbox[0]) > (width - card_margin_x * 2 - 60):
-            curr.pop()
-            if curr:
-                lines.append(" ".join(curr))
-            curr = [w]
-    if curr:
-        lines.append(" ".join(curr))
+    max_w = (width - card_margin_x * 2) - 60
+    
+    # Auto-scale font size to fit in 1 or 2 lines
+    best_font_size = 52
+    best_lines = []
+    for test_size in [56, 52, 48, 44, 40, 36]:
+        cand_font = get_hook_font(test_size)
+        cand_lines = []
+        cand_curr = []
+        for w in words:
+            cand_curr.append(w)
+            bbox = draw.textbbox((0, 0), " ".join(cand_curr), font=cand_font)
+            if (bbox[2] - bbox[0]) > max_w:
+                cand_curr.pop()
+                if cand_curr:
+                    cand_lines.append(" ".join(cand_curr))
+                cand_curr = [w]
+        if cand_curr:
+            cand_lines.append(" ".join(cand_curr))
+            
+        best_font_size = test_size
+        best_lines = cand_lines
+        if len(cand_lines) <= 2:
+            break
+            
+    font = get_hook_font(best_font_size)
+    lines = best_lines
+    line_spacing = 10
+    
+    # Compute line heights
+    line_heights = []
+    for line in lines:
+        l_bbox = draw.textbbox((0, 0), line, font=font)
+        line_heights.append(max(l_bbox[3] - l_bbox[1], int(best_font_size * 0.85)))
         
-    total_text_h = len(lines) * (font_size + 10)
-    start_y = (height - total_text_h) / 2
+    total_text_h = sum(line_heights) + (len(lines) - 1) * line_spacing
+    curr_y = max(card_margin_y + 10, (height - total_text_h) / 2)
     
     for i, line in enumerate(lines):
         line_bbox = draw.textbbox((0, 0), line, font=font)
         line_w = line_bbox[2] - line_bbox[0]
         start_x = (width - line_w) / 2
         curr_x = start_x
-        y = start_y + i * (font_size + 10)
         
-        # Word by word rendering with highlight for CAPITAL words
+        # Word by word rendering with highlight for UPPERCASE words
         for word in line.split():
             w_bbox = draw.textbbox((0, 0), word + " ", font=font)
             w_width = w_bbox[2] - w_bbox[0]
             
-            # If word is ALL CAPS (and len > 1) -> Highlight Yellow
-            if word.isupper() and len(word) > 1 and word.isalnum():
-                color = (255, 235, 59, 255) # Bright Yellow
+            clean_w = word.strip('.,!?:;"\'()[]')
+            if clean_w.isupper() and len(clean_w) > 1 and any(c.isalpha() for c in clean_w):
+                color = (250, 204, 21, 255) # Bright Yellow
             else:
-                color = (255, 255, 255, 255) # White
+                color = (255, 255, 255, 255) # Crisp White
                 
-            draw.text((curr_x, y), word + " ", font=font, fill=color)
+            draw.text((curr_x, curr_y), word + " ", font=font, fill=color, stroke_width=3, stroke_fill=(0, 0, 0, 230))
             curr_x += w_width
+            
+        curr_y += line_heights[i] + line_spacing
             
     img.save(str(output_path), "PNG")
     return output_path
@@ -254,7 +297,7 @@ def render_clip(
     """
     work_dir = output_clip_path.parent
     hook_img = work_dir / f"hook_{uuid.uuid4().hex[:6]}.png"
-    create_hook_image(hook_text, hook_img, width=1080, height=220)
+    create_hook_image(hook_text, hook_img, width=1080, height=200)
     
     ass_file = work_dir / f"subs_{uuid.uuid4().hex[:6]}.ass"
     generate_ass_subtitles(words, start_time, ass_file)
@@ -273,8 +316,8 @@ def render_clip(
         out_tag = "[vout]" if not has_subs else "[vpre]"
         filtergraph = (
             f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[base];"
-            f"[1:v]scale=1080:220[hook];"
-            f"[base][hook]overlay=0:120{out_tag}{subs_filter}"
+            f"[1:v]scale=1080:200[hook];"
+            f"[base][hook]overlay=0:140{out_tag}{subs_filter}"
         )
     elif facecam["has_cam"]:
         # Facecam on top 35%, gameplay bottom 65%
@@ -291,11 +334,13 @@ def render_clip(
             f"[vcam]crop={cam_pad_w}:{cam_pad_h}:{crop_x}:{crop_y},scale=1080:680:force_original_aspect_ratio=increase,crop=1080:680[camtop];"
             f"[vgame]scale=1080:1240:force_original_aspect_ratio=increase,crop=1080:1240[gamebot];"
             f"[camtop][gamebot]vstack=inputs=2[stacked];"
-            f"[1:v]scale=1080:220[hook];"
-            f"[stacked][hook]overlay=0:570{out_tag}{subs_filter}"
+            f"[1:v]scale=1080:200[hook];"
+            f"[stacked][hook]overlay=0:580{out_tag}{subs_filter}"
         )
     else:
         # Fit 16:9 gameplay in middle with blurred background on top & bottom
+        # Top blur is 0..656, middle video is 656..1264, bottom blur is 1264..1920
+        # Placing hook banner cleanly in the top third at y=220 (leaving 236px clear space above video)
         subs_filter = f";[vpre]ass='{ass_escaped}'[vout]" if has_subs else ""
         out_tag = "[vout]" if not has_subs else "[vpre]"
         filtergraph = (
@@ -303,8 +348,8 @@ def render_clip(
             f"[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:5[bgblur];"
             f"[fg]scale=1080:608[fgscaled];"
             f"[bgblur][fgscaled]overlay=0:(1920-608)/2[composed];"
-            f"[1:v]scale=1080:220[hook];"
-            f"[composed][hook]overlay=0:480{out_tag}{subs_filter}"
+            f"[1:v]scale=1080:200[hook];"
+            f"[composed][hook]overlay=0:220{out_tag}{subs_filter}"
         )
         
     cmd = [
