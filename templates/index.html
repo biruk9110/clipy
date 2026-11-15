@@ -97,9 +97,16 @@
           <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
             <label class="text-[11px] font-medium text-slate-400 block mb-1">Clips from Stream</label>
             <select id="select-clips" class="w-full bg-slate-900 border border-slate-800 rounded-lg py-1.5 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="1">1 Clip (For Shorts)</option>
-              <option value="3" selected>3 Viral Clips</option>
+              <option value="1">1 Clip (For Shorts & Reels)</option>
+              <option value="2">2 Viral Clips</option>
+              <option value="3" selected>3 Viral Clips (Recommended)</option>
+              <option value="4">4 Viral Clips</option>
               <option value="5">5 Viral Clips</option>
+              <option value="6">6 Viral Clips</option>
+              <option value="7">7 Viral Clips</option>
+              <option value="8">8 Viral Clips</option>
+              <option value="9">9 Viral Clips</option>
+              <option value="10">10 Viral Clips</option>
             </select>
           </div>
 
@@ -414,7 +421,8 @@
           fileLabel.innerText = "Tap to pick a video from your phone";
           dropArea.classList.remove('border-brand-500');
           switchTab('clips');
-          loadJobs();
+          loadClips();
+          pollActiveJobs();
         } else {
           alert(data.error || "Failed to start job");
         }
@@ -426,15 +434,59 @@
       }
     }
 
-    // Load Clips
+    function loadJobs() {
+      loadClips();
+    }
+
+    let pollInterval = null;
+    function pollActiveJobs() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch('/api/jobs');
+          const data = await res.json();
+          const running = (data.jobs || []).some(j => j.status === 'processing' || j.status === 'pending');
+          loadClips();
+          if (!running) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
+        } catch (e) {}
+      }, 3500);
+    }
+
+    // Load Clips & Active Jobs
     async function loadClips() {
       const container = document.getElementById('clips-list');
       try {
-        const res = await fetch('/api/clips');
-        const data = await res.json();
-        const clips = data.clips || [];
+        const [clipsRes, jobsRes] = await Promise.all([
+          fetch('/api/clips'),
+          fetch('/api/jobs')
+        ]);
+        const clipsData = await clipsRes.json();
+        const jobsData = await jobsRes.json();
+        
+        const clips = clipsData.clips || [];
+        const activeJobs = (jobsData.jobs || []).filter(j => j.status === 'processing' || j.status === 'pending');
 
-        if (clips.length === 0) {
+        let html = '';
+
+        // Show active processing banner if any video is being edited right now
+        if (activeJobs.length > 0) {
+          html += activeJobs.map(j => `
+            <div class="bg-gradient-to-r from-brand-950/70 to-slate-900 border border-brand-500/40 rounded-2xl p-4 shadow-lg animate-pulse flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-400 flex-shrink-0">
+                <i class="ph ph-spinner animate-spin text-2xl"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-white truncate">AI is editing your video & subtitles...</p>
+                <p class="text-[11px] text-brand-300">Finding moments, reframing 9:16 & adding animated captions</p>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        if (clips.length === 0 && activeJobs.length === 0) {
           container.innerHTML = `
             <div class="text-center py-12 bg-slate-900 border border-slate-800 rounded-2xl">
               <i class="ph ph-film-strip text-4xl text-slate-600 mb-2"></i>
@@ -445,7 +497,7 @@
           return;
         }
 
-        container.innerHTML = clips.map(c => {
+        html += clips.map(c => {
           const hashtagsStr = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : c.hashtags;
           const isPosted = c.status === 'posted';
           const schedTime = c.scheduled_time ? new Date(c.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now';
@@ -503,6 +555,7 @@
             </div>
           `;
         }).join('');
+        container.innerHTML = html;
       } catch (e) {
         console.error(e);
       }
