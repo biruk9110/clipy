@@ -799,11 +799,13 @@
     function clearDeviceCache() {
       localStorage.removeItem('clipy_cached_clips');
       localStorage.removeItem('clipy_cached_jobs');
+      localStorage.removeItem('clipy_cached_history');
       localStorage.removeItem('clipy_cached_settings');
       const countEl = document.getElementById('device-clips-count');
       if (countEl) countEl.textContent = '0';
       showToast('Local device cache cleared', 'info');
       loadClips();
+      loadHistory();
       loadSettings();
     }
 
@@ -888,6 +890,7 @@
           showToast(data.message || 'Processing started', 'success');
           switchTab('clips');
           loadClips();
+          loadHistory();
           pollActiveJobs();
         } else showToast(data.error || 'Failed to start job', 'error');
       } catch (err) {
@@ -908,14 +911,17 @@
           JOBS = data.jobs || [];
           const running = JOBS.filter(j => j.status === 'processing' || j.status === 'pending');
           loadClips();
+          loadHistory();
           if (lastRunningCount > 0 && running.length === 0) {
             notifyUser('Clipy', '✅ Your clips are ready!');
-            showToast('Job finished — clips are ready', 'success');
+            showToast('✅ Video editing complete! Saved to Clips & History', 'success');
+            loadClips();
+            loadHistory();
           }
           lastRunningCount = running.length;
           if (running.length === 0) { clearInterval(pollInterval); pollInterval = null; }
         } catch (e) {}
-      }, 3500);
+      }, 2500);
     }
 
     /* ═══════════════════ CLIPS LIST ═══════════════════ */
@@ -1185,6 +1191,11 @@
     async function deleteJob(jobId) {
       const ok = await confirmDialog('Delete this source and all its clips? This cannot be undone.', { yes: 'Delete all' });
       if (!ok) return;
+      try {
+        const cached = JSON.parse(localStorage.getItem('clipy_cached_history') || '[]');
+        const updated = cached.filter(x => x.id !== jobId);
+        localStorage.setItem('clipy_cached_history', JSON.stringify(updated));
+      } catch {}
       await api(`/api/jobs/${jobId}`, { method: 'DELETE' });
       showToast('Deleted', 'success');
       loadClips();
@@ -1192,46 +1203,76 @@
     }
 
     /* ═══════════════════ HISTORY ═══════════════════ */
-    async function loadHistory() {
+    function renderHistoryListUI(history) {
       const container = document.getElementById('history-list');
+      if (!container) return;
+      if (!history || history.length === 0) {
+        container.innerHTML = `
+          <div class="card text-center py-14">
+            <i class="ph ph-clock-counter-clockwise text-4xl text-ink-500 mb-3"></i>
+            <p class="text-sm text-zinc-400 font-semibold">Nothing processed yet</p>
+            <p class="text-xs text-zinc-600 mt-1">Your clipped videos will show up here</p>
+          </div>`;
+        return;
+      }
+      container.innerHTML = history.map(j => {
+        const isUrl = j.source_type === 'url';
+        const statusCls = j.status === 'completed' ? 'text-emerald-400' : (j.status === 'failed' ? 'text-red-400' : (j.status === 'processing' ? 'text-amber-300' : 'text-zinc-500'));
+        const when = j.created_at ? new Date(j.created_at.replace(' ', 'T')).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+        const isRunning = j.status === 'processing' || j.status === 'pending';
+        return `
+          <div class="card p-4 flex items-center gap-3 fade-in">
+            <div class="w-10 h-10 rounded-xl bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0 ${isUrl ? 'text-zinc-300' : 'text-zinc-300'}">
+              <i class="ph ${isUrl ? 'ph-link' : 'ph-video'} text-lg"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-white truncate">${esc(j.title || 'Untitled source')}</p>
+              <p class="text-[10px] text-zinc-500 truncate">
+                ${when} · <span class="font-bold ${statusCls}">${j.status}</span> · ${j.clip_count || 0} clip${(j.clip_count || 0) === 1 ? '' : 's'}${j.is_short ? ' · short' : ''}
+              </p>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              ${(j.status === 'failed' || j.status === 'cancelled') ? `
+                <button onclick="retryJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-white text-black text-[10px] font-bold flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>` : ''}
+              ${isRunning ? `
+                <button onclick="cancelJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 text-[10px] font-bold hover:text-white transition-colors">Stop</button>` : `
+                <button onclick="deleteJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-500 hover:text-red-400 text-[10px] font-bold transition-colors" title="Delete source & clips"><i class="ph ph-trash"></i></button>`}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function loadHistory() {
+      // 1. Instant render from local device storage cache
+      try {
+        const cached = JSON.parse(localStorage.getItem('clipy_cached_history') || '[]');
+        if (cached && cached.length > 0) renderHistoryListUI(cached);
+      } catch {}
+
+      // 2. Fetch fresh updates from server
       try {
         const res = await api('/api/history');
-        const history = (await res.json()).history || [];
-        if (history.length === 0) {
-          container.innerHTML = `
-            <div class="card text-center py-14">
-              <i class="ph ph-clock-counter-clockwise text-4xl text-ink-500 mb-3"></i>
-              <p class="text-sm text-zinc-400 font-semibold">Nothing processed yet</p>
-              <p class="text-xs text-zinc-600 mt-1">Your clipped videos will show up here</p>
-            </div>`;
-          return;
-        }
-        container.innerHTML = history.map(j => {
-          const isUrl = j.source_type === 'url';
-          const statusCls = j.status === 'completed' ? 'text-emerald-400' : (j.status === 'failed' ? 'text-red-400' : (j.status === 'processing' ? 'text-amber-300' : 'text-zinc-500'));
-          const when = j.created_at ? new Date(j.created_at.replace(' ', 'T')).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-          const isRunning = j.status === 'processing' || j.status === 'pending';
-          return `
-            <div class="card p-4 flex items-center gap-3 fade-in">
-              <div class="w-10 h-10 rounded-xl bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0 ${isUrl ? 'text-zinc-300' : 'text-zinc-300'}">
-                <i class="ph ${isUrl ? 'ph-link' : 'ph-video'} text-lg"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-white truncate">${esc(j.title || 'Untitled source')}</p>
-                <p class="text-[10px] text-zinc-500 truncate">
-                  ${when} · <span class="font-bold ${statusCls}">${j.status}</span> · ${j.clip_count || 0} clip${(j.clip_count || 0) === 1 ? '' : 's'}${j.is_short ? ' · short' : ''}
-                </p>
-              </div>
-              <div class="flex items-center gap-1.5 flex-shrink-0">
-                ${(j.status === 'failed' || j.status === 'cancelled') ? `
-                  <button onclick="retryJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-white text-black text-[10px] font-bold flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>` : ''}
-                ${isRunning ? `
-                  <button onclick="cancelJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 text-[10px] font-bold hover:text-white transition-colors">Stop</button>` : `
-                  <button onclick="deleteJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-500 hover:text-red-400 text-[10px] font-bold transition-colors" title="Delete source & clips"><i class="ph ph-trash"></i></button>`}
-              </div>
-            </div>`;
-        }).join('');
-      } catch (e) { if (e.message !== 'locked') console.error(e); }
+        const serverHistory = (await res.json()).history || [];
+
+        // Merge server history with device cache by ID (so no past jobs are wiped if server restarts)
+        let combined = [...serverHistory];
+        try {
+          const cached = JSON.parse(localStorage.getItem('clipy_cached_history') || '[]');
+          const seen = new Set(serverHistory.map(x => x.id));
+          cached.forEach(item => {
+            if (!seen.has(item.id)) {
+              combined.push(item);
+              seen.add(item.id);
+            }
+          });
+          combined.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+          localStorage.setItem('clipy_cached_history', JSON.stringify(combined));
+        } catch {}
+
+        renderHistoryListUI(combined);
+      } catch (e) {
+        if (e.message !== 'locked') console.warn('Displaying cached history from device');
+      }
     }
 
     /* ═══════════════════ ANALYTICS ═══════════════════ */
@@ -1396,6 +1437,37 @@
       try {
         const res = await api('/api/settings');
         const s = await res.json();
+
+        // Auto-restore Buffer token if server restarted or container reset
+        const savedBuffer = localStorage.getItem('clipy_buffer_token');
+        if (savedBuffer && (!s.connections || !s.connections.buffer)) {
+          console.log('Restoring saved Buffer token to server from device storage...');
+          await api('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ buffer_access_token: savedBuffer, buffer_post_youtube: true })
+          });
+          const refreshed = await (await api('/api/settings')).json();
+          try { localStorage.setItem('clipy_cached_settings', JSON.stringify(refreshed)); } catch {}
+          applySettingsUI(refreshed);
+          return;
+        }
+
+        // Auto-restore Gemini API key if server restarted
+        const savedGemini = localStorage.getItem('clipy_gemini_key');
+        if (savedGemini && !s.gemini_api_key_masked) {
+          console.log('Restoring saved Gemini key to server from device storage...');
+          await api('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gemini_api_key: savedGemini })
+          });
+          const refreshed = await (await api('/api/settings')).json();
+          try { localStorage.setItem('clipy_cached_settings', JSON.stringify(refreshed)); } catch {}
+          applySettingsUI(refreshed);
+          return;
+        }
+
         try { localStorage.setItem('clipy_cached_settings', JSON.stringify(s)); } catch {}
         applySettingsUI(s);
       } catch (e) {
@@ -1409,9 +1481,10 @@
     async function saveApiKey() {
       const key = document.getElementById('setting-gemini-key').value.trim();
       if (!key) { showToast('Paste a key first', 'error'); return; }
+      localStorage.setItem('clipy_gemini_key', key);
       await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gemini_api_key: key }) });
       document.getElementById('setting-gemini-key').value = '';
-      showToast('API key saved', 'success');
+      showToast('API key saved & backed up on device', 'success');
       loadSettings();
     }
 
@@ -1574,14 +1647,17 @@
         if (!val) { showToast('Paste your Buffer token first', 'error'); return; }
         payload.buffer_access_token = val;
         payload.buffer_post_youtube = document.getElementById('modal-buffer-youtube').checked;
+        localStorage.setItem('clipy_buffer_token', val);
       } else if (currentModalPlatform === 'instagram') {
         if (!val) { showToast('Tip: the Share to IG button works with zero setup', 'info'); closeSocialModal(); return; }
         payload.instagram_access_token = val;
         payload.auto_post_instagram = true;
+        localStorage.setItem('clipy_ig_token', val);
       } else if (currentModalPlatform === 'tiktok') {
         if (!val) { showToast('Tip: the Share to TikTok button works with zero setup', 'info'); closeSocialModal(); return; }
         payload.tiktok_session_id = val;
         payload.auto_post_tiktok = true;
+        localStorage.setItem('clipy_tiktok_token', val);
       } else if (currentModalPlatform === 'youtube') {
         const cid = document.getElementById('modal-input-yt-id').value.trim();
         const csec = val;
@@ -1598,7 +1674,7 @@
       }
 
       await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      showToast(currentModalPlatform + ' connected', 'success');
+      showToast(currentModalPlatform + ' connected & saved on device', 'success');
       closeSocialModal();
       loadSettings();
     }
@@ -1606,6 +1682,9 @@
     async function disconnectAccount(platform) {
       const ok = await confirmDialog('Disconnect ' + platform + '?', { yes: 'Disconnect' });
       if (!ok) return;
+      if (platform === 'buffer') localStorage.removeItem('clipy_buffer_token');
+      if (platform === 'instagram') localStorage.removeItem('clipy_ig_token');
+      if (platform === 'tiktok') localStorage.removeItem('clipy_tiktok_token');
       await api(`/auth/disconnect/${platform}`, { method: 'POST' });
       showToast(platform + ' disconnected', 'success');
       loadSettings();
@@ -1661,6 +1740,7 @@
     function startApp() {
       loadSettings();
       loadClips();
+      loadHistory();
       pollActiveJobs();
       // deep link ?tab=settings&connected=…
       const params = new URLSearchParams(location.search);

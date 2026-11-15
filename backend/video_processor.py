@@ -36,17 +36,27 @@ def probe_video(video_path: Path):
         return {"width": 1920, "height": 1080, "duration": 0, "aspect": 1.77}
 
 def download_video(url: str, output_dir: Path):
-    """Downloads a video or stream using yt-dlp."""
+    """Downloads a video or stream using yt-dlp with parallel fragments."""
     output_template = str(output_dir / "%(id)s.%(ext)s")
     cmd = [
         "python", "-m", "yt_dlp",
         "--no-playlist",
-        "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+        "-f", "bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo[height<=1080]+bestaudio/best",
         "--merge-output-format", "mp4",
+        "--concurrent-fragments", "5",
+        "--print", "title",
         "-o", output_template,
         url
     ]
-    subprocess.run(cmd, check=True)
+    title = ""
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        out_lines = (res.stdout or "").strip().split("\n")
+        if out_lines and out_lines[0].strip():
+            title = out_lines[0].strip()
+    except Exception as e:
+        print(f"[yt-dlp] Fast download error, falling back: {e}")
+        subprocess.run(["python", "-m", "yt_dlp", "--no-playlist", "-o", output_template, url], check=True)
     
     # Find the downloaded file
     mp4s = list(output_dir.glob("*.mp4"))
@@ -54,9 +64,9 @@ def download_video(url: str, output_dir: Path):
         # Fallback any video file
         files = [f for f in output_dir.iterdir() if f.suffix.lower() in [".mp4", ".mkv", ".webm"]]
         if files:
-            return files[0]
+            return files[0], title
         raise RuntimeError("Download completed but no video file found.")
-    return mp4s[0]
+    return mp4s[0], title
 
 def create_hook_image(hook_text: str, output_path: Path, width=1080, height=220):
     """Creates a viral bold hook banner with Pillow."""
@@ -283,6 +293,7 @@ def render_clip(
         
     cmd = [
         "ffmpeg", "-y",
+        "-threads", "0",
         "-ss", str(start_time),
         "-t", str(duration),
         "-i", str(source_video),
@@ -291,11 +302,10 @@ def render_clip(
         "-map", "[vout]",
         "-map", "0:a?",
         "-c:v", "libx264",
-        "-preset", "fast",
-        "-crf", "22",
+        "-preset", "ultrafast",
+        "-crf", "23",
         "-c:a", "aac",
-        "-b:a", "192k",
-        "-af", "loudnorm=I=-14:LRA=11:TP=-1.5",
+        "-b:a", "128k",
         str(output_clip_path)
     ]
     

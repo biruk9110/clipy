@@ -9,8 +9,8 @@ _whisper_cache = {}
 
 def get_whisper(model_size="tiny"):
     if model_size not in _whisper_cache:
-        # device="cpu", compute_type="int8" is fast and works on all PCs and cloud instances
-        _whisper_cache[model_size] = WhisperModel(model_size, device="cpu", compute_type="int8")
+        # device="cpu", compute_type="int8", cpu_threads=4 is fast and works on all PCs and cloud instances
+        _whisper_cache[model_size] = WhisperModel(model_size, device="cpu", compute_type="int8", cpu_threads=4)
     return _whisper_cache[model_size]
 
 def extract_audio(video_path: Path, output_audio_path: Path):
@@ -49,7 +49,7 @@ def get_audio_loudness(audio_path: Path):
 
 def transcribe_audio(audio_path: Path, model_size="tiny"):
     model = get_whisper(model_size)
-    segments, info = model.transcribe(str(audio_path), word_timestamps=True)
+    segments, info = model.transcribe(str(audio_path), word_timestamps=True, beam_size=1)
     
     transcript_lines = []
     all_words = []

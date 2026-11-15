@@ -157,7 +157,9 @@ def process_job_async(job_id: str, source_type: str, source_url: str = "", file_
             
             # Step 1: Ingest Video
             if source_type == "url":
-                video_file = download_video(source_url, job_dir)
+                video_file, real_title = download_video(source_url, job_dir)
+                if real_title:
+                    update_job(job_id, title=real_title)
             else:
                 video_file = Path(file_path)
                 
