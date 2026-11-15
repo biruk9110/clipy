@@ -269,8 +269,8 @@ def render_clip(
     
     if is_vertical_already:
         # Already 9:16, just scale to 1080x1920 and overlay hook + subs
-        subs_filter = f";[vwithhook]ass='{ass_escaped}'[vout]" if has_subs else ""
-        out_tag = "[vwithhook]" if not has_subs else "[vout]"
+        subs_filter = f";[vpre]ass='{ass_escaped}'[vout]" if has_subs else ""
+        out_tag = "[vout]" if not has_subs else "[vpre]"
         filtergraph = (
             f"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2[base];"
             f"[1:v]scale=1080:220[hook];"
@@ -284,8 +284,8 @@ def render_clip(
         crop_x = max(0, cx - int(cw * 0.9))
         crop_y = max(0, cy - int(ch * 0.7))
         
-        subs_filter = f";[vwithhook]ass='{ass_escaped}'[vout]" if has_subs else ""
-        out_tag = "[vwithhook]" if not has_subs else "[vout]"
+        subs_filter = f";[vpre]ass='{ass_escaped}'[vout]" if has_subs else ""
+        out_tag = "[vout]" if not has_subs else "[vpre]"
         filtergraph = (
             f"[0:v]split=2[vcam][vgame];"
             f"[vcam]crop={cam_pad_w}:{cam_pad_h}:{crop_x}:{crop_y},scale=1080:680:force_original_aspect_ratio=increase,crop=1080:680[camtop];"
@@ -296,8 +296,8 @@ def render_clip(
         )
     else:
         # Fit 16:9 gameplay in middle with blurred background on top & bottom
-        subs_filter = f";[vwithhook]ass='{ass_escaped}'[vout]" if has_subs else ""
-        out_tag = "[vwithhook]" if not has_subs else "[vout]"
+        subs_filter = f";[vpre]ass='{ass_escaped}'[vout]" if has_subs else ""
+        out_tag = "[vout]" if not has_subs else "[vpre]"
         filtergraph = (
             f"[0:v]split=2[bg][fg];"
             f"[bg]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:5[bgblur];"
@@ -315,7 +315,7 @@ def render_clip(
         "-i", str(source_video),
         "-i", str(hook_img),
         "-filter_complex", filtergraph,
-        "-map", "[vout]",
+        "-map", "[vout]",          # final label every branch outputs
         "-map", "0:a?",
         "-c:v", "libx264",
         "-preset", "ultrafast",
@@ -325,7 +325,11 @@ def render_clip(
         str(output_clip_path)
     ]
     
-    subprocess.run(cmd, check=True)
+    res = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
+    if res.returncode != 0:
+        # Surface the meaningful ffmpeg error instead of the raw command list
+        err_tail = "\n".join((res.stderr or "").strip().splitlines()[-6:]).strip()
+        raise RuntimeError(f"ffmpeg render failed (exit {res.returncode}): {err_tail or 'unknown error'}")
     
     # Extract thumbnail
     thumb_path = work_dir / f"{output_clip_path.stem}_thumb.jpg"

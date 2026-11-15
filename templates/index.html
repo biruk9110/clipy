@@ -1127,7 +1127,8 @@
         // preferences
         document.getElementById('pref-review').checked = !!s.review_mode;
         document.getElementById('pref-hashtags').value = s.default_hashtags || '';
-        document.getElementById('pref-notify').checked = localStorage.getItem('clipy_notify') === '1';
+        // notification pref lives server-side so it follows you across devices
+        document.getElementById('pref-notify').checked = (s.notify_enabled === true) || (s.notify_enabled === undefined && localStorage.getItem('clipy_notify') === '1');
         document.getElementById('pref-del-source').checked = !!s.delete_source_after;
         document.getElementById('pref-keep-n').value = s.keep_last_clips || 0;
         document.getElementById('pref-max-age').value = s.max_clip_age_days || 0;
