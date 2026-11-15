@@ -55,6 +55,9 @@ async def api_get_settings():
     if masked.get("gemini_api_key"):
         k = masked["gemini_api_key"]
         masked["gemini_api_key_masked"] = k[:6] + "..." + k[-4:] if len(k) > 10 else "******"
+    if masked.get("buffer_access_token"):
+        b = masked["buffer_access_token"]
+        masked["buffer_access_token_masked"] = b[:4] + "..." + b[-3:] if len(b) > 8 else "******"
     return masked
 
 @app.post("/api/settings")

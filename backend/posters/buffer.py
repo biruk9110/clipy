@@ -54,3 +54,4 @@ def post_to_buffer(video_url: str, caption: str, hashtags: list, schedule_timest
         return {"success": False, "error": str(res)}
     except Exception as e:
         return {"success": False, "error": str(e)}
+

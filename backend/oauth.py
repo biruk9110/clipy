@@ -96,3 +96,4 @@ def handle_tiktok_callback(code: str):
         })
         return {"success": True, "open_id": open_id}
     return {"success": False, "error": str(data)}
+
