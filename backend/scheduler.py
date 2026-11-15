@@ -79,7 +79,7 @@ def publish_clip(clip_id: str):
 def process_job_async(job_id: str, source_type: str, source_url: str = "", file_path: str = "", num_clips: int = 3, interval_hours: float = 3.0):
     def worker():
         try:
-            update_job(job_id, status="processing")
+            update_job(job_id, status="processing", step="📥 Downloading video...", progress=15)
             job_dir = OUTPUT_DIR / job_id
             job_dir.mkdir(parents=True, exist_ok=True)
             
@@ -94,7 +94,7 @@ def process_job_async(job_id: str, source_type: str, source_url: str = "", file_
             is_vertical = info["aspect"] < 0.7 # e.g. 9:16 is ~0.56
             is_short = dur <= 150.0 # Under 2.5 minutes is treated as a Short
             
-            update_job(job_id, duration=dur, is_short=1 if is_short else 0)
+            update_job(job_id, duration=dur, is_short=1 if is_short else 0, step="🎙️ Listening & transcribing speech with Whisper...", progress=35)
             
             # Step 2: Extract & Transcribe Audio
             audio_path = job_dir / "audio.wav"
@@ -106,10 +106,12 @@ def process_job_async(job_id: str, source_type: str, source_url: str = "", file_
             
             if is_short:
                 # Polishing 1 short video
+                update_job(job_id, step="🧠 Gemini AI is analyzing video & generating viral hook title...", progress=55)
                 polish = polish_short_video(transcript_data["text"], dur)
                 clip_id = f"clip_{uuid.uuid4().hex[:8]}"
                 out_clip = job_dir / f"{clip_id}.mp4"
                 
+                update_job(job_id, step="🎨 Editing 9:16 layout & burning animated subtitles...", progress=80)
                 render_clip(
                     source_video=video_file,
                     start_time=0.0,
@@ -140,11 +142,15 @@ def process_job_async(job_id: str, source_type: str, source_url: str = "", file_
                 })
             else:
                 # Multi-moment extraction from longer video/stream
+                update_job(job_id, step="🧠 Gemini AI is searching for viral moments & writing hooks...", progress=50)
                 moments = pick_stream_moments(transcript_data["text"], dur, count=num_clips)
                 for i, m in enumerate(moments):
                     clip_id = f"clip_{uuid.uuid4().hex[:8]}"
                     out_clip = job_dir / f"{clip_id}.mp4"
                     c_dur = m["end"] - m["start"]
+                    
+                    clip_progress = int(50 + ((i + 1) / len(moments)) * 45)
+                    update_job(job_id, step=f"✂️ Editing clip {i+1} of {len(moments)}: {m.get('hook_text', '')[:30]}...", progress=clip_progress)
                     
                     render_clip(
                         source_video=video_file,
@@ -175,7 +181,7 @@ def process_job_async(job_id: str, source_type: str, source_url: str = "", file_
                         "status": "scheduled" if i > 0 else "ready"
                     })
                     
-            update_job(job_id, status="completed", completed_at=datetime.now().isoformat())
+            update_job(job_id, status="completed", step="✅ Done! Clips ready to share & post", progress=100, completed_at=datetime.now().isoformat())
             
         except Exception as e:
             print(f"[Worker] Job {job_id} failed: {e}")

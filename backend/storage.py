@@ -25,11 +25,22 @@ def init_db():
         duration REAL,
         is_short BOOLEAN DEFAULT 0,
         status TEXT, -- pending, processing, completed, failed
+        step TEXT DEFAULT 'Starting...',
+        progress INTEGER DEFAULT 0,
         error TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         completed_at TIMESTAMP
     )
     """)
+    
+    try:
+        cursor.execute("ALTER TABLE jobs ADD COLUMN step TEXT DEFAULT 'Starting...'")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE jobs ADD COLUMN progress INTEGER DEFAULT 0")
+    except Exception:
+        pass
     
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS clips (
@@ -65,7 +76,7 @@ init_db()
 def create_job(job_id: str, title: str, source_type: str, source_url: str = "", source_file: str = ""):
     conn = get_db()
     conn.execute(
-        "INSERT INTO jobs (id, title, source_type, source_url, source_file, status) VALUES (?, ?, ?, ?, ?, 'pending')",
+        "INSERT INTO jobs (id, title, source_type, source_url, source_file, status, step, progress) VALUES (?, ?, ?, ?, ?, 'pending', '📥 Queued, preparing to download...', 5)",
         (job_id, title, source_type, source_url, source_file)
     )
     conn.commit()
