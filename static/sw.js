@@ -1,70 +1,71 @@
-const CACHE_NAME = 'clipy-v4';
-const PRECACHE_URLS = [
+const CACHE = 'clipy-v3';
+
+// App shell: everything the UI needs to render without internet
+const PRECACHE = [
   '/',
   '/manifest.json',
+  '/static/vendor/tailwind.js',
+  '/static/vendor/fonts/inter.css',
+  '/static/vendor/fonts/InterVariable.woff2',
+  '/static/vendor/phosphor/regular/style.css',
+  '/static/vendor/phosphor/regular/Phosphor.woff2',
+  '/static/vendor/phosphor/bold/style.css',
+  '/static/vendor/phosphor/bold/Phosphor-Bold.woff2',
+  '/static/vendor/phosphor/fill/style.css',
+  '/static/vendor/phosphor/fill/Phosphor-Fill.woff2',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png',
+  '/static/icons/favicon.png',
   '/static/icons/apple-touch-icon.png',
-  '/static/icons/favicon.png'
 ];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)).then(() => self.skipWaiting())
+    Promise.allSettled(PRECACHE.map((url) => caches.open(CACHE).then((c) => c.add(url))))
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
-    ).then(() => clients.claim())
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => clients.claim())
   );
 });
 
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
+  if (url.origin !== location.origin) return; // let third-party requests pass through
 
-  // For API or video downloads, try network first
-  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/media') || url.pathname.startsWith('/auth')) {
+  // Vendored UI assets & icons: cache-first (instant + offline)
+  if (url.pathname.startsWith('/static/vendor') || url.pathname.startsWith('/static/icons')) {
     e.respondWith(
-      fetch(e.request).catch(async () => {
-        const cached = await caches.match(e.request);
-        return cached || new Response(JSON.stringify({ error: 'Offline', offline: true }), {
-          headers: { 'Content-Type': 'application/json' }
-        });
-      })
+      caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, copy));
+        return res;
+      }))
     );
     return;
   }
 
-  // For HTML page navigation, network first with cache fallback
-  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+  // App page: network-first, cached shell as offline fallback (so relaunch always works)
+  if (e.request.mode === 'navigate' || url.pathname === '/') {
     e.respondWith(
-      fetch(e.request).then((resp) => {
-        if (resp && resp.status === 200) {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-        }
-        return resp;
-      }).catch(() => caches.match(e.request))
+      fetch(e.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put('/', copy));
+          return res;
+        })
+        .catch(() => caches.match('/'))
     );
     return;
   }
 
-  // Stale-while-revalidate for static icons & assets
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const networked = fetch(e.request).then((resp) => {
-        if (resp && resp.status === 200) {
-          const clone = resp.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-        }
-        return resp;
-      }).catch(() => cached);
-      return cached || networked;
-    })
-  );
+  // API & media: always live
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
 
 // Focus the app when a notification is tapped

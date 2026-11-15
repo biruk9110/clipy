@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -11,15 +10,17 @@
   <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="/static/icons/favicon.png">
   <meta name="theme-color" content="#09090b">
+  <meta name="color-scheme" content="dark">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Clipy">
 
-  <!-- Inter font + Tailwind + Phosphor -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Inter font + Tailwind + Phosphor — ALL VENDORED LOCALLY (app works fully offline) -->
+  <link rel="stylesheet" href="/static/vendor/fonts/inter.css">
+  <link rel="stylesheet" href="/static/vendor/phosphor/regular/style.css">
+  <link rel="stylesheet" href="/static/vendor/phosphor/bold/style.css">
+  <link rel="stylesheet" href="/static/vendor/phosphor/fill/style.css">
+  <script src="/static/vendor/tailwind.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -36,119 +37,48 @@
     }
   </script>
   <style>
-    * {
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-    }
-
-    .hide-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-
-    .hide-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    .card {
-      background: #101013;
-      border: 1px solid #1f1f23;
-      border-radius: 1rem;
-    }
-
-    .chip {
-      transition: all .15s ease;
-    }
-
-    input,
-    select,
-    textarea {
-      color-scheme: dark;
-    }
-
-    select option {
-      background: #18181b;
-    }
-
-    .fade-in {
-      animation: fadeIn .25s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
-
-      to {
-        opacity: 1;
-        transform: none;
-      }
-    }
-
-    .toast-in {
-      animation: toastIn .25s ease;
-    }
-
-    @keyframes toastIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px) scale(.98);
-      }
-
-      to {
-        opacity: 1;
-        transform: none;
-      }
-    }
+    :root { color-scheme: dark; }
+    * { -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .card { background: #101013; border: 1px solid #1f1f23; border-radius: 1rem; }
+    .chip { transition: all .15s ease; }
+    input, select, textarea { color-scheme: dark; }
+    select option { background: #18181b; }
+    .fade-in { animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .toast-in { animation: toastIn .25s ease; }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
   </style>
 </head>
-
 <body class="bg-ink-950 text-zinc-100 min-h-screen flex flex-col select-none pb-24 md:pb-6">
 
   <!-- ══════════ LOCK SCREEN ══════════ -->
   <div id="lock-screen" class="fixed inset-0 z-[100] bg-ink-950 hidden items-center justify-center p-6">
-    <div class="w-full max-w-xs text-center space-y-5 fade-in">
-      <img src="/static/icons/apple-touch-icon.png" alt="Clipy"
-        class="w-16 h-16 mx-auto rounded-2xl shadow-xl shadow-purple-500/20 border border-ink-600">
+    <div class="w-full max-w-xs text-center space-y-6 fade-in">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-white flex items-center justify-center">
+        <i class="ph-bold ph-scissors text-3xl text-black"></i>
+      </div>
       <div>
         <h1 class="text-xl font-bold tracking-tight">Clipy is locked</h1>
-        <p class="text-xs text-zinc-500 mt-1">Authenticate to continue</p>
+        <p class="text-xs text-zinc-500 mt-1">Enter your PIN to continue</p>
       </div>
-
-      <!-- Fingerprint / Biometric Button -->
-      <div id="biometric-area" class="hidden space-y-3">
-        <button onclick="unlockWithBiometrics()"
-          class="w-full py-3.5 bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/40 hover:to-teal-600/40 border border-emerald-500/40 text-emerald-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-          <i class="ph-bold ph-fingerprint text-2xl text-emerald-400"></i>
-          <span>Unlock with Fingerprint / Face ID</span>
-        </button>
-        <div class="flex items-center gap-3">
-          <div class="flex-1 h-px bg-ink-700"></div>
-          <span class="text-[10px] text-zinc-500 uppercase font-semibold">or enter PIN</span>
-          <div class="flex-1 h-px bg-ink-700"></div>
-        </div>
-      </div>
-
       <input id="lock-pin" type="password" inputmode="numeric" maxlength="8" placeholder="• • • •"
         class="w-full text-center tracking-[0.5em] text-lg font-bold px-4 py-3.5 bg-ink-900 border border-ink-600 rounded-xl focus:outline-none focus:border-zinc-400 placeholder-zinc-700">
       <p id="lock-error" class="text-xs text-red-400 hidden">Wrong PIN, try again</p>
-      <button onclick="unlockApp()"
-        class="w-full py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-xl transition-all active:scale-[0.98]">
+      <button onclick="unlockApp()" class="w-full py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-xl transition-all active:scale-[0.98]">
         Unlock
       </button>
     </div>
   </div>
 
   <!-- ══════════ HEADER ══════════ -->
-  <header
-    class="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-xl border-b border-ink-700 px-4 py-3 flex items-center justify-between">
+  <header class="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-xl border-b border-ink-700 px-4 py-3 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
-      <img src="/static/icons/apple-touch-icon.png" alt="Clipy"
-        class="w-9 h-9 rounded-xl shadow-md shadow-purple-500/20 object-cover border border-ink-600">
+      <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
+        <i class="ph-bold ph-scissors text-xl text-black"></i>
+      </div>
       <div>
         <h1 class="font-bold text-[17px] tracking-tight leading-none">Clipy</h1>
         <p class="text-[10px] text-zinc-500 font-medium mt-0.5">AI Clip Studio</p>
@@ -159,9 +89,7 @@
         class="px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-zinc-400/10 text-zinc-400 border border-ink-600 flex items-center gap-1.5 cursor-pointer hover:border-zinc-500 transition-colors">
         <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span> AI
       </a>
-      <button id="lock-btn" onclick="lockApp()"
-        class="hidden w-8 h-8 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors"
-        title="Lock app">
+      <button id="lock-btn" onclick="lockApp()" class="hidden w-8 h-8 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors" title="Lock app">
         <i class="ph ph-lock-simple text-sm"></i>
       </button>
     </div>
@@ -175,14 +103,11 @@
       <div class="card p-5 space-y-4 fade-in">
         <div class="flex items-center gap-2">
           <h2 class="text-sm font-bold text-white">New Clip</h2>
-          <span
-            class="text-[10px] px-2 py-0.5 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 font-semibold">AI
-            AUTO-EDIT</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 font-semibold">AI AUTO-EDIT</span>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Paste a YouTube or TikTok
-            link</label>
+          <label class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Paste a YouTube or TikTok link</label>
           <div class="relative">
             <i class="ph ph-link absolute left-3.5 top-3.5 text-zinc-500 text-lg"></i>
             <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=..."
@@ -196,12 +121,10 @@
           <div class="flex-1 h-px bg-ink-700"></div>
         </div>
 
-        <div id="drop-area"
-          class="border border-dashed border-ink-600 hover:border-zinc-500 rounded-xl p-5 text-center cursor-pointer bg-ink-900/50 transition-all">
+        <div id="drop-area" class="border border-dashed border-ink-600 hover:border-zinc-500 rounded-xl p-5 text-center cursor-pointer bg-ink-900 transition-all">
           <input type="file" id="input-file" accept="video/*" class="hidden">
           <div class="flex flex-col items-center gap-2">
-            <div
-              class="w-10 h-10 rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-400">
+            <div class="w-10 h-10 rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-400">
               <i class="ph ph-video-camera text-xl"></i>
             </div>
             <p id="file-label" class="text-xs text-zinc-300 font-medium">Tap to pick a video</p>
@@ -211,10 +134,8 @@
 
         <div class="grid grid-cols-2 gap-3 pt-1">
           <div class="bg-ink-900 border border-ink-700 rounded-xl p-3">
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Clips from
-              stream</label>
-            <select id="select-clips"
-              class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Clips from stream</label>
+            <select id="select-clips" class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
               <option value="1">1 clip</option>
               <option value="2">2 clips</option>
               <option value="3" selected>3 clips</option>
@@ -228,10 +149,8 @@
             </select>
           </div>
           <div class="bg-ink-900 border border-ink-700 rounded-xl p-3">
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Posting
-              schedule</label>
-            <select id="select-interval"
-              class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Posting schedule</label>
+            <select id="select-interval" class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
               <option value="1">every 1 hour</option>
               <option value="3" selected>every 3 hours</option>
               <option value="5">every 5 hours</option>
@@ -257,24 +176,18 @@
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
           <i class="ph ph-film-strip text-zinc-400"></i> Clips
         </h2>
-        <button onclick="loadClips()"
-          class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
+        <button onclick="loadClips()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
           <i class="ph ph-arrows-clockwise text-xs"></i> Refresh
         </button>
       </div>
 
       <!-- Filters -->
       <div class="flex gap-2 overflow-x-auto hide-scrollbar">
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
-          data-filter="all" onclick="setFilter('all')">All</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
-          data-filter="ready" onclick="setFilter('ready')">Ready</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
-          data-filter="scheduled" onclick="setFilter('scheduled')">Scheduled</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
-          data-filter="posted" onclick="setFilter('posted')">Posted</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border"
-          data-filter="failed" onclick="setFilter('failed')">Failed</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="all" onclick="setFilter('all')">All</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="ready" onclick="setFilter('ready')">Ready</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="scheduled" onclick="setFilter('scheduled')">Scheduled</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="posted" onclick="setFilter('posted')">Posted</button>
+        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="failed" onclick="setFilter('failed')">Failed</button>
       </div>
 
       <div id="clips-list" class="space-y-4"></div>
@@ -286,8 +199,7 @@
         <h2 class="text-sm font-bold text-white flex items-center gap-2">
           <i class="ph ph-clock-counter-clockwise text-zinc-400"></i> History
         </h2>
-        <button onclick="loadHistory()"
-          class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
+        <button onclick="loadHistory()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
           <i class="ph ph-arrows-clockwise text-xs"></i> Refresh
         </button>
       </div>
@@ -350,40 +262,32 @@
 
       <!-- AI key -->
       <div class="card p-5 space-y-3">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-cpu text-zinc-400"></i>
-          Google Gemini API Key</h3>
-        <p class="text-[11px] text-zinc-500">Free from Google AI Studio. Used for picking moments, hooks &amp; hashtags.
-        </p>
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-cpu text-zinc-400"></i> Google Gemini API Key</h3>
+        <p class="text-[11px] text-zinc-500">Free from Google AI Studio. Used for picking moments, hooks &amp; hashtags.</p>
         <div class="flex gap-2">
           <input id="setting-gemini-key" type="password" placeholder="Paste your key (AIzaSy...)"
             class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
-          <button onclick="saveApiKey()"
-            class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
+          <button onclick="saveApiKey()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
         </div>
-        <p class="text-[11px] text-zinc-600">Get a free key at <a href="https://aistudio.google.com/" target="_blank"
-            class="text-zinc-300 underline">aistudio.google.com</a></p>
+        <p class="text-[11px] text-zinc-600">Get a free key at <a href="https://aistudio.google.com/" target="_blank" class="text-zinc-300 underline">aistudio.google.com</a></p>
       </div>
 
       <!-- Connections -->
       <div class="card p-5 space-y-3">
         <div>
-          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i
-              class="ph ph-share-network text-zinc-400"></i> Connected accounts</h3>
+          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-share-network text-zinc-400"></i> Connected accounts</h3>
           <p class="text-[11px] text-zinc-500 mt-0.5">Auto-post your clips to your socials.</p>
         </div>
 
         <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-black flex-shrink-0"><i
-                class="ph-bold ph-stack text-lg"></i></div>
+            <div class="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-black flex-shrink-0"><i class="ph-bold ph-stack text-lg"></i></div>
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
                 <p class="text-xs font-bold text-white truncate">Buffer</p>
-                <span
-                  class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-400/10 text-zinc-400 font-bold flex-shrink-0">EASIEST</span>
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-400/10 text-zinc-400 font-bold flex-shrink-0">EASIEST</span>
               </div>
-              <p id="buffer-status-text" class="text-[10px] text-zinc-500 truncate">Instagram + TikTok (+ YouTube) in
-                one step</p>
+              <p id="buffer-status-text" class="text-[10px] text-zinc-500 truncate">Instagram + TikTok (+ YouTube) in one step</p>
             </div>
           </div>
           <div id="buffer-action-area" class="flex-shrink-0"></div>
@@ -391,9 +295,7 @@
 
         <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-3 min-w-0">
-            <div
-              class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0">
-              <i class="ph ph-instagram-logo text-lg"></i></div>
+            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-instagram-logo text-lg"></i></div>
             <div class="min-w-0">
               <p class="text-xs font-bold text-white">Instagram Reels</p>
               <p id="ig-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
@@ -404,9 +306,7 @@
 
         <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-3 min-w-0">
-            <div
-              class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0">
-              <i class="ph ph-tiktok-logo text-lg"></i></div>
+            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-tiktok-logo text-lg"></i></div>
             <div class="min-w-0">
               <p class="text-xs font-bold text-white">TikTok</p>
               <p id="tiktok-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
@@ -417,9 +317,7 @@
 
         <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
           <div class="flex items-center gap-3 min-w-0">
-            <div
-              class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0">
-              <i class="ph ph-youtube-logo text-lg"></i></div>
+            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-youtube-logo text-lg"></i></div>
             <div class="min-w-0">
               <p class="text-xs font-bold text-white">YouTube Shorts</p>
               <p id="youtube-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
@@ -431,21 +329,18 @@
 
       <!-- Posting preferences -->
       <div class="card p-5 space-y-4">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i
-            class="ph ph-paper-plane-tilt text-zinc-400"></i> Posting</h3>
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-paper-plane-tilt text-zinc-400"></i> Posting</h3>
 
         <label class="flex items-center justify-between gap-3 cursor-pointer">
           <div>
             <p class="text-xs font-semibold text-white">Review before posting</p>
             <p class="text-[10px] text-zinc-500">Scheduled clips wait until you tap Post</p>
           </div>
-          <input id="pref-review" type="checkbox" onchange="savePrefs()"
-            class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+          <input id="pref-review" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
         </label>
 
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Default hashtags
-            (added to every caption)</label>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Default hashtags (added to every caption)</label>
           <input id="pref-hashtags" type="text" placeholder="#gaming #clips #viral"
             class="w-full px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
             onkeydown="if(event.key==='Enter')savePrefs()">
@@ -454,16 +349,14 @@
 
       <!-- Automation & storage -->
       <div class="card p-5 space-y-4">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-broom text-zinc-400"></i>
-          Storage &amp; automation</h3>
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-broom text-zinc-400"></i> Storage &amp; automation</h3>
 
         <label class="flex items-center justify-between gap-3 cursor-pointer">
           <div>
             <p class="text-xs font-semibold text-white">Notify when clips are ready</p>
             <p class="text-[10px] text-zinc-500">Push notification when a job finishes</p>
           </div>
-          <input id="pref-notify" type="checkbox" onchange="saveNotify()"
-            class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+          <input id="pref-notify" type="checkbox" onchange="saveNotify()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
         </label>
 
         <label class="flex items-center justify-between gap-3 cursor-pointer">
@@ -471,105 +364,44 @@
             <p class="text-xs font-semibold text-white">Delete source video after clipping</p>
             <p class="text-[10px] text-zinc-500">Removes the original upload/download to save space</p>
           </div>
-          <input id="pref-del-source" type="checkbox" onchange="saveAutomation()"
-            class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+          <input id="pref-del-source" type="checkbox" onchange="saveAutomation()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
         </label>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Keep last N
-              clips</label>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Keep last N clips</label>
             <input id="pref-keep-n" type="number" min="0" placeholder="0 = all"
               class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
               onkeydown="if(event.key==='Enter')saveAutomation()">
           </div>
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Delete older
-              than (days)</label>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Delete older than (days)</label>
             <input id="pref-max-age" type="number" min="0" placeholder="0 = never"
               class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
               onkeydown="if(event.key==='Enter')saveAutomation()">
           </div>
         </div>
-        <button onclick="runCleanupNow()"
-          class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-          <i class="ph ph-broom"></i> Run cleanup now
-        </button>
-        <a href="/api/export/csv"
-          class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-          <i class="ph ph-download-simple"></i> Export all captions (CSV backup)
-        </a>
-      </div>
-
-      <!-- Security & App Lock -->
-      <div class="card p-5 space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i
-              class="ph ph-lock-simple text-zinc-400"></i> App Lock & Biometrics</h3>
-          <span id="lock-status-badge"
-            class="px-2 py-0.5 rounded text-[10px] font-bold bg-ink-800 text-zinc-400 border border-ink-600">No
-            PIN</span>
-        </div>
-        <p class="text-[11px] text-zinc-500">Protect your keys, social tokens and clips with PIN and native Fingerprint
-          / Face ID authentication.</p>
-
-        <!-- PIN Input -->
-        <div class="space-y-1.5">
-          <label class="text-[10px] uppercase font-bold tracking-wider text-zinc-500">Master PIN</label>
-          <div class="flex gap-2">
-            <input id="setting-pin" type="password" inputmode="numeric" maxlength="8" placeholder="4–8 digits"
-              class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600 tracking-widest">
-            <button onclick="savePin()"
-              class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save
-              PIN</button>
-          </div>
-        </div>
-        <button id="btn-remove-pin" onclick="removePin()"
-          class="hidden text-[11px] text-zinc-500 hover:text-red-400 font-semibold flex items-center gap-1">
-          <i class="ph ph-x"></i> Remove PIN
-        </button>
-
-        <!-- Fingerprint / Biometric Toggle -->
-        <div class="pt-3 border-t border-ink-700/60 flex items-center justify-between">
-          <div>
-            <p class="text-xs font-bold text-white flex items-center gap-1.5">
-              <i class="ph-bold ph-fingerprint text-emerald-400 text-base"></i> Fingerprint / Face ID
-            </p>
-            <p class="text-[10px] text-zinc-500">Fast 1-tap unlock using your device's biometric sensor</p>
-          </div>
-          <button id="btn-toggle-biometric" onclick="toggleBiometricSetting()"
-            class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5">
-            <span id="biometric-btn-text">Enable</span>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="runCleanupNow()" class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+            <i class="ph ph-broom"></i> Run cleanup now
           </button>
+          <a href="/api/export/csv" class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
+            <i class="ph ph-download-simple"></i> Export captions (CSV)
+          </a>
         </div>
       </div>
 
-      <!-- Device Storage & Offline Cache -->
+      <!-- Security -->
       <div class="card p-5 space-y-3">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i
-              class="ph-bold ph-hard-drive text-emerald-400"></i> Saved on Device</h3>
-          <span
-            class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Synced
-            Locally</span>
+        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-lock-simple text-zinc-400"></i> App lock (PIN)</h3>
+        <p class="text-[11px] text-zinc-500">Protects your keys, tokens and clips — important when the app runs on a public URL.</p>
+        <div class="flex gap-2">
+          <input id="setting-pin" type="password" inputmode="numeric" maxlength="8" placeholder="4–8 digits"
+            class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600 tracking-widest">
+          <button onclick="savePin()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
         </div>
-        <p class="text-[11px] text-zinc-400 leading-relaxed">
-          All your clips, hooks, captions, queued jobs and settings are automatically saved and cached locally on this
-          phone/device. You can view your clips anytime even when offline.
-        </p>
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <div class="p-3 bg-ink-900 border border-ink-700/80 rounded-xl">
-            <p class="text-[10px] uppercase font-bold text-zinc-500">Clips Stored</p>
-            <p id="device-clips-count" class="text-base font-extrabold text-white mt-0.5">0</p>
-          </div>
-          <div class="p-3 bg-ink-900 border border-ink-700/80 rounded-xl">
-            <p class="text-[10px] uppercase font-bold text-zinc-500">Device Cache</p>
-            <p class="text-base font-extrabold text-emerald-400 mt-0.5">Active</p>
-          </div>
-        </div>
-        <button onclick="clearDeviceCache()"
-          class="w-full py-2 bg-ink-900 hover:bg-ink-800 border border-ink-700 text-zinc-400 hover:text-zinc-200 text-xs font-medium rounded-xl transition-all flex items-center justify-center gap-1.5">
-          <i class="ph ph-trash-simple"></i> Clear local device cache
+        <button id="btn-remove-pin" onclick="removePin()" class="hidden text-[11px] text-zinc-500 hover:text-red-400 font-semibold flex items-center gap-1">
+          <i class="ph ph-x"></i> Remove PIN
         </button>
       </div>
 
@@ -592,12 +424,17 @@
         <h3 id="modal-title" class="text-xs font-bold text-white truncate max-w-[240px]">Preview</h3>
         <button onclick="closeModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
       </div>
-      <div class="bg-black aspect-[9/16] w-full flex items-center justify-center">
-        <video id="modal-video" controls class="w-full h-full object-contain"></video>
+      <div class="bg-black aspect-[9/16] w-full flex items-center justify-center relative">
+        <video id="modal-video" controls playsinline class="w-full h-full object-contain"></video>
+        <div id="modal-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-ink-950 text-center p-6">
+          <i class="ph ph-file-video text-5xl text-ink-500"></i>
+          <p class="text-xs font-bold text-white">Video file is missing</p>
+          <p class="text-[11px] text-zinc-500 leading-relaxed">This clip's file was removed from disk (cleanup or app reset). The caption is kept — you can delete the entry.</p>
+          <button id="modal-remove-btn" onclick="removeFromModal()" class="mt-1 px-4 py-2 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Remove clip</button>
+        </div>
       </div>
       <div class="p-3 border-t border-ink-700 flex justify-end">
-        <button onclick="closeModal()"
-          class="px-4 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-lg transition-colors">Close</button>
+        <button onclick="closeModal()" class="px-4 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-lg transition-colors">Close</button>
       </div>
     </div>
   </div>
@@ -606,108 +443,81 @@
   <div id="edit-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4">
       <div class="flex items-center justify-between border-b border-ink-700 pb-3">
-        <h3 class="text-sm font-bold text-white flex items-center gap-2"><i
-            class="ph ph-pencil-simple-line text-zinc-400"></i> Edit before posting</h3>
-        <button onclick="closeEditModal()" class="text-zinc-400 hover:text-white"><i
-            class="ph ph-x text-lg"></i></button>
+        <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="ph ph-pencil-simple-line text-zinc-400"></i> Edit before posting</h3>
+        <button onclick="closeEditModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
       </div>
       <div class="space-y-3">
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hook /
-            title</label>
-          <input id="edit-hook"
-            class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hook / title</label>
+          <input id="edit-hook" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
         </div>
         <div>
           <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Caption</label>
-          <textarea id="edit-caption" rows="4"
-            class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 resize-none"></textarea>
+          <textarea id="edit-caption" rows="4" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 resize-none"></textarea>
         </div>
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hashtags (space
-            separated)</label>
-          <input id="edit-hashtags"
-            class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hashtags (space separated)</label>
+          <input id="edit-hashtags" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
         </div>
       </div>
       <div class="flex justify-end gap-2 pt-1">
-        <button onclick="closeEditModal()"
-          class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
-        <button onclick="saveEdit()"
-          class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save
-          changes</button>
+        <button onclick="closeEditModal()" class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
+        <button onclick="saveEdit()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save changes</button>
       </div>
     </div>
   </div>
 
   <!-- ══════════ SOCIAL CONNECT MODAL ══════════ -->
   <div id="social-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-    <div
-      class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar">
+    <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar">
       <div class="flex items-center justify-between border-b border-ink-700 pb-3">
         <h3 id="social-modal-title" class="text-sm font-bold text-white">Connect account</h3>
-        <button onclick="closeSocialModal()" class="text-zinc-400 hover:text-white"><i
-            class="ph ph-x text-lg"></i></button>
+        <button onclick="closeSocialModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
       </div>
       <div id="social-modal-body" class="space-y-3"></div>
       <div class="pt-2 border-t border-ink-700 flex justify-end gap-2">
-        <button onclick="closeSocialModal()"
-          class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
-        <button id="social-modal-save-btn" onclick="saveSocialModal()"
-          class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save
-          &amp; connect</button>
+        <button onclick="closeSocialModal()" class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
+        <button id="social-modal-save-btn" onclick="saveSocialModal()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save &amp; connect</button>
       </div>
     </div>
   </div>
 
   <!-- ══════════ CONFIRM MODAL ══════════ -->
-  <div id="confirm-modal"
-    class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+  <div id="confirm-modal" class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="max-w-xs w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 text-center">
-      <div
-        class="w-10 h-10 mx-auto rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300">
+      <div class="w-10 h-10 mx-auto rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300">
         <i id="confirm-icon" class="ph ph-warning text-lg"></i>
       </div>
       <p id="confirm-message" class="text-xs text-zinc-200 font-medium leading-relaxed"></p>
       <div class="flex gap-2">
-        <button onclick="resolveConfirm(false)"
-          class="flex-1 py-2.5 bg-ink-800 hover:bg-ink-700 text-white text-xs font-bold rounded-xl transition-colors">Cancel</button>
-        <button id="confirm-yes" onclick="resolveConfirm(true)"
-          class="flex-1 py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Confirm</button>
+        <button onclick="resolveConfirm(false)" class="flex-1 py-2.5 bg-ink-800 hover:bg-ink-700 text-white text-xs font-bold rounded-xl transition-colors">Cancel</button>
+        <button id="confirm-yes" onclick="resolveConfirm(true)" class="flex-1 py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Confirm</button>
       </div>
     </div>
   </div>
 
   <!-- ══════════ TOASTS ══════════ -->
-  <div id="toast-area"
-    class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[70] space-y-2 w-[calc(100%-2rem)] max-w-xs pointer-events-none">
-  </div>
+  <div id="toast-area" class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[70] space-y-2 w-[calc(100%-2rem)] max-w-xs pointer-events-none"></div>
 
   <!-- ══════════ MOBILE NAV ══════════ -->
-  <nav
-    class="fixed bottom-0 left-0 right-0 z-40 bg-ink-950/90 backdrop-blur-xl border-t border-ink-700 px-2 py-2 flex items-center justify-around">
-    <button onclick="switchTab('create')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
-      data-tab="create">
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-ink-950/90 backdrop-blur-xl border-t border-ink-700 px-2 py-2 flex items-center justify-around">
+    <button onclick="switchTab('create')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="create">
       <i class="ph ph-plus-circle text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">Create</span>
     </button>
-    <button onclick="switchTab('clips')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
-      data-tab="clips">
+    <button onclick="switchTab('clips')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="clips">
       <i class="ph ph-film-strip text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">Clips</span>
     </button>
-    <button onclick="switchTab('history')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
-      data-tab="history">
+    <button onclick="switchTab('history')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="history">
       <i class="ph ph-clock-counter-clockwise text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">History</span>
     </button>
-    <button onclick="switchTab('analytics')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
-      data-tab="analytics">
+    <button onclick="switchTab('analytics')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="analytics">
       <i class="ph ph-chart-bar text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">Stats</span>
     </button>
-    <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl"
-      data-tab="settings">
+    <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="settings">
       <i class="ph ph-gear-six text-[22px]"></i>
       <span class="text-[9px] font-bold tracking-wide">Settings</span>
     </button>
@@ -768,27 +578,16 @@
       if (confirmResolver) { confirmResolver(val); confirmResolver = null; }
     }
 
-    /* ── Lock screen & Biometrics ── */
+    /* ── Lock screen ── */
     function showLock() {
       const el = document.getElementById('lock-screen');
       el.classList.remove('hidden'); el.classList.add('flex');
-      
-      const bioEnabled = localStorage.getItem('clipy_biometric_enable d') === '1';
-      const bioArea = document.getElementById('biometric-area');
-      if (bioEnabled && window.PublicKeyCredential) {
-        if (bioArea) bioArea.classList.remove('hidden');
-        // Auto-prompt biometric sensor after short delay for seamless unlock
-        setTimeout(() => { unlockWithBiometrics(); }, 350);
-      } else {
-        if (bioArea) bioArea.classList.add('hid     }
-      setTimeout(() => document.getElementById('lock-pin').focus(), 150);
+      setTimeout(() => document.getElementById('lock-pin').focus(), 100);
     }
-
     function hideLock() {
       const el = document.getElementById('lock-screen');
       el.classList.add('hidden'); el.classList.remove('flex');
     }
-
     async function unlockApp() {
       const pin = document.getElementById('lock-pin').value.trim();
       const err = document.getElementById('lock-error');
@@ -797,163 +596,10 @@
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pin })
         });
-        if (res.ok) {
-          err.classList.add('hidden');
-          localStorage.setItem('clipy_device_pin', pin);
-          if (localStorage.getItem('clipy_biometric_enabled') === '1') {
-            localStorage.setItem('clipy_biometric_pin', btoa(pin));
-          }
-          hideLock();
-          startApp();
-        } else {
-          err.textContent = 'Wrong PIN, try again';
-          err.classList.remove('hidden');
-        }
-      } catch {
-        err.textContent = 'Connection error, try again';
-        err.classList.remove('hidden');
-      }
+        if (res.ok) { err.classList.add('hidden'); hideLock(); startApp(); }
+        else err.classList.remove('hidden');
+      } catch { err.classList.remove('hidden'); }
     }
-
-    async function unlockWithBiometrics() {
-      if (localStorage.getItem('clipy_biometric_enabled') !== '1') return;
-      if (!window.PublicKeyCredential) return;
-      try {
-        const challenge = new Uint8Array(32);
-        window.crypto.getRandomValues(challenge);
-        const credIdStr = localStorage.getItem('clipy_biometric_cred_id');
-
-        const publicKeyOptions = {
-          challenge: challenge,
-          timeout: 60000,
-          userVerification: "preferred",
-          rpId: window.location.hostname
-        };
-        if (credIdStr) {
-          try {
-            const binStr = atob(credIdStr);
-            const rawId = new Uint8Array(binStr.length);
-            for (let i = 0; i < binStr.length; i++) rawId[i] = binStr.charCodeAt(i);
-            publicKeyOptions.allowCredentials = [{ id: rawId, type: 'public-key' }];
-          } catch {}
-        }
-
-        const assertion = await navigator.credentials.get({ publicKey: publicKeyOptions });
-        if (assertion) {
-          const pin = localStorage.getItem('clipy_device_pin') || (function() {
-            try { return atob(localStorage.getItem('clipy_biometric_pin') || ''); } catch { return ''; }
-          })();
-          const res = await fetch('/api/auth/unlock', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pin: pin })
-          });
-          if (res.ok) {
-            document.getElementById('lock-error').classList.add('hidden');
-            hideLock();
-            startApp();
-            showToast('Unlocked with Fingerprint / Face ID', 'success');
-          } else {
-            const err = document.getElementById('lock-error');
-            err.textContent = 'Biometric passed, but PIN mismatch. Please enter PIN.';
-            err.classList.remove('hidden');
-          }
-        }
-      } catch (err) {
-        console.log('Biometric prompt dismissed:', err);
-      }
-    }
-
-    async function toggleBiometricSetting() {
-      const isEnabled = localStorage.getItem('clipy_biometric_enabled') === '1';
-      if (isEnabled) {
-        localStorage.removeItem('clipy_biometric_enabled');
-        localStorage.removeItem('clipy_biometric_cred_id');
-        localStorage.removeItem('clipy_biometric_pin');
-        initBiometricsUI();
-        showToast('Biometric unlock turned off', 'info');
-        return;
-      }
-
-      if (!window.PublicKeyCredential) {
-        showToast('Fingerprint/Biometrics is not supported on this browser', 'error');
-        return;
-      }
-
-      let pin = localStorage.getItem('clipy_device_pin');
-      if (!pin) {
-        pin = prompt('Enter your 4–8 digit master PIN to link Fingerprint / Face ID:');
-        if (!pin) {
-          showToast('Master PIN is required for biometrics fallback', 'error');
-          return;
-        }
-      }
-
-      try {
-        const challenge = new Uint8Array(32);
-        window.crypto.getRandomValues(challenge);
-        const userId = new Uint8Array(16);
-        window.crypto.getRandomValues(userId);
-
-        const credential = await navigator.credentials.create({
-          publicKey: {
-            challenge: challenge,
-            rp: { name: "Clipy", id: window.location.hostname },
-            user: { id: userId, name: "clipy_user", displayName: "Clipy User" },
-            pubKeyCredParams: [
-              { alg: -7, type: "public-key" },
-              { alg: -257, type: "public-key" }
-            ],
-            authenticatorSelection: {
-              authenticatorAttachment: "platform",
-              userVerification: "preferred"
-            },
-            timeout: 60000
-          }
-        });
-
-        if (credential) {
-          localStorage.setItem('clipy_biometric_enabled', '1');
-          localStorage.setItem('clipy_device_pin', pin);
-          localStorage.setItem('clipy_biometric_pin', btoa(pin));
-          const rawId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
-          localStorage.setItem('clipy_biometric_cred_id', rawId);
-          initBiometricsUI();
-          showToast('✅ Fingerprint / Face ID enabled on this device!', 'success');
-        }
-      } catch (e) {
-        console.warn('Biometric setup failed or cancelled:', e);
-        showToast('Biometric setup was cancelled', 'error');
-      }
-    }
-
-    function initBiometricsUI() {
-      const btnText = document.getElementById('biometric-btn-text');
-      const btn = document.getElementById('btn-toggle-biometric');
-      if (!btn || !btnText) return;
-      const isEnabled = localStorage.getItem('clipy_biometric_enabled') === '1';
-      if (isEnabled) {
-        btnText.textContent = 'Enabled ✓';
-        btn.className = 'px-3 py-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5';
-      } else {
-        btnText.textContent = 'Enable';
-        btn.className = 'px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5';
-      }
-    }
-
-    function clearDeviceCache() {
-      localStorage.removeItem('clipy_cached_clips');
-      localStorage.removeItem('clipy_cached_jobs');
-      localStorage.removeItem('clipy_cached_history');
-      localStorage.removeItem('clipy_cached_settings');
-      const countEl = document.getElementById('device-clips-count');
-      if (countEl) countEl.textContent = '0';
-      showToast('Local device cache cleared', 'info');
-      loadClips();
-      loadHistory();
-      loadSettings();
-    }
-
     async function lockApp() {
       await fetch('/api/auth/lock', { method: 'POST' });
       showLock();
@@ -985,7 +631,7 @@
         btn.classList.toggle('text-white', active);
         btn.classList.toggle('text-zinc-500', !active);
       });
- 
+
       if (tabId === 'clips') loadClips();
       if (tabId === 'history') loadHistory();
       if (tabId === 'analytics') loadAnalytics();
@@ -1035,7 +681,6 @@
           showToast(data.message || 'Processing started', 'success');
           switchTab('clips');
           loadClips();
-          loadHistory();
           pollActiveJobs();
         } else showToast(data.error || 'Failed to start job', 'error');
       } catch (err) {
@@ -1056,17 +701,14 @@
           JOBS = data.jobs || [];
           const running = JOBS.filter(j => j.status === 'processing' || j.status === 'pending');
           loadClips();
-          loadHistory();
           if (lastRunningCount > 0 && running.length === 0) {
             notifyUser('Clipy', '✅ Your clips are ready!');
-            showToast('✅ Video editing complete! Saved to Clips & History', 'success');
-            loadClips();
-            loadHistory();
+            showToast('Job finished — clips are ready', 'success');
           }
           lastRunningCount = running.length;
           if (running.length === 0) { clearInterval(pollInterval); pollInterval = null; }
         } catch (e) {}
-      }, 2500);
+      }, 3500);
     }
 
     /* ═══════════════════ CLIPS LIST ═══════════════════ */
@@ -1074,7 +716,7 @@
       activeFilter = f;
       document.querySelectorAll('.filter-chip').forEach(chip => {
         const on = chip.dataset.filter === f;
-        c hip.className = 'filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border ' +
+        chip.className = 'filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border ' +
           (on ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 border-ink-600 hover:border-zinc-500');
       });
       loadClips();
@@ -1088,148 +730,124 @@
       failed:    { label: 'Failed',    cls: 'bg-red-400/10 text-red-300 border-red-400/20' }
     };
 
-    function renderClipsListUI(clips, jobs) {
-      const container = document.getElementById('clips-list');
-      if (!container) return;
-      JOBS = jobs || [];
-      (clips || []).forEach(c => CLIPS[c.id] = c);
-
-      const countEl = document.getElementById('device-clips-count');
-      if (countEl) countEl.textContent = (clips || []).length;
-
-      const activeJobs = JOBS.filter(j => j.status === 'processing' || j.status === 'pending');
-      const failedJobs = JOBS.filter(j => j.status === 'failed' || j.status === 'cancelled');
-      const filtered = activeFilter === 'all' ? (clips || []) : (clips || []).filter(c => c.status === activeFilter);
-
-      let html = '';
-
-      // Running jobs with live progress
-      html += activeJobs.map(j => `
-        <div class="card p-4 fade-in">
-          <div class="flex items-center gap-3 mb-3">
-            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0">
-              <i class="ph ph-circle-notch animate-spin text-zinc-300"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-bold text-white truncate">${esc(j.step || 'Processing…')}</p>
-              <p class="text-[10px] text-zinc-500 truncate">${esc(j.title || '')}</p>
-            </div>
-            <span class="text-xs font-extrabold text-white">${j.progress || 0}%</span>
-            <button onclick="cancelJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-400 hover:text-white font-bold flex-shrink-0 transition-colors">Stop</button>
-          </div>
-          <div class="h-1.5 bg-ink-800 rounded-full overflow-hidden">
-            <div class="h-full bg-white rounded-full transition-all duration-500" style="width:${j.progress || 0}%"></div>
-          </div>
-        </div>
-      `).join('');
-
-      // Failed / cancelled jobs with retry
-      html += failedJobs.map(j => `
-        <div class="card p-4 border-red-500/20 fade-in">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
-              <i class="ph ph-warning text-red-400"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-bold text-white truncate">${j.status === 'cancelled' ? 'Cancelled' : 'Job failed'} · ${esc(j.title || '')}</p>
-              <p class="text-[10px] text-red-300/80 truncate">${esc(j.error || 'Unknown error')}</p>
-            </div>
-            <button onclick="retryJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-white text-black font-bold flex-shrink-0 flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>
-            <button onclick="deleteJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 hover:text-red-400 font-bold flex-shrink-0 transition-colors"><i class="ph ph-trash"></i></button>
-          </div>
-        </div>
-      `).join('');
-
-      if (filtered.length === 0 && activeJobs.length === 0 && failedJobs.length === 0) {
-        container.innerHTML = `
-          <div class="card text-center py-14">
-            <i class="ph ph-film-strip text-4xl text-ink-500 mb-3"></i>
-            <p class="text-sm text-zinc-400 font-semibold">No clips yet</p>
-            <p class="text-xs text-zinc-600 mt-1">Paste a link or upload a video in the Create tab</p>
-          </div>`;
-        return;
-      }
-
-      html += filtered.map(c => renderClipCard(c)).join('');
-      container.innerHTML = html;
-    }
-
     async function loadClips() {
-      // 1. Instant render from local device storage cache
-      try {
-        const cachedClips = JSON.parse(localStorage.getItem('clipy_cached_clips') || '[]');
-        const cachedJobs = JSON.parse(localStorage.getItem('clipy_cached_jobs') || '[]');
-        if (cachedClips.length > 0 || cachedJobs.length > 0) {
-          renderClipsListUI(cachedClips, cachedJobs);
-        }
-      } catch {}
-
-      // 2. Fetch fresh updates from server
+      const container = document.getElementById('clips-list');
       try {
         const [clipsRes, jobsRes] = await Promise.all([api('/api/clips'), api('/api/jobs')]);
         const clips = (await clipsRes.json()).clips || [];
         const jobs = (await jobsRes.json()).jobs || [];
+        JOBS = jobs;
 
-        // Save fresh data locally on the device
-        try {
-          localStorage.setItem('clipy_cached_clips', JSON.stringify(clips));
-          localStorage.setItem('clipy_cached_jobs', JSON.stringify(jobs));
-        } catch {}
+        clips.forEach(c => CLIPS[c.id] = c);
 
-        renderClipsListUI(clips, jobs);
-      } catch (e) {
-        if (e.message !== 'locked') {
-          console.warn('Network unavailable, displaying cached clips from device storage');
+        const activeJobs = jobs.filter(j => j.status === 'processing' || j.status === 'pending');
+        const failedJobs = jobs.filter(j => j.status === 'failed' || j.status === 'cancelled');
+        const filtered = activeFilter === 'all' ? clips : clips.filter(c => c.status === activeFilter);
+
+        let html = '';
+
+        // Running jobs with live progress
+        html += activeJobs.map(j => `
+          <div class="card p-4 fade-in">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0">
+                <i class="ph ph-circle-notch animate-spin text-zinc-300"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-white truncate">${esc(j.step || 'Processing…')}</p>
+                <p class="text-[10px] text-zinc-500 truncate">${esc(j.title || '')}</p>
+              </div>
+              <span class="text-xs font-extrabold text-white">${j.progress || 0}%</span>
+              <button onclick="cancelJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-400 hover:text-white font-bold flex-shrink-0 transition-colors">Stop</button>
+            </div>
+            <div class="h-1.5 bg-ink-800 rounded-full overflow-hidden">
+              <div class="h-full bg-white rounded-full transition-all duration-500" style="width:${j.progress || 0}%"></div>
+            </div>
+          </div>
+        `).join('');
+
+        // Failed / cancelled jobs with retry
+        html += failedJobs.map(j => `
+          <div class="card p-4 border-red-500/20 fade-in">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="ph ph-warning text-red-400"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-white truncate">${j.status === 'cancelled' ? 'Cancelled' : 'Job failed'} · ${esc(j.title || '')}</p>
+                <p class="text-[10px] text-red-300/80 truncate">${esc(j.error || 'Unknown error')}</p>
+              </div>
+              <button onclick="retryJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-white text-black font-bold flex-shrink-0 flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>
+              <button onclick="deleteJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 hover:text-red-400 font-bold flex-shrink-0 transition-colors"><i class="ph ph-trash"></i></button>
+            </div>
+          </div>
+        `).join('');
+
+        if (filtered.length === 0 && activeJobs.length === 0 && failedJobs.length === 0) {
+          container.innerHTML = `
+            <div class="card text-center py-14">
+              <i class="ph ph-film-strip text-4xl text-ink-500 mb-3"></i>
+              <p class="text-sm text-zinc-400 font-semibold">No clips yet</p>
+              <p class="text-xs text-zinc-600 mt-1">Paste a link or upload a video in the Create tab</p>
+            </div>`;
+          return;
         }
-      }
+
+        html += filtered.map(c => renderClipCard(c)).join('');
+        container.innerHTML = html;
+      } catch (e) { if (e.message !== 'locked') console.error(e); }
     }
 
     function renderClipCard(c) {
       const meta = STATUS_META[c.status] || STATUS_META.ready;
-      const hashtagsStr = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
       const schedTime = c.scheduled_time
         ? new Date(c.scheduled_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
         : '';
-      const filename = (c.file_path || '').split(/[\\/]/).pop();
+      const missing = c.file_exists === false;
 
       let actionBtns = '';
       if (c.status !== 'posted') {
-        actionBtns = `
+        actionBtns = missing
+          ? `<span class="text-[11px] text-zinc-600 font-semibold px-1">File missing</span>`
+          : `
           <button onclick="postNow('${c.id}')" class="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black font-bold rounded-lg text-[11px] flex items-center gap-1 transition-colors"><i class="ph ph-paper-plane-tilt"></i> Post</button>
           <button onclick="openEditModal('${c.id}')" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 font-semibold rounded-lg text-[11px] flex items-center gap-1 transition-colors"><i class="ph ph-pencil-simple-line"></i> Edit</button>`;
       } else {
         const links = [];
         if (c.ig_post_url) links.push(`<a href="${esc(c.ig_post_url)}" target="_blank" class="text-emerald-400 hover:underline">IG</a>`);
         if (c.tiktok_post_url) links.push(`<a href="${esc(c.tiktok_post_url)}" target="_blank" class="text-emerald-400 hover:underline">TikTok</a>`);
-        if (c.youtube_post_url)  links.push(`<a href="${esc(c.youtube_post_url)}" target="_blank" class="text-emerald-400 hover:underline">YT</a>`);
+        if (c.youtube_post_url) links.push(`<a href="${esc(c.youtube_post_url)}" target="_blank" class="text-emerald-400 hover:underline">YT</a>`);
         actionBtns = `<span class="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">✓ Posted${links.length ? ' · ' + links.join(' · ') : ''}</span>`;
       }
 
       return `
-        <div class="card p-4 space-y-3 fade-in">
+        <div class="card p-4 space-y-3 fade-in ${missing ? 'opacity-60' : ''}">
           <div class="flex items-start gap-3">
-            <div class="w-20 h-28 bg-black rounded-xl overflow-hidden relative cursor-pointer flex-shrink-0 group border border-ink-700" onclick="openModal('${c.id}')">
+            <div class="w-20 h-28 bg-black rounded-xl overflow-hidden relative ${missing ? '' : 'cursor-pointer'} flex-shrink-0 group border border-ink-700" ${missing ? '' : `onclick="openModal('${c.id}')"`}>
               <div class="absolute inset-0 flex items-center justify-center bg-black/50 group-hover:bg-black/25 transition-colors">
-                <i class="ph-fill ph-play-circle text-3xl text-white/90"></i>
+                ${missing ? '<i class="ph ph-file-video text-3xl text-ink-500"></i>' : '<i class="ph-fill ph-play-circle text-3xl text-white/90"></i>'}
               </div>
             </div>
             <div class="flex-1 min-w-0 space-y-1.5">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-ink-800 text-zinc-300 border border-ink-600">Score ${c.score ?? '—'}</span>
+                ${missing
+                  ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-400/10 text-red-300 border border-red-400/20">File missing</span>'
+                  : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-ink-800 text-zinc-300 border border-ink-600">Score ${c.score ?? '—'}</span>`}
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${meta.cls}">${meta.label}${c.status === 'scheduled' && schedTime ? ' · ' + esc(schedTime) : ''}</span>
               </div>
               <h4 class="text-xs font-bold text-white leading-snug line-clamp-2">${esc(c.hook_text || c.title || 'Untitled clip')}</h4>
               <p class="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed">${esc(c.caption || '')}</p>
               ${c.status === 'failed' && c.error ? `<p class="text-[10px] text-red-300/80 leading-snug">${esc(c.error)}</p>` : ''}
+              ${missing ? '<p class="text-[10px] text-zinc-600 leading-snug">Video file is gone from disk (cleanup or reset). Remove it or re-run the source from History.</p>' : ''}
             </div>
           </div>
 
           <div class="pt-3 border-t border-ink-700 space-y-2.5">
             <div class="grid grid-cols-2 gap-2">
-              <button onclick="shareToSocial('Instagram Reels', '${c.id}')" class="py-2 px-3 bg-ink-800 hover:bg-ink-700 border border-k-6ded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95">
+              <button onclick="shareToSocial('Instagram Reels', '${c.id}')" ${missing ? 'disabled' : ''} class="py-2 px-3 bg-ink-800 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95 ${missing ? 'opacity-30 cursor-not-allowed' : 'hover:bg-ink-700'}">
                 <i class="ph ph-instagram-logo text-sm"></i> Share to IG
               </button>
-              <button onclick="shareToSocial('TikTok', '${c.id}')" class="py-2 px-3 bg-ink-800 hover:bg-ink-700 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95">
+              <button onclick="shareToSocial('TikTok', '${c.id}')" ${missing ? 'disabled' : ''} class="py-2 px-3 bg-ink-800 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95 ${missing ? 'opacity-30 cursor-not-allowed' : 'hover:bg-ink-700'}">
                 <i class="ph ph-tiktok-logo text-sm"></i> Share to TikTok
               </button>
             </div>
@@ -1238,13 +856,16 @@
                 <i class="ph ph-copy"></i> Copy caption
               </button>
               <div class="flex items-center gap-2">
-                <a href="/api/clips/${c.id}/video" download="${esc(c.hook_text || c.title || 'clip')}.mp4" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-200 rounded-lg font-semibold flex items-center gap-1.5 transition-colors" title="Download and save clip to device storage">
-                  <i class="ph-bold ph-download-simple text-emerald-400 text-xs"></i> Save to Device
+                ${missing
+                  ? `<button onclick="deleteClip('${c.id}')" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-red-400 rounded-lg font-semibold flex items-center gap-1 transition-colors"><i class="ph ph-trash"></i> Remove</button>`
+                  : `
+                <a href="/api/clips/${c.id}/video" download="${esc(c.hook_text || c.title || 'clip')}.mp4" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-200 rounded-lg font-semibold flex items-center gap-1.5 transition-colors" title="Save clip to device storage">
+                  <i class="ph-bold ph-download-simple text-emerald-400 text-xs"></i> Save
                 </a>
                 <button onclick="deleteClip('${c.id}')" class="px-2.5 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-500 hover:text-red-400 rounded-lg font-semibold flex items-center transition-colors" title="Delete clip">
                   <i class="ph ph-trash"></i>
                 </button>
-                ${actionBtns}
+                ${actionBtns}`}
               </div>
             </div>
           </div>
@@ -1336,11 +957,6 @@
     async function deleteJob(jobId) {
       const ok = await confirmDialog('Delete this source and all its clips? This cannot be undone.', { yes: 'Delete all' });
       if (!ok) return;
-      try {
-        const cached = JSON.parse(localStorage.getItem('clipy_cached_history') || '[]');
-        const updated = cached.filter(x => x.id !== jobId);
-        localStorage.setItem('clipy_cached_history', JSON.stringify(updated));
-      } catch {}
       await api(`/api/jobs/${jobId}`, { method: 'DELETE' });
       showToast('Deleted', 'success');
       loadClips();
@@ -1348,76 +964,46 @@
     }
 
     /* ═══════════════════ HISTORY ═══════════════════ */
-    function renderHistoryListUI(history) {
-      const container = document.getElementById('history-list');
-      if (!container) return;
-      if (!history || history.length === 0) {
-        container.innerHTML = `
-          <div class="card text-center py-14">
-            <i class="ph ph-clock-counter-clockwise text-4xl text-ink-500 mb-3"></i>
-            <p class="text-sm text-zinc-400 font-semibold">Nothing processed yet</p>
-            <p class="text-xs text-zinc-600 mt-1">Your clipped videos will show up here</p>
-          </div>`;
-        return;
-      }
-      container.innerHTML = history.map(j => {
-        const isUrl = j.source_type === 'url';
-        const statusCls = j.status === 'completed' ? 'text-emerald-400' : (j.status === 'failed' ? 'text-red-400' : (j.status === 'processing' ? 'text-amber-300' : 'text-zinc-500'));
-        const when = j.created_at ? new Date(j.created_at.replace(' ', 'T')).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-        const isRunning = j.status === 'processing' || j.status === 'pending';
-        return `
-          <div class="card p-4 flex items-center gap-3 fade-in">
-            <div class="w-10 h-10 rounded-xl bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0 ${isUrl ? 'text-zinc-300' : 'text-zinc-300'}">
-              <i class="ph ${isUrl ? 'ph-link' : 'ph-video'} text-lg"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-bold text-white truncate">${esc(j.title || 'Untitled source')}</p>
-              <p class="text-[10px] text-zinc-500 truncate">
-                ${when} · <span class="font-bold ${statusCls}">${j.status}</span> · ${j.clip_count || 0} clip${(j.clip_count || 0) === 1 ? '' : 's'}${j.is_short ? ' · short' : ''}
-              </p>
-            </div>
-            <div class="flex items-center gap-1.5 flex-shrink-0">
-              ${(j.status === 'failed' || j.status === 'cancelled') ? `
-                <button onclick="retryJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-white text-black text-[10px] font-bold flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>` : ''}
-              ${isRunning ? `
-                <button onclick="cancelJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 text-[10px] font-bold hover:text-white transition-colors">Stop</button>` : `
-                <button onclick="deleteJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-500 hover:text-red-400 text-[10px] font-bold transition-colors" title="Delete source & clips"><i class="ph ph-trash"></i></button>`}
-            </div>
-          </div>`;
-      }).join('');
-    }
-
     async function loadHistory() {
-      // 1. Instant render from local device storage cache
-      try {
-        const cached = JSON.parse(localStorage.getItem('clipy_cached_history') || '[]');
-        if (cached && cached.length > 0) renderHistoryListUI(cached);
-      } catch {}
-
-      // 2. Fetch fresh updates from server
+      const container = document.getElementById('history-list');
       try {
         const res = await api('/api/history');
-        const serverHistory = (await res.json()).history || [];
-
-        // Merge server history with device cache by ID (so no past jobs are wiped if server restarts)
-        let combined = [...serverHistory];
-        try {
-          const cached = JSON.parse(localStorage.getItem('clipy_cached_history') || '[]');
-          const seen = new Set(serverHistory.map(x => x.id));
-          cached.forEach(item => {
-            if (!seen.has(item.id)) {
-              combined.push(item);
-              seen.add(item.id);
-            }
-          });
-          combined.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
-          localStorage.setItem('clipy_cached_history', JSON.stringify(combined));
-        } catch {}
-
-        renderHistoryListUI(combined);
-      } catch (e) {
-        if (e.message !== 'locked') console.warn('Displaying cached history from device');
-      }
+        const history = (await res.json()).history || [];
+        if (history.length === 0) {
+          container.innerHTML = `
+            <div class="card text-center py-14">
+              <i class="ph ph-clock-counter-clockwise text-4xl text-ink-500 mb-3"></i>
+              <p class="text-sm text-zinc-400 font-semibold">Nothing processed yet</p>
+              <p class="text-xs text-zinc-600 mt-1">Your clipped videos will show up here</p>
+            </div>`;
+          return;
+        }
+        container.innerHTML = history.map(j => {
+          const isUrl = j.source_type === 'url';
+          const statusCls = j.status === 'completed' ? 'text-emerald-400' : (j.status === 'failed' ? 'text-red-400' : (j.status === 'processing' ? 'text-amber-300' : 'text-zinc-500'));
+          const when = j.created_at ? new Date(j.created_at.replace(' ', 'T')).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+          const isRunning = j.status === 'processing' || j.status === 'pending';
+          return `
+            <div class="card p-4 flex items-center gap-3 fade-in">
+              <div class="w-10 h-10 rounded-xl bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0 text-zinc-300">
+                <i class="ph ${isUrl ? 'ph-link' : 'ph-video'} text-lg"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-white truncate">${esc(j.title || 'Untitled source')}</p>
+                <p class="text-[10px] text-zinc-500 truncate">
+                  ${when} · <span class="font-bold ${statusCls}">${j.status}</span> · ${j.clip_count || 0} clip${(j.clip_count || 0) === 1 ? '' : 's'}${j.is_short ? ' · short' : ''}
+                </p>
+              </div>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                ${(j.status === 'failed' || j.status === 'cancelled') ? `
+                  <button onclick="retryJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-white text-black text-[10px] font-bold flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>` : ''}
+                ${isRunning ? `
+                  <button onclick="cancelJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 text-[10px] font-bold hover:text-white transition-colors">Stop</button>` : `
+                  <button onclick="deleteJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-500 hover:text-red-400 text-[10px] font-bold transition-colors" title="Delete source & clips"><i class="ph ph-trash"></i></button>`}
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) { if (e.message !== 'locked') console.error(e); }
     }
 
     /* ═══════════════════ ANALYTICS ═══════════════════ */
@@ -1492,132 +1078,60 @@
 
     /* ═══════════════════ SETTINGS ═══════════════════ */
     function connectBtn(platform) {
-      const colors = {
-        buffer: 'bg-white hover:bg-zinc-200 text-black',
-        instagram: 'bg-white hover:bg-zinc-200 text-black',
-        tiktok: 'bg-white hover:bg-zinc-200 text-black',
-        youtube: 'bg-white hover:bg-zinc-200 text-black'
-      };
-      return `<button onclick="openSocialModal('${platform}')" class="px-3 py-1.5 ${colors[platform]} text-[11px] font-bold rounded-lg flex items-center gap-1 transition-colors"><i class="ph ph-plug"></i> Connect</button>`;
+      return `<button onclick="openSocialModal('${platform}')" class="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black text-[11px] font-bold rounded-lg flex items-center gap-1 transition-colors"><i class="ph ph-plug"></i> Connect</button>`;
     }
     function disconnectBtn(platform) {
       return `<button onclick="disconnectAccount('${platform}')" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-400 hover:text-red-400 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-colors"><i class="ph ph-plug-x"></i> Disconnect</button>`;
     }
 
-    function applySettingsUI(s) {
-      if (!s) return;
-      if (s.gemini_api_key_masked) {
-        document.getElementById('setting-gemini-key').placeholder = 'Saved: ' + s.gemini_api_key_masked;
-      }
-
-      // header AI chip
-      const chip = document.getElementById('gemini-status');
-      if (s.gemini_api_key_masked) {
-        chip.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> AI Ready';
-        chip.className = 'px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20 flex items-center gap-1.5 cursor-pointer hover:border-emerald-400/40 transition-colors';
-      } else {
-        chip.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Add API key';
-        chip.className = 'px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-red-400/10 text-red-300 border border-red-400/20 flex items-center gap-1.5 cursor-pointer hover:border-red-400/40 transition-colors';
-      }
-
-      // lock button visibility
-      const lockBtn = document.getElementById('lock-btn');
-      if (s.has_access_pin) { lockBtn.classList.remove('hidden'); lockBtn.classList.add('flex'); }
-      else { lockBtn.classList.add('hidden'); lockBtn.classList.remove('flex'); }
-
-      // remove-pin button
-      const rmPin = document.getElementById('btn-remove-pin');
-      if (s.has_access_pin) { rmPin.classList.remove('hidden'); rmPin.classList.add('flex'); }
-      else { rmPin.classList.add('hidden'); rmPin.classList.remove('flex'); }
-
-      // lock badge
-      const badge = document.getElementById('lock-status-badge');
-      if (badge) {
-        if (s.has_access_pin) {
-          badge.textContent = 'Active (Protected)';
-          badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20';
-        } else {
-          badge.textContent = 'No PIN';
-          badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-ink-800 text-zinc-400 border border-ink-600';
-        }
-      }
-
-      // connections
-      const c = s.connections || {};
-      setText('buffer-status-text', c.buffer ? '✓ Connected — posts to all linked channels' : 'Instagram + TikTok (+ YouTube) in one step');
-      setAction('buffer-action-area', c.buffer ? disconnectBtn('buffer') : connectBtn('buffer'));
-      setText('ig-status-text', c.instagram ? `✓ Connected${s.instagram_username && !s.instagram_username.startsWith('User_') ? ' · ' + s.instagram_username : ''}` : 'Not connected');
-      setAction('ig-action-area', c.instagram ? disconnectBtn('instagram') : connectBtn('instagram'));
-      setText('tiktok-status-text', c.tiktok ? '✓ Connected' : 'Not connected');
-      setAction('tiktok-action-area', c.tiktok ? disconnectBtn('tiktok') : connectBtn('tiktok'));
-      setText('youtube-status-text', c.youtube ? `✓ Connected${s.youtube_channel_title ? ' · ' + s.youtube_channel_title : ''}` : 'Not connected');
-      setAction('youtube-action-area', c.youtube ? disconnectBtn('youtube') : connectBtn('youtube'));
-
-      // preferences
-      document.getElementById('pref-review').checked = !!s.review_mode;
-      document.getElementById('pref-hashtags').value = s.default_hashtags || '';
-      document.getElementById('pref-notify').checked = localStorage.getItem('clipy_notify') === '1';
-      document.getElementById('pref-del-source').checked = !!s.delete_source_after;
-      document.getElementById('pref-keep-n').value = s.keep_last_clips || 0;
-      document.getElementById('pref-max-age').value = s.max_clip_age_days || 0;
-
-      initBiometricsUI();
-
-      // update saved on device count
-      try {
-        const cachedClips = JSON.parse(localStorage.getItem('clipy_cached_clips') || '[]');
-        const countEl = document.getElementById('device-clips-count');
-        if (countEl) countEl.textContent = cachedClips.length;
-      } catch {}
-    }
-
     async function loadSettings() {
-      // 1. Load instantly from local device cache
-      try {
-        const cached = JSON.parse(localStorage.getItem('clipy_cached_settings') || 'null');
-        if (cached) applySettingsUI(cached);
-      } catch {}
-
-      // 2. Fetch fresh updates from server
       try {
         const res = await api('/api/settings');
         const s = await res.json();
 
-        // Auto-restore Buffer token if server restarted or container reset
-        const savedBuffer = localStorage.getItem('clipy_buffer_token');
-        if (savedBuffer && (!s.connections || !s.connections.buffer)) {
-          console.log('Restoring saved Buffer token to server from device storage...');
-          await api('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ buffer_access_token: savedBuffer, buffer_post_youtube: true })
-          });
-          const refreshed = await (await api('/api/settings')).json();
-          try { localStorage.setItem('clipy_cached_settings', JSON.stringify(refreshed)); } catch {}
-          applySettingsUI(refreshed);
-          return;
+        if (s.gemini_api_key_masked) {
+          document.getElementById('setting-gemini-key').placeholder = 'Saved: ' + s.gemini_api_key_masked;
         }
 
-        // Auto-restore Gemini API key if server restarted
-        const savedGemini = localStorage.getItem('clipy_gemini_key');
-        if (savedGemini && !s.gemini_api_key_masked) {
-          console.log('Restoring saved Gemini key to server from device storage...');
-          await api('/api/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gemini_api_key: savedGemini })
-          });
-          const refreshed = await (await api('/api/settings')).json();
-          try { localStorage.setItem('clipy_cached_settings', JSON.stringify(refreshed)); } catch {}
-          applySettingsUI(refreshed);
-          return;
+        // header AI chip
+        const chip = document.getElementById('gemini-status');
+        if (s.gemini_api_key_masked) {
+          chip.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> AI Ready';
+          chip.className = 'px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20 flex items-center gap-1.5 cursor-pointer hover:border-emerald-400/40 transition-colors';
+        } else {
+          chip.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Add API key';
+          chip.className = 'px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-red-400/10 text-red-300 border border-red-400/20 flex items-center gap-1.5 cursor-pointer hover:border-red-400/40 transition-colors';
         }
 
-        try { localStorage.setItem('clipy_cached_settings', JSON.stringify(s)); } catch {}
-        applySettingsUI(s);
-      } catch (e) {
-        if (e.message !== 'locked') console.warn('Displaying cached settings from device');
-      }
+        // lock button visibility
+        const lockBtn = document.getElementById('lock-btn');
+        if (s.has_access_pin) { lockBtn.classList.remove('hidden'); lockBtn.classList.add('flex'); }
+        else { lockBtn.classList.add('hidden'); lockBtn.classList.remove('flex'); }
+
+        // remove-pin button
+        const rmPin = document.getElementById('btn-remove-pin');
+        if (s.has_access_pin) { rmPin.classList.remove('hidden'); rmPin.classList.add('flex'); }
+        else { rmPin.classList.add('hidden'); rmPin.classList.remove('flex'); }
+
+        // connections
+        const c = s.connections || {};
+        setText('buffer-status-text', c.buffer ? '✓ Connected — posts to all linked channels' : 'Instagram + TikTok (+ YouTube) in one step');
+        setAction('buffer-action-area', c.buffer ? disconnectBtn('buffer') : connectBtn('buffer'));
+        setText('ig-status-text', c.instagram ? `✓ Connected${s.instagram_username && !s.instagram_username.startsWith('User_') ? ' · ' + s.instagram_username : ''}` : 'Not connected');
+        setAction('ig-action-area', c.instagram ? disconnectBtn('instagram') : connectBtn('instagram'));
+        setText('tiktok-status-text', c.tiktok ? '✓ Connected' : 'Not connected');
+        setAction('tiktok-action-area', c.tiktok ? disconnectBtn('tiktok') : connectBtn('tiktok'));
+        setText('youtube-status-text', c.youtube ? `✓ Connected${s.youtube_channel_title ? ' · ' + s.youtube_channel_title : ''}` : 'Not connected');
+        setAction('youtube-action-area', c.youtube ? disconnectBtn('youtube') : connectBtn('youtube'));
+
+        // preferences
+        document.getElementById('pref-review').checked = !!s.review_mode;
+        document.getElementById('pref-hashtags').value = s.default_hashtags || '';
+        document.getElementById('pref-notify').checked = localStorage.getItem('clipy_notify') === '1';
+        document.getElementById('pref-del-source').checked = !!s.delete_source_after;
+        document.getElementById('pref-keep-n').value = s.keep_last_clips || 0;
+        document.getElementById('pref-max-age').value = s.max_clip_age_days || 0;
+      } catch (e) { if (e.message !== 'locked') console.error(e); }
     }
 
     function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
@@ -1626,10 +1140,9 @@
     async function saveApiKey() {
       const key = document.getElementById('setting-gemini-key').value.trim();
       if (!key) { showToast('Paste a key first', 'error'); return; }
-      localStorage.setItem('clipy_gemini_key', key);
       await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gemini_api_key: key }) });
       document.getElementById('setting-gemini-key').value = '';
-      showToast('API key saved & backed up on device', 'success');
+      showToast('API key saved', 'success');
       loadSettings();
     }
 
@@ -1673,10 +1186,6 @@
       const res = await api('/api/settings/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem('clipy_device_pin', pin);
-        if (localStorage.getItem('clipy_biometric_enabled') === '1') {
-          localStorage.setItem('clipy_biometric_pin', btoa(pin));
-        }
         document.getElementById('setting-pin').value = '';
         showToast('PIN saved — app is now locked for others', 'success');
         loadSettings();
@@ -1687,10 +1196,6 @@
       const ok = await confirmDialog('Remove the PIN? Anyone with the link can access the app.', { yes: 'Remove' });
       if (!ok) return;
       await api('/api/settings/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: '' }) });
-      localStorage.removeItem('clipy_device_pin');
-      localStorage.removeItem('clipy_biometric_pin');
-      localStorage.removeItem('clipy_biometric_enabled');
-      initBiometricsUI();
       showToast('PIN removed', 'success');
       loadSettings();
     }
@@ -1792,17 +1297,14 @@
         if (!val) { showToast('Paste your Buffer token first', 'error'); return; }
         payload.buffer_access_token = val;
         payload.buffer_post_youtube = document.getElementById('modal-buffer-youtube').checked;
-        localStorage.setItem('clipy_buffer_token', val);
       } else if (currentModalPlatform === 'instagram') {
         if (!val) { showToast('Tip: the Share to IG button works with zero setup', 'info'); closeSocialModal(); return; }
         payload.instagram_access_token = val;
         payload.auto_post_instagram = true;
-        localStorage.setItem('clipy_ig_token', val);
       } else if (currentModalPlatform === 'tiktok') {
         if (!val) { showToast('Tip: the Share to TikTok button works with zero setup', 'info'); closeSocialModal(); return; }
         payload.tiktok_session_id = val;
         payload.auto_post_tiktok = true;
-        localStorage.setItem('clipy_tiktok_token', val);
       } else if (currentModalPlatform === 'youtube') {
         const cid = document.getElementById('modal-input-yt-id').value.trim();
         const csec = val;
@@ -1819,7 +1321,7 @@
       }
 
       await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      showToast(currentModalPlatform + ' connected & saved on device', 'success');
+      showToast(currentModalPlatform + ' connected', 'success');
       closeSocialModal();
       loadSettings();
     }
@@ -1827,36 +1329,62 @@
     async function disconnectAccount(platform) {
       const ok = await confirmDialog('Disconnect ' + platform + '?', { yes: 'Disconnect' });
       if (!ok) return;
-      if (platform === 'buffer') localStorage.removeItem('clipy_buffer_token');
-      if (platform === 'instagram') localStorage.removeItem('clipy_ig_token');
-      if (platform === 'tiktok') localStorage.removeItem('clipy_tiktok_token');
       await api(`/auth/disconnect/${platform}`, { method: 'POST' });
       showToast(platform + ' disconnected', 'success');
       loadSettings();
     }
 
     /* ═══════════════════ VIDEO PLAYER ═══════════════════ */
+    let currentModalId = null;
     function openModal(clipId) {
       const c = CLIPS[clipId];
       if (!c) return;
+      currentModalId = clipId;
       const modal = document.getElementById('video-modal');
       const video = document.getElementById('modal-video');
-      video.src = '/api/clips/' + c.id + '/video';
+      const missingEl = document.getElementById('modal-missing');
       document.getElementById('modal-title').innerText = c.hook_text || c.title || 'Preview';
       modal.classList.remove('hidden'); modal.classList.add('flex');
+
+      const showMissing = () => {
+        video.pause(); video.removeAttribute('src'); video.load();
+        missingEl.classList.remove('hidden'); missingEl.classList.add('flex');
+      };
+      const showPlayer = () => {
+        missingEl.classList.add('hidden'); missingEl.classList.remove('flex');
+      };
+
+      video.onerror = showMissing;
+      if (c.file_exists === false) { showMissing(); return; }
+      showPlayer();
+      video.src = '/api/clips/' + c.id + '/video';
       video.play().catch(() => {});
+    }
+    async function removeFromModal() {
+      if (!currentModalId) return;
+      const ok = await confirmDialog('Remove this clip entry? Its video file is already gone.');
+      if (!ok) return;
+      await api(`/api/clips/${currentModalId}`, { method: 'DELETE' });
+      currentModalId = null;
+      closeModal();
+      showToast('Clip removed', 'success');
+      loadClips();
     }
     function closeModal() {
       const modal = document.getElementById('video-modal');
       const video = document.getElementById('modal-video');
-      video.pause(); video.src = '';
+      video.onerror = null;
+      video.pause(); video.removeAttribute('src'); video.load();
       modal.classList.add('hidden'); modal.classList.remove('flex');
+      document.getElementById('modal-missing').classList.add('hidden');
+      currentModalId = null;
     }
 
     /* ═══════════════════ 1-TAP MOBILE SHARE ═══════════════════ */
     async function shareToSocial(platform, clipId) {
       const c = CLIPS[clipId];
       if (!c) return;
+      if (c.file_exists === false) { showToast('Video file is missing — cannot share', 'error'); return; }
       const filename = (c.file_path || '').split(/[\\/]/).pop() || (c.id + '.mp4');
       const videoUrl = '/api/clips/' + c.id + '/video';
       const tags = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
@@ -1884,7 +1412,6 @@
     function startApp() {
       loadSettings();
       loadClips();
-      loadHistory();
       pollActiveJobs();
       // deep link ?tab=settings&connected=…
       const params = new URLSearchParams(location.search);
@@ -1910,5 +1437,4 @@
     })();
   </script>
 </body>
-
 </html>

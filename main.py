@@ -166,6 +166,10 @@ async def api_set_pin(data: dict):
 @app.get("/api/clips")
 async def api_get_clips():
     clips = get_all_clips()
+    # Tell the UI which clips still have a playable file on disk
+    for c in clips:
+        p = c.get("file_path")
+        c["file_exists"] = bool(p) and Path(p).exists()
     return {"clips": clips}
 
 @app.patch("/api/clips/{clip_id}")
@@ -188,18 +192,24 @@ async def api_post_clip(clip_id: str):
     return {"success": True, "clip": get_clip(clip_id)}
 
 @app.get("/api/clips/{clip_id}/video")
-async def api_get_clip_video(clip_id: str):
-    c = get_clip(clip_id)
-    if not c or not c.get("file_path"):
+async def api_clip_video(clip_id: str):
+    """Streams the clip's video for playback / 'Save to Device' with a friendly filename."""
+    clip = get_clip(clip_id)
+    if not clip:
         return JSONResponse(status_code=404, content={"error": "Clip not found"})
-    p = Path(c["file_path"])
+    p = Path(clip.get("file_path") or "")
     if not p.exists():
         matches = list(OUTPUT_DIR.glob(f"**/{clip_id}.mp4"))
         if matches:
             p = matches[0]
         else:
-            return JSONResponse(status_code=404, content={"error": "Video file not found on server"})
-    return FileResponse(p, media_type="video/mp4", filename=f"{clip_id}.mp4")
+            return JSONResponse(status_code=404, content={"error": "Video file missing on server"})
+    safe_name = re.sub(r"[^A-Za-z0-9 _-]", "", (clip.get("hook_text") or clip.get("title") or "clipy-clip"))[:40].strip() or "clipy-clip"
+    return FileResponse(
+        str(p),
+        media_type="video/mp4",
+        headers={"Content-Disposition": f'inline; filename="{safe_name}.mp4"'},
+    )
 
 # ----------------- Jobs -----------------
 @app.get("/api/jobs")
