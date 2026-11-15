@@ -239,9 +239,9 @@
             </div>
           </div>
           <div id="ig-action-area">
-            <a href="/auth/instagram/login" class="px-3.5 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-pink-500/20 flex items-center gap-1.5">
+            <button onclick="openSocialModal('instagram')" class="px-3.5 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-pink-500/20 flex items-center gap-1.5">
               <i class="ph ph-plug"></i> Connect
-            </a>
+            </button>
           </div>
         </div>
 
@@ -257,9 +257,9 @@
             </div>
           </div>
           <div id="tiktok-action-area">
-            <a href="/auth/tiktok/login" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all border border-slate-700 flex items-center gap-1.5">
+            <button onclick="openSocialModal('tiktok')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all border border-slate-700 flex items-center gap-1.5">
               <i class="ph ph-plug"></i> Connect
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -288,6 +288,23 @@
       </div>
       <div class="p-3 bg-slate-950 border-t border-slate-800 flex justify-end">
         <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-lg">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Social Connect Modal -->
+  <div id="social-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="max-w-sm w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="social-modal-title" class="text-sm font-bold text-white flex items-center gap-2">Connect Account</h3>
+        <button onclick="closeSocialModal()" class="text-slate-400 hover:text-white text-lg"><i class="ph ph-x"></i></button>
+      </div>
+      <div id="social-modal-body" class="space-y-3">
+        <!-- Dynamically populated -->
+      </div>
+      <div class="pt-2 border-t border-slate-800 flex justify-end gap-2">
+        <button onclick="closeSocialModal()" class="px-3.5 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">Cancel</button>
+        <button id="social-modal-save-btn" onclick="saveSocialModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl">Save & Connect</button>
       </div>
     </div>
   </div>
@@ -433,21 +450,33 @@
               </div>
 
               <!-- Action buttons -->
-              <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
-                <button onclick="navigator.clipboard.writeText('${c.caption} ${hashtagsStr}'); alert('Caption & tags copied!');" class="text-slate-400 hover:text-white flex items-center gap-1">
-                  <i class="ph ph-copy"></i> Copy Copy
-                </button>
-                <div class="flex items-center gap-2">
-                  <a href="/media/${c.id}.mp4" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1">
-                    <i class="ph ph-download-simple"></i> MP4
-                  </a>
-                  ${!isPosted ? `
-                    <button onclick="postNow('${c.id}')" class="px-3 py-1.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-md shadow-brand-500/20">
-                      <i class="ph ph-paper-plane-tilt"></i> Post Now
-                    </button>
-                  ` : `
-                    <span class="text-[11px] text-emerald-400 font-medium">Auto-posted to IG & TikTok</span>
-                  `}
+              <div class="pt-3 border-t border-slate-800 space-y-2.5">
+                <!-- 1-Tap Mobile Share Bar -->
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="shareToSocial('Instagram Reels', '${c.file_path}', '${c.caption}', '${hashtagsStr}')" class="py-2 px-3 bg-gradient-to-r from-pink-600/30 to-purple-600/30 hover:from-pink-600/40 hover:to-purple-600/40 border border-pink-500/30 rounded-xl text-xs font-bold text-pink-300 flex items-center justify-center gap-1.5 transition-all active:scale-95">
+                    <i class="ph ph-instagram-logo text-base"></i> Share to IG
+                  </button>
+                  <button onclick="shareToSocial('TikTok', '${c.file_path}', '${c.caption}', '${hashtagsStr}')" class="py-2 px-3 bg-slate-950 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-cyan-300 flex items-center justify-center gap-1.5 transition-all active:scale-95">
+                    <i class="ph ph-tiktok-logo text-base"></i> Share to TikTok
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-1">
+                  <button onclick="navigator.clipboard.writeText('${c.caption} ${hashtagsStr}'); alert('Caption & tags copied!');" class="text-slate-400 hover:text-white flex items-center gap-1">
+                    <i class="ph ph-copy"></i> Copy Copy
+                  </button>
+                  <div class="flex items-center gap-2">
+                    <a href="/media/${c.id}.mp4" download class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1">
+                      <i class="ph ph-download-simple"></i> MP4
+                    </a>
+                    ${!isPosted ? `
+                      <button onclick="postNow('${c.id}')" class="px-3 py-1.5 bg-gradient-to-r from-brand-600 to-pink-600 hover:from-brand-500 hover:to-pink-500 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-md shadow-brand-500/20">
+                        <i class="ph ph-paper-plane-tilt"></i> Auto-Post
+                      </button>
+                    ` : `
+                      <span class="text-[11px] text-emerald-400 font-medium">✓ Auto-Posted</span>
+                    `}
+                  </div>
                 </div>
               </div>
             </div>
@@ -527,9 +556,9 @@
         } else {
           igText.innerText = 'Not connected';
           igAction.innerHTML = `
-            <a href="/auth/instagram/login" class="px-3.5 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-pink-500/20 flex items-center gap-1.5">
+            <button onclick="openSocialModal('instagram')" class="px-3.5 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-pink-500/20 flex items-center gap-1.5">
               <i class="ph ph-plug"></i> Connect
-            </a>
+            </button>
           `;
         }
 
@@ -546,12 +575,122 @@
         } else {
           ttText.innerText = 'Not connected';
           ttAction.innerHTML = `
-            <a href="/auth/tiktok/login" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all border border-slate-700 flex items-center gap-1.5">
+            <button onclick="openSocialModal('tiktok')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all border border-slate-700 flex items-center gap-1.5">
               <i class="ph ph-plug"></i> Connect
-            </a>
+            </button>
           `;
         }
       } catch (e) {}
+    }
+
+    let currentModalPlatform = '';
+
+    function openSocialModal(platform) {
+      currentModalPlatform = platform;
+      const modal = document.getElementById('social-modal');
+      const title = document.getElementById('social-modal-title');
+      const body = document.getElementById('social-modal-body');
+
+      if (platform === 'instagram') {
+        title.innerHTML = '<i class="ph ph-instagram-logo text-pink-500 text-lg"></i> Connect Instagram';
+        body.innerHTML = `
+          <div class="space-y-3">
+            <p class="text-xs text-slate-300">Choose how you want to post to Instagram:</p>
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+              <span class="text-xs font-bold text-emerald-400">⚡ Method 1: 1-Tap Mobile Share (Zero Setup)</span>
+              <p class="text-[11px] text-slate-400">Under any clip in your Queue, simply tap <b>"Share to IG"</b>. It copies the caption & tags and opens Instagram Reels on your phone!</p>
+            </div>
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-white">🤖 Method 2: Automatic Cloud Schedule</span>
+              <p class="text-[11px] text-slate-400">Enter your Meta Graph Access Token for hands-free background uploads:</p>
+              <input id="modal-input-token" type="password" placeholder="Paste Instagram Access Token" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none">
+            </div>
+          </div>
+        `;
+      } else {
+        title.innerHTML = '<i class="ph ph-tiktok-logo text-cyan-400 text-lg"></i> Connect TikTok';
+        body.innerHTML = `
+          <div class="space-y-3">
+            <p class="text-xs text-slate-300">Choose how you want to post to TikTok:</p>
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+              <span class="text-xs font-bold text-cyan-400">⚡ Method 1: 1-Tap Mobile Share (Zero Setup)</span>
+              <p class="text-[11px] text-slate-400">Under any clip in your Queue, simply tap <b>"Share to TikTok"</b>. It copies your hashtags and opens TikTok on your phone!</p>
+            </div>
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-white">🤖 Method 2: Automatic Cloud Schedule</span>
+              <p class="text-[11px] text-slate-400">Paste your TikTok <b>sessionid</b> cookie (from F12 &gt; Application &gt; Cookies):</p>
+              <input id="modal-input-token" type="password" placeholder="Paste TikTok sessionid cookie" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none">
+            </div>
+          </div>
+        `;
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function closeSocialModal() {
+      document.getElementById('social-modal').classList.add('hidden');
+    }
+
+    async function saveSocialModal() {
+      const input = document.getElementById('modal-input-token');
+      const val = input ? input.value.trim() : '';
+      if (!val) {
+        alert("Tip: You can use the 1-Tap Mobile Share buttons directly on your clips in the Queue!");
+        closeSocialModal();
+        return;
+      }
+
+      const payload = {};
+      if (currentModalPlatform === 'instagram') {
+        payload.instagram_access_token = val;
+        payload.auto_post_instagram = true;
+      } else if (currentModalPlatform === 'tiktok') {
+        payload.tiktok_session_id = val;
+        payload.auto_post_tiktok = true;
+      }
+
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      alert(`${currentModalPlatform} connected successfully!`);
+      closeSocialModal();
+      loadSettings();
+    }
+
+    async function shareToSocial(platform, filePath, caption, hashtags) {
+      const filename = filePath.split(/[\\\\/]/).pop();
+      const videoUrl = '/media/' + filename;
+      const fullText = caption + '\n\n' + hashtags;
+
+      try {
+        await navigator.clipboard.writeText(fullText);
+      } catch (e) {}
+
+      if (navigator.canShare) {
+        try {
+          const resp = await fetch(videoUrl);
+          const blob = await resp.blob();
+          const file = new File([blob], filename, { type: 'video/mp4' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: caption,
+              text: fullText
+            });
+            return;
+          }
+        } catch (err) {
+          console.log('Share error:', err);
+        }
+      }
+
+      alert(`Caption and hashtags copied to clipboard! Downloading ${filename} so you can post it to ${platform}...`);
+      const a = document.createElement('a');
+      a.href = videoUrl;
+      a.download = filename;
+      a.click();
     }
 
     async function disconnectAccount(platform) {

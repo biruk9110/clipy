@@ -126,33 +126,33 @@ async def api_analytics():
 async def auth_instagram_login():
     url = get_instagram_auth_url()
     if not url:
-        return JSONResponse(status_code=400, content={"error": "Instagram App Client ID not configured yet. Add it in Settings!"})
+        return RedirectResponse("/?tab=settings&modal=instagram")
     return RedirectResponse(url)
 
 @app.get("/auth/instagram/callback")
 async def auth_instagram_callback(code: str = None, error: str = None):
     if error or not code:
-        return RedirectResponse("/?error=instagram_auth_failed")
+        return RedirectResponse("/?tab=settings&error=instagram_auth_failed")
     res = handle_instagram_callback(code)
     if res.get("success"):
-        return RedirectResponse("/?connected=instagram")
-    return RedirectResponse("/?error=instagram_token_failed")
+        return RedirectResponse("/?tab=settings&connected=instagram")
+    return RedirectResponse("/?tab=settings&error=instagram_token_failed")
 
 @app.get("/auth/tiktok/login")
 async def auth_tiktok_login():
     url = get_tiktok_auth_url()
     if not url:
-        return JSONResponse(status_code=400, content={"error": "TikTok Client Key not configured yet. Add it in Settings!"})
+        return RedirectResponse("/?tab=settings&modal=tiktok")
     return RedirectResponse(url)
 
 @app.get("/auth/tiktok/callback")
 async def auth_tiktok_callback(code: str = None, error: str = None):
     if error or not code:
-        return RedirectResponse("/?error=tiktok_auth_failed")
+        return RedirectResponse("/?tab=settings&error=tiktok_auth_failed")
     res = handle_tiktok_callback(code)
     if res.get("success"):
-        return RedirectResponse("/?connected=tiktok")
-    return RedirectResponse("/?error=tiktok_token_failed")
+        return RedirectResponse("/?tab=settings&connected=tiktok")
+    return RedirectResponse("/?tab=settings&error=tiktok_token_failed")
 
 @app.post("/auth/disconnect/{platform}")
 async def auth_disconnect(platform: str):
