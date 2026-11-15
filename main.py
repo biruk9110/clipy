@@ -13,6 +13,11 @@ from backend.storage import (
     create_job, get_job
 )
 from backend.scheduler import process_job_async, start_background_scheduler, publish_clip
+from backend.oauth import (
+    get_instagram_auth_url, handle_instagram_callback,
+    get_tiktok_auth_url, handle_tiktok_callback, get_base_url
+)
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 
 app = FastAPI(title="Clipy - AI Stream & Short Video Clipper")
 
@@ -116,6 +121,56 @@ async def api_analytics():
         "total_views": total_views,
         "total_likes": total_likes
     }
+
+@app.get("/auth/instagram/login")
+async def auth_instagram_login():
+    url = get_instagram_auth_url()
+    if not url:
+        return JSONResponse(status_code=400, content={"error": "Instagram App Client ID not configured yet. Add it in Settings!"})
+    return RedirectResponse(url)
+
+@app.get("/auth/instagram/callback")
+async def auth_instagram_callback(code: str = None, error: str = None):
+    if error or not code:
+        return RedirectResponse("/?error=instagram_auth_failed")
+    res = handle_instagram_callback(code)
+    if res.get("success"):
+        return RedirectResponse("/?connected=instagram")
+    return RedirectResponse("/?error=instagram_token_failed")
+
+@app.get("/auth/tiktok/login")
+async def auth_tiktok_login():
+    url = get_tiktok_auth_url()
+    if not url:
+        return JSONResponse(status_code=400, content={"error": "TikTok Client Key not configured yet. Add it in Settings!"})
+    return RedirectResponse(url)
+
+@app.get("/auth/tiktok/callback")
+async def auth_tiktok_callback(code: str = None, error: str = None):
+    if error or not code:
+        return RedirectResponse("/?error=tiktok_auth_failed")
+    res = handle_tiktok_callback(code)
+    if res.get("success"):
+        return RedirectResponse("/?connected=tiktok")
+    return RedirectResponse("/?error=tiktok_token_failed")
+
+@app.post("/auth/disconnect/{platform}")
+async def auth_disconnect(platform: str):
+    if platform == "instagram":
+        save_settings({
+            "instagram_access_token": "",
+            "instagram_user_id": "",
+            "instagram_username": "",
+            "auto_post_instagram": False
+        })
+    elif platform == "tiktok":
+        save_settings({
+            "tiktok_access_token": "",
+            "tiktok_open_id": "",
+            "tiktok_username": "",
+            "auto_post_tiktok": False
+        })
+    return {"success": True, "settings": get_settings()}
 
 if __name__ == "__main__":
     import uvicorn
