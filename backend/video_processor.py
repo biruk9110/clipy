@@ -338,6 +338,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 
 def detect_facecam(video_path: Path, start_time: float, duration: float):
+    if not hasattr(cv2, "CascadeClassifier") or not hasattr(cv2, "data"):
+        return {"has_cam": False}
     try:
         cap = cv2.VideoCapture(str(video_path))
         fps = cap.get(cv2.CAP_PROP_FPS) or 30

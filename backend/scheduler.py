@@ -448,8 +448,9 @@ def publish_clip(clip_id: str, user_id: int, platform: str = "all", manual: bool
     if clip.get("status") == "posted" and not manual:
         return {"ok": True, "message": "Already published", "url": ""}
 
-    video_path = Path(clip.get("file_path") or "")
-    if not file_exists(video_path, user_id):
+    from .filestore import open_file
+    video_path = open_file(clip.get("file_path") or "", user_id)
+    if not video_path or not video_path.exists():
         update_clip(clip_id, status="failed", error="Video file missing on server")
         return {"ok": False, "error": "Video file missing on server"}
 
@@ -469,7 +470,11 @@ def publish_clip(clip_id: str, user_id: int, platform: str = "all", manual: bool
     title = clip.get("hook_text") or clip.get("title") or "Clip"
 
     attempted, succeeded, errors, urls = 0, 0, [], {}
-    video_url = f"{get_base_url()}/media/clips/{Path(clip['file_path']).name}"
+    try:
+        rel_media = video_path.resolve().relative_to(OUTPUT_DIR.resolve()).as_posix()
+        video_url = f"{get_base_url()}/media/{rel_media}"
+    except Exception:
+        video_url = f"{get_base_url()}/media/{video_path.parent.name}/{video_path.name}"
 
     # Buffer first (covers IG/TikTok/YT in one step if connected)
     buffer_acc = accounts.get("buffer")

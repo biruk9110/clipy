@@ -79,6 +79,13 @@ def fetch_reference(url: str, out_dir: Path) -> Path:
         # Be a good citizen: max 2 minutes analyzed even for long links
         "max_filesize": 300 * 1024 * 1024,
     }
+    if "youtube.com" in url or "youtu.be" in url:
+        opts["extractor_args"] = {
+            "youtube": {
+                "player_client": ["android", "ios", "web"],
+                "player_skip": ["configs", "webpage"],
+            }
+        }
     # Optional user cookies (their own accounts) to view content they can see
     sid = (HOST_SETTINGS.get("tiktok_session_id") or "").strip()
     if sid and "tiktok.com" in url:

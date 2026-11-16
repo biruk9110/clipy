@@ -532,6 +532,7 @@ function switchTab(tabId) {
   document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === tabId));
   history.replaceState(null, '', '?tab=' + tabId);
   window.scrollTo({ top: 0 });
+  if (tabId === 'projects') loadProjects();
   if (tabId === 'clips') loadClips();
   if (tabId === 'history') loadHistory();
   if (tabId === 'analytics') loadAnalytics();
