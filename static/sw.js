@@ -1,8 +1,7 @@
-const CACHE = 'clipy-v3';
+const CACHE = 'clipy-v4';
 
 // App shell: everything the UI needs to render without internet
 const PRECACHE = [
-  '/',
   '/manifest.json',
   '/static/vendor/tailwind.js',
   '/static/vendor/fonts/inter.css',
@@ -38,6 +37,9 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return; // let third-party requests pass through
 
+  // Never cache API or media - live data and auth-gated content only
+  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/media')) return;
+
   // Vendored UI assets & icons: cache-first (instant + offline)
   if (url.pathname.startsWith('/static/vendor') || url.pathname.startsWith('/static/icons')) {
     e.respondWith(
@@ -50,33 +52,16 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // App page: network-first, cached shell as offline fallback (so relaunch always works)
-  if (e.request.mode === 'navigate' || url.pathname === '/') {
+  // Pages: network-first, cached shell as offline fallback
+  if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request)
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('/', copy));
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
           return res;
         })
-        .catch(() => caches.match('/'))
+        .catch(() => caches.match(e.request).then((hit) => hit || caches.match('/')))
     );
-    return;
   }
-
-  // API & media: always live
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-});
-
-// Focus the app when a notification is tapped
-self.addEventListener('notificationclick', (e) => {
-  e.notification.close();
-  e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-      for (const client of list) {
-        if ('focus' in client) return client.focus();
-      }
-      return clients.openWindow('/');
-    })
-  );
 });

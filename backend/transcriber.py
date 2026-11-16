@@ -47,10 +47,49 @@ def get_audio_loudness(audio_path: Path):
         print(f"[Transcriber] Loudness check error: {e}")
         return []
 
+def decode_wav_to_float32(audio_path: Path) -> np.ndarray:
+    """Reads a 16 kHz mono PCM WAV with the stdlib (no PyAV) -> float32 array."""
+    import wave
+    with wave.open(str(audio_path), "rb") as wf:
+        frames = wf.readframes(wf.getnframes())
+        rate = wf.getframerate()
+        channels = wf.getnchannels()
+        sampwidth = wf.getsampwidth()
+    if sampwidth == 2:
+        samples = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+    elif sampwidth == 4:
+        samples = np.frombuffer(frames, dtype=np.int32).astype(np.float32) / 2147483648.0
+    else:
+        samples = np.frombuffer(frames, dtype=np.uint8).astype(np.float32) / 128.0 - 1.0
+    if channels > 1:
+        samples = samples.reshape(-1, channels).mean(axis=1)
+    return samples, rate
+
+
 def transcribe_audio(audio_path: Path, model_size="tiny"):
     model = get_whisper(model_size)
-    segments, info = model.transcribe(str(audio_path), word_timestamps=True, beam_size=1)
-    
+
+    # faster-whisper normally decodes via PyAV; some PyAV builds reject the
+    # 'metadata_errors' kwarg (incompatible faster-whisper/PyAV pair), so fall
+    # back to decoding the WAV ourselves and passing a numpy array.
+    try:
+        segments, info = model.transcribe(str(audio_path), word_timestamps=True, beam_size=1)
+        segments = list(segments)  # force iteration inside the guarded block
+    except TypeError as e:
+        if "metadata_errors" not in str(e) and "unexpected keyword" not in str(e):
+            raise
+        try:
+            samples, _rate = decode_wav_to_float32(audio_path)
+        except Exception:
+            # Re-encode any odd input to 16 kHz mono PCM, then read it back.
+            import subprocess as _sp
+            tmp = Path(audio_path).with_suffix(".reenc.wav")
+            _sp.run(["ffmpeg", "-y", "-i", str(audio_path), "-vn", "-acodec", "pcm_s16le",
+                     "-ar", "16000", "-ac", "1", str(tmp)], capture_output=True, timeout=600)
+            samples, _rate = decode_wav_to_float32(tmp)
+        segments, info = model.transcribe(samples, word_timestamps=True, beam_size=1)
+        segments = list(segments)
+
     transcript_lines = []
     all_words = []
     

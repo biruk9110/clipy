@@ -8,39 +8,57 @@ app_port: 7860
 pinned: false
 ---
 
-# Clipy - AI Stream & Short Video Auto-Clipper
+# Clipy - AI Video Editing Platform
 
-An automated, mobile-friendly AI video clipper and social media scheduler.
-Paste a YouTube or TikTok link (or upload a video directly from your phone), and Clipy will:
-1. **Intelligently detect length**:
-   - **Short Videos (< 2.5 min)**: Polishes the video, adds animated word-by-word subtitles, adds a viral hook bar, normalizes audio to -14 LUFS, and generates viral captions & hashtags.
-   - **Long Streams / Videos (> 2.5 min)**: Scans the entire stream, finds the most viral moments using **Gemini 2.0 Flash**, and cuts 3 or more 9:16 vertical clips.
-2. **Auto-Post on Schedule**: Staggers uploads (e.g. 1 clip now, 1 clip in 3 hours, 1 clip in 6 hours) to **TikTok** and **Instagram Reels**.
-3. **100% Free**: Uses local speech recognition (`faster-whisper`), local video editing (`ffmpeg`), and the free tier of Google's Gemini API.
+Upload a video, add a TikTok / Reel / Short as **editing inspiration**, and Clipy's AI
+studies the reference's style (cuts, captions, zooms, pacing) and applies it to your
+footage — then renders real, playable clips with FFmpeg and publishes them on schedule.
 
----
+## What Clipy does
 
-## 📱 How to Run on Your Phone
+1. **Reference-based AI editing**: paste a public TikTok / Instagram Reel / YouTube
+   Shorts URL (or upload the file). Clipy retrieves the video, samples its frames and
+   audio, and Gemini builds a structured editing profile that drives your edit.
+2. **Highlight detection**: local Whisper transcription + Gemini find the strongest
+   moments; long videos are cut into multiple styled clips, short videos get polished.
+3. **Real rendering**: FFmpeg engine with 9:16 / 16:9 / 1:1 / 4:5 output, karaoke /
+   bold / minimal captions, zoom punches, silence removal, -14 LUFS audio.
+4. **Publishing**: schedule or post now to Buffer, Instagram, TikTok and YouTube.
+   Success is only reported when the platform confirms it.
+5. **Permanent workspace**: users, projects, clips, history, API keys and connected
+   accounts all live in a database (PostgreSQL on Render) and survive restarts.
 
-### Option A: 24/7 Free Cloud (PC Can Be Turned Off)
-To use Clipy from your phone anywhere while your PC is off:
-1. Create a free account at [Hugging Face](https://huggingface.co/).
-2. Click **New Space** -> Name it `clipy` -> Select **Docker** (Blank).
-3. Upload all files from this `clipy` folder to your Space repo.
-4. Hugging Face will automatically build and launch it 24/7 for **$0**.
-5. Open your Space URL on your phone's browser and tap:
-   - **iPhone**: Share button -> **Add to Home Screen**.
-   - **Android**: Menu (3 dots) -> **Install App**.
+## Deployment (Render)
 
-### Option B: Run Locally on Your PC
-1. Double-click `start.bat` (or run `python -m uvicorn main:app --host 0.0.0.0 --port 8000`).
-2. Open on your PC: `http://localhost:8000`
-3. To open on your phone while on the same Wi-Fi, open: `http://<YOUR_PC_IP>:8000` (e.g. `http://192.168.1.5:8000`).
+1. Create a **PostgreSQL** instance (free tier works) and a Web Service from this repo
+   (Docker runtime — build/start are automatic).
+2. Set environment variables on the Web Service:
+   - `DATABASE_URL` — internal Postgres connection string (**required** for persistence)
+   - `SECRET_KEY` — any long random string; encrypts API keys & tokens at rest (**required**)
+   - `GEMINI_API_KEY` — optional server-wide fallback; each user adds their own key in Settings
+   - Optional OAuth: `INSTAGRAM_CLIENT_ID/SECRET`, `TIKTOK_CLIENT_KEY/SECRET`,
+     `YOUTUBE_CLIENT_ID/SECRET`, `TIKTOK_AUDITED=true` only after TikTok approval
+   - Optional: `BUFFER_ACCESS_TOKEN`, `CLIPY_MAX_UPLOAD_MB`, `CLIPY_PERSIST_FILES`
+3. Deploy. First boot creates the schema and migrates any legacy data automatically.
+4. Health check: `/health`.
 
----
+## Run locally
 
-## 🔑 Adding Your Free Gemini API Key
-1. Go to [Google AI Studio](https://aistudio.google.com/) and click **Get API Key** (it's 100% free).
-2. Open Clipy -> Go to the **Settings** tab.
-3. Paste your Gemini API key and tap **Save**.
+1. `pip install -r requirements.txt` (ffmpeg must be on PATH).
+2. `python -m uvicorn main:app --host 0.0.0.0 --port 8000` or double-click `start.bat`.
+3. Open `http://localhost:8000`, register, complete onboarding, add your Gemini key.
 
+Without `DATABASE_URL`, Clipy uses a local SQLite database (`data/clipy.db`) — handy
+for development; production should always use PostgreSQL.
+
+## Security notes
+
+- Passwords: PBKDF2-SHA256 (240k iterations, per-user salt); sessions are DB-backed
+  and survive restarts; reset tokens are single-use, hashed and expire in 1 hour.
+- Secrets (Gemini key, OAuth tokens) are encrypted with Fernet before storage and are
+  never returned to the browser in plaintext (masked indicator only).
+- All clips/projects/history are ownership-checked per request; anonymous API access
+  returns 401.
+- Reference retrieval only uses publicly accessible videos with standard clients.
+  If a platform refuses access, users upload the file instead — no access-control
+  bypass.

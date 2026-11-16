@@ -1,40 +1,36 @@
+"""Storage maintenance: cleanup policies, orphan detection, storage reporting.
+
+Cleanup NEVER deletes files still referenced by active jobs or retained
+projects. Database-mirrored files keep metadata alive even when the raw file
+is gone - the UI then offers re-upload instead of a broken preview.
+"""
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from .config import get_settings, UPLOADS_DIR
-from .storage import get_all_clips, get_job, delete_clip, delete_clips_for_job
+from .config import OUTPUT_DIR, UPLOADS_DIR
+from .database import db
+from .filestore import db_file_count, db_storage_bytes, delete_file, rel_key
+from .storage import list_clips, update_clip
 
-def _remove_file(path: str):
-    if path and Path(path).exists():
-        try:
-            Path(path).unlink()
-        except Exception:
-            pass
 
-def run_cleanup():
-    """
-    Applies the user's storage rules:
-      - keep_last_clips: keep only the N newest clips
-      - max_clip_age_days: delete clips older than X days
-    Scheduled clips are never touched (they still need to be posted).
-    Returns number of clips removed.
-    """
-    s = get_settings()
-    keep_n = int(s.get("keep_last_clips") or 0)
-    max_age = int(s.get("max_clip_age_days") or 0)
-    if not keep_n and not max_age:
+def run_cleanup(user_id: int | None = None) -> int:
+    """Applies the user's retention rules to generated clips.
+    Scheduled clips are never touched (they still need to post)."""
+    from .usersettings import get_prefs
+    if user_id:
+        prefs = get_prefs(user_id)
+        keep_n = int(prefs.get("keep_last_clips") or 0)
+        max_age = int(prefs.get("max_clip_age_days") or 0)
+    else:
         return 0
 
-    clips = get_all_clips()
+    clips = list_clips(user_id, limit=1000)
     removable = set()
-
     if keep_n:
-        active = [c for c in clips if c["status"] not in ("scheduled",)]
-        # newest first is the default ordering from get_all_clips()
+        active = [c for c in clips if c["status"] != "scheduled"]
         for old in active[keep_n:]:
             removable.add(old["id"])
-
     if max_age:
         cutoff = datetime.now() - timedelta(days=max_age)
         for c in clips:
@@ -47,16 +43,75 @@ def run_cleanup():
                 pass
 
     removed = 0
-    for clip_id in list(removable):
-        if delete_clip(clip_id):
+    for clip_id in removable:
+        clip = next((c for c in clips if c["id"] == clip_id), None)
+        if clip:
+            for key in ("file_path", "thumb_path"):
+                if clip.get(key):
+                    delete_file(clip[key])
+            db.execute("DELETE FROM scheduled_posts WHERE clip_id = ?", (clip_id,))
+            db.execute("DELETE FROM clips WHERE id = ?", (clip_id,))
             removed += 1
-    if removed:
-        print(f"[Cleanup] Removed {removed} old clip(s)")
     return removed
 
-def delete_job_source(job_id: str):
-    """Deletes the raw uploaded/downloaded source video of a completed job (clips are kept)."""
-    job = get_job(job_id)
-    if not job:
-        return
-    _remove_file(job.get("source_file"))
+
+def detect_missing_files(user_id: int) -> list[dict]:
+    """Clips whose local file is gone (DB mirror will restore them lazily).
+    Only flagged when the mirror is also empty."""
+    from .filestore import file_exists
+    missing = []
+    for clip in list_clips(user_id, limit=1000):
+        p = clip.get("file_path")
+        if p and not file_exists(p, user_id):
+            missing.append({"clip_id": clip["id"], "title": clip.get("title") or clip.get("hook_text")})
+    return missing
+
+
+def orphan_scan() -> list[str]:
+    """Output files on disk that no clip row references anymore."""
+    referenced = set()
+    for sql in ("SELECT file_path AS p FROM clips WHERE file_path != ''",
+                "SELECT thumb_path AS p FROM clips WHERE thumb_path != ''",
+                "SELECT source_file AS p FROM projects WHERE source_file != ''",
+                "SELECT reference_file AS p FROM projects WHERE reference_file != ''"):
+        for r in db.query(sql):
+            if r.get("p"):
+                referenced.add(rel_key(r["p"]))
+    orphans = []
+    for base in (OUTPUT_DIR, UPLOADS_DIR):
+        if not base.exists():
+            continue
+        for p in base.rglob("*"):
+            if p.is_file() and rel_key(p) not in referenced:
+                try:
+                    orphans.append(str(p))
+                except Exception:
+                    pass
+    return orphans
+
+
+def remove_orphans(older_than_hours: int = 24) -> int:
+    """Deletes orphaned files older than the threshold (never referenced)."""
+    cutoff = datetime.now() - timedelta(hours=older_than_hours)
+    removed = 0
+    for p in orphan_scan():
+        try:
+            if datetime.fromtimestamp(Path(p).stat().st_mtime) < cutoff:
+                Path(p).unlink()
+                removed += 1
+        except Exception:
+            pass
+    return removed
+
+
+def storage_usage(user_id: int) -> dict:
+    clips = list_clips(user_id, limit=1000)
+    clips_bytes = sum(int(c.get("file_size") or 0) for c in clips)
+    mirrored = db_storage_bytes()
+    return {
+        "clips_bytes": clips_bytes,
+        "clips_count": len(clips),
+        "db_mirror_bytes": mirrored,
+        "db_mirror_files": db_file_count(),
+        "quota_mb": int(os.getenv("CLIPY_MAX_PG_TOTAL_MB", "900")),
+    }

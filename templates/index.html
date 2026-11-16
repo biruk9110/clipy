@@ -1,1468 +1,1329 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Clipy — AI Clip Studio</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
-  <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Clipy — Dashboard</title>
   <meta name="theme-color" content="#09090b">
-  <meta name="color-scheme" content="dark">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Clipy">
-
-  <!-- Inter font + Tailwind + Phosphor — ALL VENDORED LOCALLY (app works fully offline) -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/static/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/static/vendor/fonts/inter.css">
   <link rel="stylesheet" href="/static/vendor/phosphor/regular/style.css">
-  <link rel="stylesheet" href="/static/vendor/phosphor/bold/style.css">
   <link rel="stylesheet" href="/static/vendor/phosphor/fill/style.css">
   <script src="/static/vendor/tailwind.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-          colors: {
-            ink: {
-              950: '#09090b', 900: '#0e0e11', 850: '#131316',
-              800: '#18181b', 700: '#232327', 600: '#2e2e33', 500: '#3f3f46'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } };</script>
   <style>
-    :root { color-scheme: dark; }
-    * { -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .card { background: #101013; border: 1px solid #1f1f23; border-radius: 1rem; }
-    .chip { transition: all .15s ease; }
-    input, select, textarea { color-scheme: dark; }
-    select option { background: #18181b; }
-    .fade-in { animation: fadeIn .25s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-    .toast-in { animation: toastIn .25s ease; }
-    @keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+    html { color-scheme: dark; }
+    body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    input:focus, select:focus, textarea:focus { outline: none; }
+    .tab-content { display: none; } .tab-content.active { display: block; }
+    .tab-btn.active { color: #facc15; }
+    .tab-btn.active .tab-ind { opacity: 1; }
+    ::selection { background: #facc15; color: #000; }
+    input[type="checkbox"].toggle { appearance: none; }
+    .skeleton { background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .progress-ring { transform: rotate(-90deg); }
   </style>
 </head>
-<body class="bg-ink-950 text-zinc-100 min-h-screen flex flex-col select-none pb-24 md:pb-6">
+<body class="bg-ink-950 text-zinc-200 antialiased">
 
-  <!-- ══════════ LOCK SCREEN ══════════ -->
-  <div id="lock-screen" class="fixed inset-0 z-[100] bg-ink-950 hidden items-center justify-center p-6">
-    <div class="w-full max-w-xs text-center space-y-6 fade-in">
-      <div class="w-16 h-16 mx-auto rounded-2xl bg-white flex items-center justify-center">
-        <i class="ph-bold ph-scissors text-3xl text-black"></i>
-      </div>
-      <div>
-        <h1 class="text-xl font-bold tracking-tight">Clipy is locked</h1>
-        <p class="text-xs text-zinc-500 mt-1">Enter your PIN to continue</p>
-      </div>
-      <input id="lock-pin" type="password" inputmode="numeric" maxlength="8" placeholder="• • • •"
-        class="w-full text-center tracking-[0.5em] text-lg font-bold px-4 py-3.5 bg-ink-900 border border-ink-600 rounded-xl focus:outline-none focus:border-zinc-400 placeholder-zinc-700">
-      <p id="lock-error" class="text-xs text-red-400 hidden">Wrong PIN, try again</p>
-      <button onclick="unlockApp()" class="w-full py-3 bg-white hover:bg-zinc-200 text-black text-sm font-bold rounded-xl transition-all active:scale-[0.98]">
-        Unlock
-      </button>
+<!-- ================= HEADER ================= -->
+<header class="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-md border-b border-white/5">
+  <div class="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
+    <div class="flex items-center gap-2 mr-auto">
+      <span class="w-7 h-7 rounded-lg bg-yellow-400 text-black grid place-items-center font-black text-sm">C</span>
+      <span class="font-extrabold text-white tracking-tight">Clipy</span>
     </div>
+    <span id="gemini-status" onclick="switchTab('settings')" title="Gemini key status" class="cursor-pointer px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"></span>
+    <a href="/api/export/csv" class="hidden sm:grid w-8 h-8 place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors" title="Export CSV backup">
+      <i class="ph ph-download-simple"></i>
+    </a>
+    <button onclick="openProfile()" class="w-8 h-8 grid place-items-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors" title="Profile & security">
+      <i class="ph ph-user-circle text-xl"></i>
+    </button>
   </div>
+</header>
 
-  <!-- ══════════ HEADER ══════════ -->
-  <header class="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-xl border-b border-ink-700 px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-2.5">
-      <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
-        <i class="ph-bold ph-scissors text-xl text-black"></i>
-      </div>
-      <div>
-        <h1 class="font-bold text-[17px] tracking-tight leading-none">Clipy</h1>
-        <p class="text-[10px] text-zinc-500 font-medium mt-0.5">AI Clip Studio</p>
-      </div>
+<main class="max-w-5xl mx-auto px-4 pb-28 md:pb-10 pt-5">
+
+  <!-- ================= TAB: CREATE ================= -->
+  <section id="tab-create" class="tab-content space-y-5">
+    <div>
+      <h1 class="text-xl font-extrabold text-white tracking-tight">New project</h1>
+      <p class="text-xs text-zinc-500 mt-0.5">Upload your video, optionally add a reference for the style.</p>
     </div>
-    <div class="flex items-center gap-2">
-      <a id="gemini-status" href="#" onclick="switchTab('settings'); return false;"
-        class="px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-zinc-400/10 text-zinc-400 border border-ink-600 flex items-center gap-1.5 cursor-pointer hover:border-zinc-500 transition-colors">
-        <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span> AI
-      </a>
-      <button id="lock-btn" onclick="lockApp()" class="hidden w-8 h-8 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 hover:text-zinc-200 flex items-center justify-center transition-colors" title="Lock app">
-        <i class="ph ph-lock-simple text-sm"></i>
-      </button>
-    </div>
-  </header>
 
-  <!-- ══════════ MAIN ══════════ -->
-  <main class="flex-1 max-w-3xl w-full mx-auto p-4 space-y-5">
-
-    <!-- ════ TAB 1 · CREATE ════ -->
-    <section id="tab-create" class="tab-content space-y-5">
-      <div class="card p-5 space-y-4 fade-in">
-        <div class="flex items-center gap-2">
-          <h2 class="text-sm font-bold text-white">New Clip</h2>
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-ink-800 border border-ink-600 text-zinc-400 font-semibold">AI AUTO-EDIT</span>
+    <form id="new-project-form" onsubmit="submitProject(event)" class="space-y-4">
+      <!-- Source -->
+      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+        <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-yellow-400/15 text-yellow-300 grid place-items-center text-[10px] font-black">1</span> Your video</p>
+        <div id="drop-area" class="border border-dashed border-ink-600 hover:border-zinc-500 rounded-xl p-6 text-center cursor-pointer bg-ink-950 transition-all"
+             onclick="document.getElementById('input-file').click()">
+          <input type="file" id="input-file" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,.mp4,.mov,.webm,.mkv" class="hidden">
+          <i class="ph-fill ph-upload-simple text-2xl text-zinc-500"></i>
+          <p id="file-label" class="text-xs text-zinc-300 font-semibold mt-2">Tap to pick a video (MP4, MOV, WEBM)</p>
+          <p id="file-meta" class="text-[10px] text-zinc-600 mt-1">or paste a public link below</p>
         </div>
-
-        <div class="space-y-1.5">
-          <label class="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Paste a YouTube or TikTok link</label>
-          <div class="relative">
-            <i class="ph ph-link absolute left-3.5 top-3.5 text-zinc-500 text-lg"></i>
-            <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=..."
-              class="w-full pl-10 pr-4 py-3 bg-ink-900 border border-ink-600 rounded-xl text-sm focus:outline-none focus:border-zinc-400 transition-all text-white placeholder-zinc-600">
-          </div>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <div class="flex-1 h-px bg-ink-700"></div>
-          <span class="text-[10px] text-zinc-600 font-semibold uppercase tracking-wider">or upload</span>
-          <div class="flex-1 h-px bg-ink-700"></div>
-        </div>
-
-        <div id="drop-area" class="border border-dashed border-ink-600 hover:border-zinc-500 rounded-xl p-5 text-center cursor-pointer bg-ink-900 transition-all">
-          <input type="file" id="input-file" accept="video/*" class="hidden">
-          <div class="flex flex-col items-center gap-2">
-            <div class="w-10 h-10 rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-400">
-              <i class="ph ph-video-camera text-xl"></i>
-            </div>
-            <p id="file-label" class="text-xs text-zinc-300 font-medium">Tap to pick a video</p>
-            <p class="text-[10px] text-zinc-600">Shorts, clips or long streams · MP4 / MOV</p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 pt-1">
-          <div class="bg-ink-900 border border-ink-700 rounded-xl p-3">
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Clips from stream</label>
-            <select id="select-clips" class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="1">1 clip</option>
-              <option value="2">2 clips</option>
-              <option value="3" selected>3 clips</option>
-              <option value="4">4 clips</option>
-              <option value="5">5 clips</option>
-              <option value="6">6 clips</option>
-              <option value="7">7 clips</option>
-              <option value="8">8 clips</option>
-              <option value="9">9 clips</option>
-              <option value="10">10 clips</option>
-            </select>
-          </div>
-          <div class="bg-ink-900 border border-ink-700 rounded-xl p-3">
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Posting schedule</label>
-            <select id="select-interval" class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="1">every 1 hour</option>
-              <option value="3" selected>every 3 hours</option>
-              <option value="5">every 5 hours</option>
-              <option value="8">every 8 hours</option>
-            </select>
-          </div>
-        </div>
-
-        <button id="btn-submit" onclick="submitJob()"
-          class="w-full py-3.5 px-4 bg-white hover:bg-zinc-200 active:scale-[0.99] text-black text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all">
-          <i class="ph-bold ph-magic-wand text-base"></i>
-          <span>Auto-Clip &amp; Schedule</span>
-        </button>
-      </div>
-
-      <!-- Active jobs (progress + cancel) -->
-      <div id="jobs-container" class="space-y-3"></div>
-    </section>
-
-    <!-- ════ TAB 2 · CLIPS ════ -->
-    <section id="tab-clips" class="tab-content hidden space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <i class="ph ph-film-strip text-zinc-400"></i> Clips
-        </h2>
-        <button onclick="loadClips()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
-          <i class="ph ph-arrows-clockwise text-xs"></i> Refresh
-        </button>
-      </div>
-
-      <!-- Filters -->
-      <div class="flex gap-2 overflow-x-auto hide-scrollbar">
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="all" onclick="setFilter('all')">All</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="ready" onclick="setFilter('ready')">Ready</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="scheduled" onclick="setFilter('scheduled')">Scheduled</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="posted" onclick="setFilter('posted')">Posted</button>
-        <button class="filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border" data-filter="failed" onclick="setFilter('failed')">Failed</button>
-      </div>
-
-      <div id="clips-list" class="space-y-4"></div>
-    </section>
-
-    <!-- ════ TAB 3 · HISTORY ════ -->
-    <section id="tab-history" class="tab-content hidden space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold text-white flex items-center gap-2">
-          <i class="ph ph-clock-counter-clockwise text-zinc-400"></i> History
-        </h2>
-        <button onclick="loadHistory()" class="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 font-semibold">
-          <i class="ph ph-arrows-clockwise text-xs"></i> Refresh
-        </button>
-      </div>
-      <p class="text-[11px] text-zinc-600 -mt-2">Every video you've processed, with the clips it produced.</p>
-      <div id="history-list" class="space-y-3"></div>
-    </section>
-
-    <!-- ════ TAB 4 · STATS ════ -->
-    <section id="tab-analytics" class="tab-content hidden space-y-4">
-      <h2 class="text-sm font-bold text-white flex items-center gap-2">
-        <i class="ph ph-chart-bar text-zinc-400"></i> Stats
-      </h2>
-
-      <div class="grid grid-cols-2 gap-3">
-        <div class="card p-4">
-          <p class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Total Clips</p>
-          <p id="stat-total" class="text-2xl font-extrabold text-white mt-1">0</p>
-        </div>
-        <div class="card p-4">
-          <p class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Posted</p>
-          <p id="stat-posted" class="text-2xl font-extrabold text-emerald-400 mt-1">0</p>
-        </div>
-        <div class="card p-4">
-          <p class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Scheduled</p>
-          <p id="stat-scheduled" class="text-2xl font-extrabold text-white mt-1">0</p>
-        </div>
-        <div class="card p-4">
-          <p class="text-[11px] text-zinc-500 font-semibold uppercase tracking-wider">Post Success</p>
-          <p id="stat-success" class="text-2xl font-extrabold text-white mt-1">—</p>
+        <div class="mt-3">
+          <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=… (public video link)"
+                 class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-zinc-400 transition-colors">
         </div>
       </div>
 
-      <!-- 7-day activity -->
-      <div class="card p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-xs font-bold text-white">Last 7 days</h3>
-          <span id="stat-avg-score" class="text-[10px] text-zinc-500 font-semibold"></span>
-        </div>
-        <div id="week-chart" class="flex items-end justify-between gap-2 h-24"></div>
-      </div>
-
-      <!-- Per-platform posts -->
-      <div class="card p-5 space-y-3">
-        <h3 class="text-xs font-bold text-white">Published per platform</h3>
-        <div id="platform-posts" class="space-y-2.5"></div>
-      </div>
-
-      <!-- Connected destinations (real status) -->
-      <div class="card p-5 space-y-3">
-        <h3 class="text-xs font-bold text-white">Destinations</h3>
-        <div id="destinations" class="space-y-2"></div>
-      </div>
-    </section>
-
-    <!-- ════ TAB 5 · SETTINGS ════ -->
-    <section id="tab-settings" class="tab-content hidden space-y-4">
-      <h2 class="text-sm font-bold text-white flex items-center gap-2">
-        <i class="ph ph-gear-six text-zinc-400"></i> Settings
-      </h2>
-
-      <!-- AI key -->
-      <div class="card p-5 space-y-3">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-cpu text-zinc-400"></i> Google Gemini API Key</h3>
-        <p class="text-[11px] text-zinc-500">Free from Google AI Studio. Used for picking moments, hooks &amp; hashtags.</p>
+      <!-- Reference -->
+      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+        <p class="text-xs font-bold text-zinc-300 mb-1 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-yellow-400/15 text-yellow-300 grid place-items-center text-[10px] font-black">2</span>
+          Use a video as inspiration
+          <span class="text-[9px] font-bold text-yellow-400/80 bg-yellow-400/10 px-1.5 py-0.5 rounded-full">NEW</span>
+        </p>
+        <p class="text-[10px] text-zinc-500 mb-3 ml-7">Optional — paste a public TikTok, Reel or Short URL and the AI will study its editing style and apply it to your video.</p>
         <div class="flex gap-2">
-          <input id="setting-gemini-key" type="password" placeholder="Paste your key (AIzaSy...)"
-            class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
-          <button onclick="saveApiKey()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
+          <input id="input-reference" type="url" placeholder="https://www.tiktok.com/@creator/video/… or IG Reel / YT Short"
+                 class="flex-1 bg-ink-800 border border-ink-600 rounded-lg py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-yellow-400/50 transition-colors">
         </div>
-        <p class="text-[11px] text-zinc-600">Get a free key at <a href="https://aistudio.google.com/" target="_blank" class="text-zinc-300 underline">aistudio.google.com</a></p>
-      </div>
-
-      <!-- Connections -->
-      <div class="card p-5 space-y-3">
-        <div>
-          <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-share-network text-zinc-400"></i> Connected accounts</h3>
-          <p class="text-[11px] text-zinc-500 mt-0.5">Auto-post your clips to your socials.</p>
-        </div>
-
-        <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-white flex items-center justify-center text-black flex-shrink-0"><i class="ph-bold ph-stack text-lg"></i></div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
-                <p class="text-xs font-bold text-white truncate">Buffer</p>
-                <span class="text-[9px] px-1.5 py-0.5 rounded bg-zinc-400/10 text-zinc-400 font-bold flex-shrink-0">EASIEST</span>
-              </div>
-              <p id="buffer-status-text" class="text-[10px] text-zinc-500 truncate">Instagram + TikTok (+ YouTube) in one step</p>
-            </div>
-          </div>
-          <div id="buffer-action-area" class="flex-shrink-0"></div>
-        </div>
-
-        <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-instagram-logo text-lg"></i></div>
-            <div class="min-w-0">
-              <p class="text-xs font-bold text-white">Instagram Reels</p>
-              <p id="ig-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
-            </div>
-          </div>
-          <div id="ig-action-area" class="flex-shrink-0"></div>
-        </div>
-
-        <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-tiktok-logo text-lg"></i></div>
-            <div class="min-w-0">
-              <p class="text-xs font-bold text-white">TikTok</p>
-              <p id="tiktok-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
-            </div>
-          </div>
-          <div id="tiktok-action-area" class="flex-shrink-0"></div>
-        </div>
-
-        <div class="bg-ink-900 border border-ink-600 rounded-xl p-3.5 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300 flex-shrink-0"><i class="ph ph-youtube-logo text-lg"></i></div>
-            <div class="min-w-0">
-              <p class="text-xs font-bold text-white">YouTube Shorts</p>
-              <p id="youtube-status-text" class="text-[10px] text-zinc-500 truncate">Not connected</p>
-            </div>
-          </div>
-          <div id="youtube-action-area" class="flex-shrink-0"></div>
-        </div>
-      </div>
-
-      <!-- Posting preferences -->
-      <div class="card p-5 space-y-4">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-paper-plane-tilt text-zinc-400"></i> Posting</h3>
-
-        <label class="flex items-center justify-between gap-3 cursor-pointer">
-          <div>
-            <p class="text-xs font-semibold text-white">Review before posting</p>
-            <p class="text-[10px] text-zinc-500">Scheduled clips wait until you tap Post</p>
-          </div>
-          <input id="pref-review" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
-        </label>
-
-        <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Default hashtags (added to every caption)</label>
-          <input id="pref-hashtags" type="text" placeholder="#gaming #clips #viral"
-            class="w-full px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
-            onkeydown="if(event.key==='Enter')savePrefs()">
-        </div>
-      </div>
-
-      <!-- Automation & storage -->
-      <div class="card p-5 space-y-4">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-broom text-zinc-400"></i> Storage &amp; automation</h3>
-
-        <label class="flex items-center justify-between gap-3 cursor-pointer">
-          <div>
-            <p class="text-xs font-semibold text-white">Notify when clips are ready</p>
-            <p class="text-[10px] text-zinc-500">Push notification when a job finishes</p>
-          </div>
-          <input id="pref-notify" type="checkbox" onchange="saveNotify()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
-        </label>
-
-        <label class="flex items-center justify-between gap-3 cursor-pointer">
-          <div>
-            <p class="text-xs font-semibold text-white">Delete source video after clipping</p>
-            <p class="text-[10px] text-zinc-500">Removes the original upload/download to save space</p>
-          </div>
-          <input id="pref-del-source" type="checkbox" onchange="saveAutomation()" class="toggle w-9 h-5 appearance-none bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-zinc-300 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
-        </label>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Keep last N clips</label>
-            <input id="pref-keep-n" type="number" min="0" placeholder="0 = all"
-              class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
-              onkeydown="if(event.key==='Enter')saveAutomation()">
-          </div>
-          <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Delete older than (days)</label>
-            <input id="pref-max-age" type="number" min="0" placeholder="0 = never"
-              class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600"
-              onkeydown="if(event.key==='Enter')saveAutomation()">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="runCleanupNow()" class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-            <i class="ph ph-broom"></i> Run cleanup now
+        <div class="mt-2 flex items-center gap-2">
+          <button type="button" onclick="document.getElementById('input-reference-file').click()"
+                  class="text-[11px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 transition-colors">
+            <i class="ph ph-paperclip"></i> Or upload the reference file
           </button>
-          <a href="/api/export/csv" class="w-full py-2.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-            <i class="ph ph-download-simple"></i> Export captions (CSV)
-          </a>
+          <input type="file" id="input-reference-file" accept="video/*" class="hidden">
+          <span id="ref-file-label" class="text-[10px] text-zinc-500"></span>
         </div>
+        <p class="mt-2 text-[10px] text-zinc-600 flex items-start gap-1"><i class="ph ph-info text-[11px] mt-0.5"></i> Public videos only — if a platform refuses access, upload the file instead. Clipy never bypasses access controls.</p>
       </div>
 
-      <!-- Security -->
-      <div class="card p-5 space-y-3">
-        <h3 class="text-xs font-bold text-white flex items-center gap-1.5"><i class="ph ph-lock-simple text-zinc-400"></i> App lock (PIN)</h3>
-        <p class="text-[11px] text-zinc-500">Protects your keys, tokens and clips — important when the app runs on a public URL.</p>
-        <div class="flex gap-2">
-          <input id="setting-pin" type="password" inputmode="numeric" maxlength="8" placeholder="4–8 digits"
-            class="flex-1 px-3.5 py-2.5 bg-ink-900 border border-ink-600 rounded-xl text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600 tracking-widest">
-          <button onclick="savePin()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-all">Save</button>
+      <!-- Settings -->
+      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+        <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-yellow-400/15 text-yellow-300 grid place-items-center text-[10px] font-black">3</span> Editing defaults</p>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Aspect ratio</label>
+            <select id="select-aspect" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="9:16">9:16 · TikTok / Reels / Shorts</option>
+              <option value="16:9">16:9 · YouTube</option>
+              <option value="1:1">1:1 · Square</option>
+              <option value="4:5">4:5 · IG feed</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Clips</label>
+            <select id="select-num" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="1">1 clip</option><option value="2">2 clips</option><option value="3" selected>3 clips</option>
+              <option value="4">4 clips</option><option value="5">5 clips</option><option value="6">6 clips</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Clip length</label>
+            <select id="select-dur" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="25">~25s</option><option value="45" selected>~45s</option><option value="60">~60s</option><option value="90">~90s</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Quality</label>
+            <select id="select-res" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="720" selected>720p (fast)</option><option value="1080">1080p (sharp)</option>
+            </select>
+          </div>
         </div>
-        <button id="btn-remove-pin" onclick="removePin()" class="hidden text-[11px] text-zinc-500 hover:text-red-400 font-semibold flex items-center gap-1">
-          <i class="ph ph-x"></i> Remove PIN
-        </button>
+        <div class="mt-2.5 grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Captions</label>
+            <select id="select-caps" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="karaoke" selected>Karaoke (word-by-word)</option>
+              <option value="bold">Bold blocks</option>
+              <option value="minimal">Minimal</option>
+              <option value="none">Off</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Intensity</label>
+            <select id="select-intensity" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
+              <option value="light">Light</option><option value="balanced" selected>Balanced</option><option value="aggressive">Aggressive</option>
+            </select>
+          </div>
+        </div>
+        <label class="mt-3 flex items-center justify-between bg-ink-950 border border-ink-700 rounded-lg px-3 py-2.5 cursor-pointer">
+          <span class="text-xs font-semibold text-zinc-300">Remove silences<span class="text-zinc-600 font-normal"> · tighter cuts</span></span>
+          <input id="pref-trim" type="checkbox" checked class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+        </label>
       </div>
 
-      <!-- PWA tip -->
-      <div class="card p-4 flex items-center gap-3">
-        <i class="ph ph-device-mobile text-2xl text-zinc-400 flex-shrink-0"></i>
-        <div>
-          <p class="text-xs font-bold text-white">Install on your phone</p>
-          <p class="text-[10px] text-zinc-500">iPhone: Share → Add to Home Screen · Android: ⋮ → Install app</p>
-        </div>
-      </div>
-    </section>
+      <button id="btn-submit" type="submit"
+              class="w-full py-3.5 bg-yellow-400 hover:bg-yellow-300 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+        <i class="ph-fill ph-magic-wand text-base"></i> Create project & analyze
+      </button>
+      <p id="submit-error" class="hidden text-xs text-red-400 text-center"></p>
+    </form>
 
-  </main>
+    <!-- Active jobs (live) -->
+    <div id="active-jobs" class="space-y-2.5"></div>
+  </section>
 
-  <!-- ══════════ VIDEO MODAL ══════════ -->
-  <div id="video-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-      <div class="p-3 border-b border-ink-700 flex items-center justify-between">
-        <h3 id="modal-title" class="text-xs font-bold text-white truncate max-w-[240px]">Preview</h3>
-        <button onclick="closeModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
-      </div>
-      <div class="bg-black aspect-[9/16] w-full flex items-center justify-center relative">
-        <video id="modal-video" controls playsinline class="w-full h-full object-contain"></video>
-        <div id="modal-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-ink-950 text-center p-6">
-          <i class="ph ph-file-video text-5xl text-ink-500"></i>
-          <p class="text-xs font-bold text-white">Video file is missing</p>
-          <p class="text-[11px] text-zinc-500 leading-relaxed">This clip's file was removed from disk (cleanup or app reset). The caption is kept — you can delete the entry.</p>
-          <button id="modal-remove-btn" onclick="removeFromModal()" class="mt-1 px-4 py-2 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Remove clip</button>
-        </div>
-      </div>
-      <div class="p-3 border-t border-ink-700 flex justify-end">
-        <button onclick="closeModal()" class="px-4 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-lg transition-colors">Close</button>
+  <!-- ================= TAB: PROJECTS ================= -->
+  <section id="tab-projects" class="tab-content hidden space-y-4">
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-extrabold text-white tracking-tight">Projects</h1>
+      <button onclick="switchTab('create')" class="px-3.5 py-2 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"><i class="ph-bold ph-plus"></i> New</button>
+    </div>
+    <div id="projects-list" class="space-y-3"></div>
+    <div id="projects-empty" class="hidden text-center py-16">
+      <i class="ph ph-folder-open text-4xl text-zinc-700"></i>
+      <p class="mt-3 text-sm font-semibold text-zinc-400">No projects yet</p>
+      <p class="text-xs text-zinc-600 mt-1">Create your first project from the Create tab.</p>
+    </div>
+  </section>
+
+  <!-- ================= TAB: CLIPS ================= -->
+  <section id="tab-clips" class="tab-content hidden space-y-4">
+    <div class="flex items-center justify-between">
+      <h1 class="text-xl font-extrabold text-white tracking-tight">Clips</h1>
+      <div class="flex gap-1.5" id="clip-filters">
+        <button data-f="all" onclick="setClipFilter('all')" class="clip-filter px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white text-black">All</button>
+        <button data-f="ready" onclick="setClipFilter('ready')" class="clip-filter px-3 py-1.5 rounded-lg text-[11px] font-bold text-zinc-400 hover:text-white bg-white/5">Ready</button>
+        <button data-f="scheduled" onclick="setClipFilter('scheduled')" class="clip-filter px-3 py-1.5 rounded-lg text-[11px] font-bold text-zinc-400 hover:text-white bg-white/5">Scheduled</button>
+        <button data-f="posted" onclick="setClipFilter('posted')" class="clip-filter px-3 py-1.5 rounded-lg text-[11px] font-bold text-zinc-400 hover:text-white bg-white/5">Posted</button>
       </div>
     </div>
-  </div>
-
-  <!-- ══════════ EDIT CAPTION MODAL ══════════ -->
-  <div id="edit-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4">
-      <div class="flex items-center justify-between border-b border-ink-700 pb-3">
-        <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="ph ph-pencil-simple-line text-zinc-400"></i> Edit before posting</h3>
-        <button onclick="closeEditModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
-      </div>
-      <div class="space-y-3">
-        <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hook / title</label>
-          <input id="edit-hook" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
-        </div>
-        <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Caption</label>
-          <textarea id="edit-caption" rows="4" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 resize-none"></textarea>
-        </div>
-        <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">Hashtags (space separated)</label>
-          <input id="edit-hashtags" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400">
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 pt-1">
-        <button onclick="closeEditModal()" class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
-        <button onclick="saveEdit()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save changes</button>
-      </div>
+    <div id="clips-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+    <div id="clips-empty" class="hidden text-center py-16">
+      <i class="ph ph-film-strip text-4xl text-zinc-700"></i>
+      <p class="mt-3 text-sm font-semibold text-zinc-400">No clips yet</p>
+      <p class="text-xs text-zinc-600 mt-1">Finished jobs drop their clips here.</p>
     </div>
-  </div>
+  </section>
 
-  <!-- ══════════ SOCIAL CONNECT MODAL ══════════ -->
-  <div id="social-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="max-w-sm w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto hide-scrollbar">
-      <div class="flex items-center justify-between border-b border-ink-700 pb-3">
-        <h3 id="social-modal-title" class="text-sm font-bold text-white">Connect account</h3>
-        <button onclick="closeSocialModal()" class="text-zinc-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
+  <!-- ================= TAB: HISTORY ================= -->
+  <section id="tab-history" class="tab-content hidden space-y-4">
+    <h1 class="text-xl font-extrabold text-white tracking-tight">History</h1>
+    <div class="flex gap-2">
+      <div class="relative flex-1">
+        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm"></i>
+        <input id="history-search" oninput="historySearchDebounced()" placeholder="Search projects…"
+               class="w-full bg-ink-900 border border-ink-600 rounded-lg py-2.5 pl-9 pr-3 text-xs text-white placeholder-zinc-600 focus:border-zinc-400">
       </div>
-      <div id="social-modal-body" class="space-y-3"></div>
-      <div class="pt-2 border-t border-ink-700 flex justify-end gap-2">
-        <button onclick="closeSocialModal()" class="px-3.5 py-2 bg-ink-800 hover:bg-ink-700 text-white text-xs font-semibold rounded-xl transition-colors">Cancel</button>
-        <button id="social-modal-save-btn" onclick="saveSocialModal()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors">Save &amp; connect</button>
-      </div>
+      <select id="history-status" onchange="loadHistory()" class="bg-ink-900 border border-ink-600 rounded-lg py-2.5 px-2 text-xs font-semibold text-white">
+        <option value="">All status</option><option value="completed">Completed</option><option value="failed">Failed</option>
+        <option value="processing">Processing</option><option value="cancelled">Cancelled</option><option value="queued">Queued</option>
+      </select>
+      <select id="history-days" onchange="loadHistory()" class="bg-ink-900 border border-ink-600 rounded-lg py-2.5 px-2 text-xs font-semibold text-white">
+        <option value="0">Any time</option><option value="1">24h</option><option value="7">7 days</option><option value="30">30 days</option>
+      </select>
     </div>
-  </div>
+    <div id="history-list" class="space-y-3"></div>
+    <div class="flex items-center justify-between pt-1">
+      <button id="history-prev" onclick="historyPage(-1)" class="px-3.5 py-2 text-xs font-bold text-zinc-400 hover:text-white bg-white/5 rounded-lg disabled:opacity-30 transition-colors" disabled>← Prev</button>
+      <span id="history-page-info" class="text-[11px] text-zinc-600 font-semibold"></span>
+      <button id="history-next" onclick="historyPage(1)" class="px-3.5 py-2 text-xs font-bold text-zinc-400 hover:text-white bg-white/5 rounded-lg disabled:opacity-30 transition-colors" disabled>Next →</button>
+    </div>
+  </section>
 
-  <!-- ══════════ CONFIRM MODAL ══════════ -->
-  <div id="confirm-modal" class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="max-w-xs w-full bg-ink-900 border border-ink-600 rounded-2xl shadow-2xl p-5 space-y-4 text-center">
-      <div class="w-10 h-10 mx-auto rounded-full bg-ink-800 border border-ink-600 flex items-center justify-center text-zinc-300">
-        <i id="confirm-icon" class="ph ph-warning text-lg"></i>
+  <!-- ================= TAB: ANALYTICS ================= -->
+  <section id="tab-analytics" class="tab-content hidden space-y-4">
+    <h1 class="text-xl font-extrabold text-white tracking-tight">Analytics</h1>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Clips</p><p id="stat-total" class="text-2xl font-extrabold text-white mt-1">—</p></div>
+      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Published</p><p id="stat-posted" class="text-2xl font-extrabold text-emerald-400 mt-1">—</p></div>
+      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Scheduled</p><p id="stat-scheduled" class="text-2xl font-extrabold text-white mt-1">—</p></div>
+      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Success</p><p id="stat-success" class="text-2xl font-extrabold text-white mt-1">—</p></div>
+    </div>
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs font-bold text-zinc-300">Last 7 days</p>
+        <span id="stat-avg-score" class="text-[10px] text-zinc-500 font-semibold"></span>
       </div>
-      <p id="confirm-message" class="text-xs text-zinc-200 font-medium leading-relaxed"></p>
+      <div id="week-chart" class="flex items-end justify-between gap-2 h-24"></div>
+    </div>
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-3">Publishing per platform</p>
+      <div id="platform-posts" class="space-y-2.5"></div>
+    </div>
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-3">Connected destinations</p>
+      <div id="destinations" class="space-y-2"></div>
+    </div>
+  </section>
+
+  <!-- ================= TAB: ACCOUNTS ================= -->
+  <section id="tab-accounts" class="tab-content hidden space-y-4">
+    <div>
+      <h1 class="text-xl font-extrabold text-white tracking-tight">Connected accounts</h1>
+      <p class="text-xs text-zinc-500 mt-0.5">Publish and schedule your clips.</p>
+    </div>
+    <div id="accounts-list" class="space-y-2.5"></div>
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-1">Buffer — one token, all platforms</p>
+      <p class="text-[11px] text-zinc-500 mb-3">Easiest way to publish to Instagram + TikTok + YouTube at once. Create a token in your Buffer dashboard.</p>
       <div class="flex gap-2">
-        <button onclick="resolveConfirm(false)" class="flex-1 py-2.5 bg-ink-800 hover:bg-ink-700 text-white text-xs font-bold rounded-xl transition-colors">Cancel</button>
-        <button id="confirm-yes" onclick="resolveConfirm(true)" class="flex-1 py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Confirm</button>
+        <input id="buffer-token-input" type="password" placeholder="1/… (Buffer access token)"
+               class="flex-1 bg-ink-800 border border-ink-600 rounded-lg py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-yellow-400/50">
+        <button onclick="connectBuffer()" class="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded-lg transition-colors">Connect</button>
+      </div>
+      <p id="buffer-status" class="mt-2 text-[11px]"></p>
+      <div id="buffer-channels" class="mt-2 space-y-1.5"></div>
+    </div>
+  </section>
+
+  <!-- ================= TAB: SETTINGS ================= -->
+  <section id="tab-settings" class="tab-content hidden space-y-4">
+    <h1 class="text-xl font-extrabold text-white tracking-tight">Settings</h1>
+
+    <!-- AI -->
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-1 flex items-center gap-2"><i class="ph-fill ph-sparkle text-yellow-400"></i> Gemini AI</p>
+      <p class="text-[11px] text-zinc-500 mb-3">Uses Gemini 2.5 Flash (free-tier friendly) with automatic fallback. Your key is encrypted at rest and never shown in full.</p>
+      <div id="gemini-key-state" class="mb-3 px-3.5 py-3 rounded-xl bg-ink-950 border border-ink-700 flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold text-white" id="gemini-key-label">No key saved</p>
+          <p class="text-[10px] text-zinc-600 font-mono" id="gemini-key-masked"></p>
+        </div>
+        <div class="flex gap-1.5" id="gemini-key-actions"></div>
+      </div>
+      <div id="gemini-key-input-wrap" class="hidden mb-3">
+        <input id="gemini-key-input" type="password" placeholder="Paste new Gemini API key (AQ.Ab8… or AIzaSy…)"
+               class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-yellow-400/50">
+        <div class="flex gap-2 mt-2">
+          <button onclick="saveGeminiKey()" class="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded-lg">Save & test</button>
+          <button onclick="hideGeminiInput()" class="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white bg-white/5 rounded-lg">Cancel</button>
+        </div>
+        <p id="gemini-test-result" class="mt-2 text-[11px]"></p>
+      </div>
+      <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Model override <span class="normal-case">(optional, blank = automatic)</span></label>
+      <input id="setting-gemini-model" placeholder="gemini-2.5-flash"
+             class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs text-white placeholder-zinc-600">
+      <button onclick="saveModelOverride()" class="mt-2 px-3.5 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors">Save model</button>
+    </div>
+
+    <!-- Editing defaults -->
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><i class="ph-fill ph-sliders text-yellow-400"></i> Editing defaults</p>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Aspect ratio</label>
+          <select id="pref-aspect" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white">
+            <option value="9:16">9:16 · vertical</option><option value="16:9">16:9 · wide</option><option value="1:1">1:1 · square</option><option value="4:5">4:5 · feed</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Clips per project</label>
+          <select id="pref-num" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Caption style</label>
+          <select id="pref-caps" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white">
+            <option value="karaoke">Karaoke</option><option value="bold">Bold blocks</option><option value="minimal">Minimal</option><option value="none">Off</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Intensity</label>
+          <select id="pref-intensity" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white">
+            <option value="light">Light</option><option value="balanced">Balanced</option><option value="aggressive">Aggressive</option>
+          </select>
+        </div>
+      </div>
+      <label class="mt-2.5 flex items-center justify-between bg-ink-950 border border-ink-700 rounded-lg px-3 py-2.5 cursor-pointer">
+        <span class="text-xs font-semibold text-zinc-300">Remove silences by default</span>
+        <input id="pref-trim-silence" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+      </label>
+      <div class="mt-2.5">
+        <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Default hashtags (appended to captions)</label>
+        <input id="pref-hashtags" type="text" placeholder="#gaming #clips #viral" onchange="savePrefs()"
+               class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs text-white placeholder-zinc-600">
+      </div>
+      <label class="mt-2.5 flex items-center justify-between bg-ink-950 border border-ink-700 rounded-lg px-3 py-2.5 cursor-pointer">
+        <span class="text-xs font-semibold text-zinc-300">Auto-publish first clip when a job finishes</span>
+        <input id="pref-autopublish" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+      </label>
+    </div>
+
+    <!-- Publishing behaviour -->
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><i class="ph-fill ph-calendar-check text-yellow-400"></i> Publishing & scheduling</p>
+      <label class="flex items-center justify-between bg-ink-950 border border-ink-700 rounded-lg px-3 py-2.5 mb-2 cursor-pointer">
+        <span class="text-xs font-semibold text-zinc-300">Review mode <span class="text-zinc-600 font-normal">(hold scheduled posts for approval)</span></span>
+        <input id="pref-review" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+      </label>
+      <div>
+        <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Stagger between auto-posts (hours)</label>
+        <input id="pref-interval" type="number" min="0" step="0.5" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs text-white">
+      </div>
+      <div id="scheduled-list" class="mt-3 space-y-1.5"></div>
+    </div>
+
+    <!-- Storage -->
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><i class="ph-fill ph-hard-drives text-yellow-400"></i> Storage</p>
+      <div id="storage-info" class="space-y-2 text-xs"></div>
+      <div class="flex gap-2 mt-3">
+        <button onclick="runCleanupNow()" class="px-3.5 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors">Apply retention rules</button>
+        <a href="/api/export/csv" class="px-3.5 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors">Export CSV</a>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <label class="flex items-center justify-between cursor-pointer">
+        <div><p class="text-xs font-bold text-zinc-300 flex items-center gap-2"><i class="ph-fill ph-bell text-yellow-400"></i> Notifications</p>
+        <p class="text-[11px] text-zinc-500 mt-0.5">Browser notification when jobs finish</p></div>
+        <input id="pref-notify" type="checkbox" onchange="saveNotify()" class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+      </label>
+    </div>
+  </section>
+</main>
+
+<!-- ================= PROJECT DETAIL (full-screen overlay) ================= -->
+<div id="project-view" class="hidden fixed inset-0 z-50 bg-ink-950 overflow-y-auto">
+  <div class="max-w-3xl mx-auto p-4 pb-16">
+    <div class="flex items-center gap-3 py-3 sticky top-0 bg-ink-950/90 backdrop-blur z-10">
+      <button onclick="closeProject()" class="w-9 h-9 grid place-items-center rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors"><i class="ph-bold ph-arrow-left"></i></button>
+      <div class="min-w-0">
+        <h2 id="pv-title" class="font-extrabold text-white truncate text-sm">Project</h2>
+        <p id="pv-meta" class="text-[10px] text-zinc-500 truncate"></p>
+      </div>
+      <button onclick="deleteCurrentProject()" class="ml-auto w-9 h-9 grid place-items-center rounded-xl bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-zinc-500 transition-colors" title="Delete project"><i class="ph ph-trash"></i></button>
+    </div>
+
+    <div id="pv-body" class="space-y-4 mt-2"></div>
+  </div>
+</div>
+
+<!-- ================= VIDEO MODAL ================= -->
+<div id="video-modal" class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="flex items-center justify-between mb-3">
+      <h3 id="modal-title" class="text-xs font-bold text-white truncate max-w-[240px]">Preview</h3>
+      <div class="flex gap-2">
+        <a id="modal-download" href="#" download class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg transition-colors">Download</a>
+        <button onclick="closeModal()" class="w-8 h-8 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white"><i class="ph-bold ph-x"></i></button>
+      </div>
+    </div>
+    <div class="relative rounded-2xl overflow-hidden bg-black aspect-[9/16] max-h-[70vh] mx-auto">
+      <video id="modal-video" controls playsinline class="w-full h-full object-contain"></video>
+      <div id="modal-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-ink-950 text-center p-6">
+        <i class="ph ph-video-slash text-3xl text-zinc-600"></i>
+        <p class="text-xs text-zinc-400">This clip's file is no longer on the server (cleaned up or lost during a restart).<br>Open the project and re-render to restore it.</p>
+        <button id="modal-remove-btn" onclick="removeFromModal()" class="mt-1 px-4 py-2 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl">Remove from library</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════ TOASTS ══════════ -->
-  <div id="toast-area" class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[70] space-y-2 w-[calc(100%-2rem)] max-w-xs pointer-events-none"></div>
+<!-- ================= EDIT MODAL ================= -->
+<div id="edit-modal" class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-ink-900 border border-white/10 rounded-2xl p-5">
+    <h3 class="text-sm font-bold text-white mb-3">Edit clip metadata</h3>
+    <div class="space-y-3">
+      <div><label class="text-[10px] font-bold text-zinc-500 uppercase">Hook text (overlay)</label>
+        <input id="edit-hook" class="mt-1 w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white"></div>
+      <div><label class="text-[10px] font-bold text-zinc-500 uppercase">Caption</label>
+        <textarea id="edit-caption" rows="4" class="mt-1 w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white resize-none"></textarea></div>
+      <div><label class="text-[10px] font-bold text-zinc-500 uppercase">Hashtags (comma separated)</label>
+        <input id="edit-hashtags" class="mt-1 w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white"></div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button onclick="closeEditModal()" class="flex-1 py-2.5 text-xs font-bold text-zinc-400 bg-white/5 rounded-xl">Cancel</button>
+      <button onclick="saveEdit()" class="flex-1 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded-xl">Save</button>
+    </div>
+  </div>
+</div>
 
-  <!-- ══════════ MOBILE NAV ══════════ -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-ink-950/90 backdrop-blur-xl border-t border-ink-700 px-2 py-2 flex items-center justify-around">
-    <button onclick="switchTab('create')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="create">
-      <i class="ph ph-plus-circle text-[22px]"></i>
-      <span class="text-[9px] font-bold tracking-wide">Create</span>
+<!-- ================= CONFIRM MODAL ================= -->
+<div id="confirm-modal" class="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="w-full max-w-xs bg-ink-900 border border-white/10 rounded-2xl p-5 text-center">
+    <i id="confirm-icon" class="ph ph-warning text-2xl text-yellow-400"></i>
+    <p id="confirm-message" class="text-xs text-zinc-200 font-medium leading-relaxed mt-2"></p>
+    <div class="flex gap-2 mt-4">
+      <button onclick="resolveConfirm(false)" class="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-bold rounded-xl transition-colors">Cancel</button>
+      <button id="confirm-yes" onclick="resolveConfirm(true)" class="flex-1 py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PROFILE MODAL ================= -->
+<div id="profile-modal" class="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="w-full max-w-sm bg-ink-900 border border-white/10 rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-bold text-white">Profile & security</h3>
+      <button onclick="closeProfile()" class="w-8 h-8 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300"><i class="ph-bold ph-x"></i></button>
+    </div>
+    <div id="profile-info" class="text-xs text-zinc-400 mb-4"></div>
+    <p class="text-[10px] font-bold text-zinc-500 uppercase mb-1.5">Change password</p>
+    <input id="pw-current" type="password" placeholder="Current password" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white placeholder-zinc-600 mb-2">
+    <input id="pw-new" type="password" placeholder="New password (8+ chars)" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white placeholder-zinc-600 mb-2">
+    <button onclick="changePassword()" class="w-full py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs font-bold rounded-xl transition-colors mb-4">Update password</button>
+    <p id="pw-status" class="text-[11px] mb-3"></p>
+    <button onclick="logout()" class="w-full py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+      <i class="ph ph-sign-out"></i> Sign out
     </button>
-    <button onclick="switchTab('clips')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="clips">
-      <i class="ph ph-film-strip text-[22px]"></i>
-      <span class="text-[9px] font-bold tracking-wide">Clips</span>
-    </button>
-    <button onclick="switchTab('history')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="history">
-      <i class="ph ph-clock-counter-clockwise text-[22px]"></i>
-      <span class="text-[9px] font-bold tracking-wide">History</span>
-    </button>
-    <button onclick="switchTab('analytics')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="analytics">
-      <i class="ph ph-chart-bar text-[22px]"></i>
-      <span class="text-[9px] font-bold tracking-wide">Stats</span>
-    </button>
-    <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl" data-tab="settings">
-      <i class="ph ph-gear-six text-[22px]"></i>
-      <span class="text-[9px] font-bold tracking-wide">Settings</span>
-    </button>
-  </nav>
+  </div>
+</div>
 
-  <script>
-    /* ═══════════════════ STATE & HELPERS ═══════════════════ */
-    const CLIPS = {};            // id -> clip object (avoids inline-string escaping bugs)
-    let JOBS = [];               // all jobs
-    let activeFilter = 'all';
-    let currentEditId = null;
-    let currentModalPlatform = '';
-    let pollInterval = null;
-    let lastRunningCount = 0;
+<!-- ================= TOASTS ================= -->
+<div id="toast-area" class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[80] space-y-2 w-[calc(100%-2rem)] max-w-xs pointer-events-none"></div>
 
-    function esc(s) {
-      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+<!-- ================= BOTTOM NAV (mobile) / SIDE NAV (desktop) ================= -->
+<nav class="fixed bottom-0 inset-x-0 z-40 bg-ink-950/90 backdrop-blur-md border-t border-white/5 md:hidden">
+  <div class="grid grid-cols-7 h-16" id="mobile-nav"></div>
+</nav>
+<div class="hidden md:block fixed left-0 top-0 bottom-0 w-14 z-30 border-r border-white/5 bg-ink-950/60 pt-20" id="desktop-nav"></div>
+
+<script>
+const user = {{ user | tojson }};
+const tabs = [
+  { id: 'create', icon: 'ph-plus-circle', label: 'Create' },
+  { id: 'projects', icon: 'ph-folder-open', label: 'Projects' },
+  { id: 'clips', icon: 'ph-film-strip', label: 'Clips' },
+  { id: 'history', icon: 'ph-clock-counter-clockwise', label: 'History' },
+  { id: 'analytics', icon: 'ph-chart-bar', label: 'Analytics' },
+  { id: 'accounts', icon: 'ph-users-three', label: 'Accounts' },
+  { id: 'settings', icon: 'ph-gear-six', label: 'Settings' },
+];
+
+// ---------- helpers ----------
+function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+async function api(url, opts = {}) {
+  if (opts.json) { opts.body = JSON.stringify(opts.json); opts.headers = { 'Content-Type': 'application/json' }; delete opts.json; }
+  const res = await fetch(url, opts);
+  if (res.status === 401) { location.href = '/login'; throw new Error('Not signed in'); }
+  let data = {}; try { data = await res.json(); } catch {}
+  if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), { status: res.status, data });
+  return data;
+}
+
+function showToast(msg, type = 'info') {
+  const area = document.getElementById('toast-area');
+  const colors = { info: 'bg-ink-800 border-white/10 text-white', success: 'bg-emerald-500/90 text-white border-emerald-400', error: 'bg-red-500/90 text-white border-red-400' };
+  const icons = { info: 'ph-info', success: 'ph-check-circle', error: 'ph-warning-circle' };
+  const el = document.createElement('div');
+  el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold flex items-center gap-2 ${colors[type]}`;
+  el.innerHTML = `<i class="ph-fill ${icons[type]}"></i> ${esc(msg)}`;
+  area.appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 4200);
+}
+
+let _confirmResolver = null;
+function confirmDialog(message, opts = {}) {
+  document.getElementById('confirm-message').textContent = message;
+  const yes = document.getElementById('confirm-yes');
+  yes.textContent = opts.yesLabel || 'Confirm';
+  yes.className = `flex-1 py-2.5 text-white text-xs font-bold rounded-xl transition-colors ${opts.danger !== false ? 'bg-red-500/90 hover:bg-red-500' : 'bg-yellow-400 hover:bg-yellow-300 text-black'}`;
+  document.getElementById('confirm-modal').classList.replace('hidden', 'flex');
+  return new Promise(r => _confirmResolver = r);
+}
+function resolveConfirm(v) {
+  document.getElementById('confirm-modal').classList.replace('flex', 'hidden');
+  if (_confirmResolver) { _confirmResolver(v); _confirmResolver = null; }
+}
+
+function fmtBytes(b) { if (!b) return '0 B'; const u = ['B','KB','MB','GB']; let i = 0; let n = b; while (n >= 1024 && i < u.length-1) { n /= 1024; i++; } return n.toFixed(i ? 1 : 0) + ' ' + u[i]; }
+function fmtDur(s) { const m = Math.floor((s||0)/60); const r = Math.round((s||0)%60); return m ? `${m}m ${r}s` : `${r}s`; }
+function fmtDate(iso) { try { const d = new Date(iso); return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); } catch { return iso; } }
+
+// ---------- navigation ----------
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tabId));
+  document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === tabId));
+  history.replaceState(null, '', '?tab=' + tabId);
+  window.scrollTo({ top: 0 });
+  if (tabId === 'clips') loadClips();
+  if (tabId === 'history') loadHistory();
+  if (tabId === 'analytics') loadAnalytics();
+  if (tabId === 'accounts') loadAccounts();
+  if (tabId === 'settings') loadSettings();
+}
+
+const mobileNav = document.getElementById('mobile-nav');
+const desktopNav = document.getElementById('desktop-nav');
+tabs.forEach(t => {
+  mobileNav.insertAdjacentHTML('beforeend',
+    `<button data-nav="${t.id}" onclick="switchTab('${t.id}')" class="tab-btn flex flex-col items-center justify-center gap-0.5 text-zinc-500 hover:text-zinc-300 transition-colors">
+      <i class="ph ${t.icon} text-xl"></i><span class="text-[9px] font-bold">${t.label}</span><span class="tab-ind opacity-0 w-1 h-1 rounded-full bg-yellow-400"></span></button>`);
+  desktopNav.insertAdjacentHTML('beforeend',
+    `<button data-nav="${t.id}" onclick="switchTab('${t.id}')" title="${t.label}" class="tab-btn w-full py-3 grid place-items-center text-zinc-500 hover:text-white transition-colors">
+      <i class="ph ${t.icon} text-xl"></i></button>`);
+});
+
+// ---------- create: file pickers ----------
+const fileInput = document.getElementById('input-file');
+const dropArea = document.getElementById('drop-area');
+let pickedFile = null;
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files[0];
+  if (!f) return;
+  if (f.size > {{ (HOST_SETTINGS.get('max_upload_mb', 500) * 1024 * 1024) }}) {
+    showToast('File exceeds the {{ HOST_SETTINGS.get("max_upload_mb", 500) }} MB limit', 'error');
+    fileInput.value = ''; return;
+  }
+  pickedFile = f;
+  document.getElementById('file-label').textContent = f.name;
+  document.getElementById('file-meta').textContent = fmtBytes(f.size);
+  dropArea.classList.add('border-yellow-400/50');
+});
+let refFile = null;
+document.getElementById('input-reference-file').addEventListener('change', (e) => {
+  refFile = e.target.files[0] || null;
+  document.getElementById('ref-file-label').textContent = refFile ? refFile.name : '';
+});
+
+async function submitProject(ev) {
+  ev.preventDefault();
+  const btn = document.getElementById('btn-submit');
+  const err = document.getElementById('submit-error');
+  err.classList.add('hidden');
+  const url = document.getElementById('input-url').value.trim();
+  const refUrl = document.getElementById('input-reference').value.trim();
+  if (!pickedFile && !url) { err.textContent = 'Pick a video file or paste a public video link.'; err.classList.remove('hidden'); return; }
+  btn.disabled = true; btn.innerHTML = '<i class="ph ph-circle-notch animate-spin"></i> Uploading…';
+  try {
+    const fd = new FormData();
+    if (pickedFile) fd.append('file', pickedFile);
+    if (url) fd.append('source_url', url);
+    if (refUrl) fd.append('reference_url', refUrl);
+    if (refFile) fd.append('reference_file', refFile);
+    const res = await fetch('/api/projects', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    showToast('Project created' + (data.reference_job_id ? ' — reference analysis queued' : ''), 'success');
+    // reset form
+    pickedFile = null; refFile = null;
+    document.getElementById('input-file').value = ''; document.getElementById('input-reference-file').value = '';
+    document.getElementById('file-label').textContent = 'Tap to pick a video (MP4, MOV, WEBM)';
+    document.getElementById('file-meta').textContent = 'or paste a public link below';
+    document.getElementById('input-url').value = ''; document.getElementById('input-reference').value = '';
+    document.getElementById('ref-file-label').textContent = '';
+    dropArea.classList.remove('border-yellow-400/50');
+    if (data.project_id) openProject(data.project_id, data.reference_job_id);
+    else loadProjects();
+  } catch (e) {
+    err.textContent = e.message; err.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<i class="ph-fill ph-magic-wand text-base"></i> Create project & analyze';
+  }
+}
+
+// ---------- active jobs polling ----------
+let pollTimer = null;
+function startPolling() {
+  if (pollTimer) return;
+  pollActiveJobs();
+  pollTimer = setInterval(pollActiveJobs, 3000);
+}
+async function pollActiveJobs() {
+  try {
+    const { jobs } = await api('/api/jobs?limit=10');
+    const active = jobs.filter(j => ['queued', 'processing'].includes(j.status));
+    renderActiveJobs(active, jobs);
+    if (active.length === 0 && pollTimer) {
+      clearInterval(pollTimer); pollTimer = null;
+      setTimeout(() => { pollActiveJobs(); pollTimer = setInterval(pollActiveJobs, 8000); }, 500);
     }
+  } catch {}
+}
 
-    async function api(url, opts = {}) {
-      const res = await fetch(url, opts);
-      if (res.status === 401) { showLock(); throw new Error('locked'); }
-      return res;
-    }
+function jobStatusBadge(job) {
+  const map = { queued: ['ph-hourglass', 'text-zinc-400', 'Queued'], processing: ['ph-circle-notch animate-spin', 'text-yellow-400', 'Processing'],
+    completed: ['ph-check-circle', 'text-emerald-400', 'Completed'], failed: ['ph-x-circle', 'text-red-400', 'Failed'],
+    cancelled: ['ph-prohibit', 'text-zinc-500', 'Cancelled'] };
+  const [icon, color, label] = map[job.status] || map.queued;
+  return `<i class="ph ${icon} ${color}"></i><span class="${color}">${label}</span>`;
+}
 
-    /* ── Toasts ── */
-    function showToast(msg, type = 'info') {
-      const area = document.getElementById('toast-area');
-      const colors = {
-        info: 'bg-ink-800 border-ink-600 text-zinc-100',
-        success: 'bg-ink-800 border-emerald-500/40 text-emerald-300',
-        error: 'bg-ink-800 border-red-500/40 text-red-300'
-      };
-      const icons = { info: 'ph-info', success: 'ph-check-circle', error: 'ph-warning-circle' };
-      const el = document.createElement('div');
-      el.className = `toast-in pointer-events-auto flex items-center gap-2.5 px-4 py-3 ${colors[type]} border rounded-xl shadow-xl text-xs font-semibold`;
-      el.innerHTML = `<i class="ph ${icons[type]} text-base flex-shrink-0"></i><span class="leading-snug">${esc(msg)}</span>`;
-      area.appendChild(el);
-      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 320); }, 3200);
-    }
+function renderActiveJobs(active, allJobs) {
+  const wrap = document.getElementById('active-jobs');
+  if (!active.length) {
+    // Show recently finished jobs for 1 render cycle
+    const recent = (allJobs || []).filter(j => ['completed', 'failed'].includes(j.status)).slice(0, 2);
+    wrap.innerHTML = recent.length ? recent.map(j => `
+      <div class="flex items-center gap-3 p-3.5 rounded-xl bg-ink-900 border border-white/5">
+        ${jobStatusBadge(j)}
+        <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-zinc-200 truncate">${esc(j.step || j.kind)}</p>
+          ${j.error ? `<p class="text-[10px] text-red-400/90 truncate">${esc(j.error)}</p>` : ''}</div>
+        ${j.status === 'completed' ? `<button onclick="switchTab('clips')" class="text-[11px] font-bold text-yellow-400 hover:text-yellow-300">See clips</button>` :
+          `<button onclick="retryJob('${j.id}')" class="text-[11px] font-bold text-zinc-400 hover:text-white">Retry</button>`}
+      </div>`).join('') : '';
+    return;
+  }
+  wrap.innerHTML = active.map(j => `
+    <div class="p-4 rounded-xl bg-ink-900 border border-yellow-400/20">
+      <div class="flex items-center gap-3">
+        <i class="ph ph-circle-notch animate-spin text-yellow-400 text-lg"></i>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-bold text-white truncate">${esc(j.step || 'Processing…')}</p>
+          <p class="text-[10px] text-zinc-500 mt-0.5">${j.kind === 'reference' ? 'Reference analysis' : 'Editing job'} · ${esc(j.aspect_ratio || '')} · ${esc(String(j.resolution || ''))}p</p>
+        </div>
+        <button onclick="cancelJob('${j.id}')" class="text-[11px] font-bold text-zinc-500 hover:text-red-400 px-2 py-1">Cancel</button>
+      </div>
+      <div class="mt-2.5 h-1.5 rounded-full bg-white/10 overflow-hidden">
+        <div class="h-full bg-yellow-400 rounded-full transition-all duration-500" style="width:${Math.max(4, j.progress || 2)}%"></div>
+      </div>
+      <p class="text-[10px] text-zinc-600 mt-1.5">You can leave this page — the job keeps running on the server.</p>
+    </div>`).join('');
+}
 
-    /* ── Confirm dialog (replaces alert/confirm) ── */
-    let confirmResolver = null;
-    function confirmDialog(message, opts = {}) {
-      const modal = document.getElementById('confirm-modal');
-      document.getElementById('confirm-message').textContent = message;
-      const btn = document.getElementById('confirm-yes');
-      btn.textContent = opts.yes || 'Confirm';
-      btn.className = 'flex-1 py-2.5 text-xs font-bold rounded-xl transition-colors text-white ' +
-        (opts.danger === false ? 'bg-white hover:bg-zinc-200 text-black' : 'bg-red-500/90 hover:bg-red-500 text-white');
-      modal.classList.remove('hidden'); modal.classList.add('flex');
-      return new Promise(r => confirmResolver = r);
-    }
-    function resolveConfirm(val) {
-      document.getElementById('confirm-modal').classList.add('hidden');
-      document.getElementById('confirm-modal').classList.remove('flex');
-      if (confirmResolver) { confirmResolver(val); confirmResolver = null; }
-    }
+async function cancelJob(jobId) {
+  if (!(await confirmDialog('Cancel this job? Processed clips of this job will be removed.'))) return;
+  try { await api(`/api/jobs/${jobId}/cancel`, { method: 'POST' }); showToast('Cancelling…', 'info'); pollActiveJobs(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function retryJob(jobId) {
+  try { await api(`/api/jobs/${jobId}/retry`, { method: 'POST' }); showToast('Queued for retry', 'success'); startPolling(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
 
-    /* ── Lock screen ── */
-    function showLock() {
-      const el = document.getElementById('lock-screen');
-      el.classList.remove('hidden'); el.classList.add('flex');
-      setTimeout(() => document.getElementById('lock-pin').focus(), 100);
-    }
-    function hideLock() {
-      const el = document.getElementById('lock-screen');
-      el.classList.add('hidden'); el.classList.remove('flex');
-    }
-    async function unlockApp() {
-      const pin = document.getElementById('lock-pin').value.trim();
-      const err = document.getElementById('lock-error');
-      try {
-        const res = await fetch('/api/auth/unlock', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pin })
-        });
-        if (res.ok) { err.classList.add('hidden'); hideLock(); startApp(); }
-        else err.classList.remove('hidden');
-      } catch { err.classList.remove('hidden'); }
-    }
-    async function lockApp() {
-      await fetch('/api/auth/lock', { method: 'POST' });
-      showLock();
-    }
-    document.getElementById('lock-pin').addEventListener('keydown', e => { if (e.key === 'Enter') unlockApp(); });
-
-    /* ── Notifications ── */
-    async function notifyUser(title, body) {
-      if (!('Notification' in window)) return;
-      if (Notification.permission !== 'granted') return;
-      try {
-        if (navigator.serviceWorker) {
-          const reg = await navigator.serviceWorker.getRegistration();
-          if (reg) { reg.showNotification(title, { body, icon: '/static/icons/icon-192.png' }); return; }
-        }
-      } catch {}
-      try { new Notification(title, { body, icon: '/static/icons/icon-192.png' }); } catch {}
-    }
-
-    /* ═══════════════════ TABS ═══════════════════ */
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      const target = document.getElementById('tab-' + tabId);
-      if (target) target.classList.remove('hidden');
-
-      document.querySelectorAll('.nav-btn').forEach(btn => {
-        const active = btn.dataset.tab === tabId;
-        btn.classList.toggle('bg-ink-800', active);
-        btn.classList.toggle('text-white', active);
-        btn.classList.toggle('text-zinc-500', !active);
-      });
-
-      if (tabId === 'clips') loadClips();
-      if (tabId === 'history') loadHistory();
-      if (tabId === 'analytics') loadAnalytics();
-      if (tabId === 'settings') loadSettings();
-      window.scrollTo({ top: 0 });
-    }
-
-    /* ═══════════════════ CREATE / SUBMIT ═══════════════════ */
-    const dropArea = document.getElementById('drop-area');
-    const inputFile = document.getElementById('input-file');
-    const fileLabel = document.getElementById('file-label');
-
-    dropArea.addEventListener('click', () => inputFile.click());
-    inputFile.addEventListener('change', () => {
-      if (inputFile.files.length > 0) {
-        fileLabel.innerText = inputFile.files[0].name;
-        dropArea.classList.add('border-zinc-400');
-      }
-    });
-
-    async function submitJob() {
-      const url = document.getElementById('input-url').value.trim();
-      const file = inputFile.files[0];
-      const numClips = document.getElementById('select-clips').value;
-      const interval = document.getElementById('select-interval').value;
-      const btn = document.getElementById('btn-submit');
-
-      if (!url && !file) { showToast('Paste a link or pick a video first', 'error'); return; }
-
-      btn.disabled = true;
-      btn.innerHTML = `<i class="ph ph-circle-notch animate-spin text-base"></i><span>Starting…</span>`;
-
-      const formData = new FormData();
-      if (url) formData.append('url', url);
-      if (file) formData.append('file', file);
-      formData.append('num_clips', numClips);
-      formData.append('interval_hours', interval);
-
-      try {
-        const res = await api('/api/jobs', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.success) {
-          document.getElementById('input-url').value = '';
-          inputFile.value = '';
-          fileLabel.innerText = 'Tap to pick a video';
-          dropArea.classList.remove('border-zinc-400');
-          showToast(data.message || 'Processing started', 'success');
-          switchTab('clips');
-          loadClips();
-          pollActiveJobs();
-        } else showToast(data.error || 'Failed to start job', 'error');
-      } catch (err) {
-        if (err.message !== 'locked') showToast('Error: ' + err.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="ph-bold ph-magic-wand text-base"></i><span>Auto-Clip &amp; Schedule</span>`;
-      }
-    }
-
-    /* ═══════════════════ POLLING + NOTIFICATIONS ═══════════════════ */
-    function pollActiveJobs() {
-      if (pollInterval) clearInterval(pollInterval);
-      pollInterval = setInterval(async () => {
-        try {
-          const res = await api('/api/jobs');
-          const data = await res.json();
-          JOBS = data.jobs || [];
-          const running = JOBS.filter(j => j.status === 'processing' || j.status === 'pending');
-          loadClips();
-          if (lastRunningCount > 0 && running.length === 0) {
-            notifyUser('Clipy', '✅ Your clips are ready!');
-            showToast('Job finished — clips are ready', 'success');
-          }
-          lastRunningCount = running.length;
-          if (running.length === 0) { clearInterval(pollInterval); pollInterval = null; }
-        } catch (e) {}
-      }, 3500);
-    }
-
-    /* ═══════════════════ CLIPS LIST ═══════════════════ */
-    function setFilter(f) {
-      activeFilter = f;
-      document.querySelectorAll('.filter-chip').forEach(chip => {
-        const on = chip.dataset.filter === f;
-        chip.className = 'filter-chip chip flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border ' +
-          (on ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-400 border-ink-600 hover:border-zinc-500');
-      });
-      loadClips();
-    }
-    setFilter('all');
-
-    const STATUS_META = {
-      ready:     { label: 'Ready',     cls: 'bg-zinc-400/10 text-zinc-300 border-zinc-400/20' },
-      scheduled: { label: 'Scheduled', cls: 'bg-amber-400/10 text-amber-300 border-amber-400/20' },
-      posted:    { label: 'Posted',    cls: 'bg-emerald-400/10 text-emerald-300 border-emerald-400/20' },
-      failed:    { label: 'Failed',    cls: 'bg-red-400/10 text-red-300 border-red-400/20' }
-    };
-
-    async function loadClips() {
-      const container = document.getElementById('clips-list');
-      try {
-        const [clipsRes, jobsRes] = await Promise.all([api('/api/clips'), api('/api/jobs')]);
-        const clips = (await clipsRes.json()).clips || [];
-        const jobs = (await jobsRes.json()).jobs || [];
-        JOBS = jobs;
-
-        clips.forEach(c => CLIPS[c.id] = c);
-
-        const activeJobs = jobs.filter(j => j.status === 'processing' || j.status === 'pending');
-        const failedJobs = jobs.filter(j => j.status === 'failed' || j.status === 'cancelled');
-        const filtered = activeFilter === 'all' ? clips : clips.filter(c => c.status === activeFilter);
-
-        let html = '';
-
-        // Running jobs with live progress
-        html += activeJobs.map(j => `
-          <div class="card p-4 fade-in">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-9 h-9 rounded-lg bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0">
-                <i class="ph ph-circle-notch animate-spin text-zinc-300"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-white truncate">${esc(j.step || 'Processing…')}</p>
-                <p class="text-[10px] text-zinc-500 truncate">${esc(j.title || '')}</p>
-              </div>
-              <span class="text-xs font-extrabold text-white">${j.progress || 0}%</span>
-              <button onclick="cancelJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-400 hover:text-white font-bold flex-shrink-0 transition-colors">Stop</button>
-            </div>
-            <div class="h-1.5 bg-ink-800 rounded-full overflow-hidden">
-              <div class="h-full bg-white rounded-full transition-all duration-500" style="width:${j.progress || 0}%"></div>
+// ---------- projects ----------
+let projectsCache = [];
+async function loadProjects() {
+  try {
+    const { projects } = await api('/api/projects?limit=50');
+    projectsCache = projects;
+    const list = document.getElementById('projects-list');
+    document.getElementById('projects-empty').classList.toggle('hidden', projects.length > 0);
+    list.innerHTML = projects.map(p => {
+      const statusColor = { draft: 'text-zinc-400', analyzing_reference: 'text-yellow-400', ready_to_edit: 'text-yellow-400',
+        processing: 'text-yellow-400', queued: 'text-zinc-400', completed: 'text-emerald-400', failed: 'text-red-400', cancelled: 'text-zinc-500' };
+      return `<button onclick="openProject('${p.id}')" class="w-full text-left p-4 rounded-2xl bg-ink-900 border border-white/5 hover:border-white/15 transition-colors">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center flex-shrink-0">
+            <i class="ph ${p.reference_url || p.reference_file ? 'ph-shooting-star' : 'ph-video'} text-lg ${p.reference_url || p.reference_file ? 'text-yellow-400' : 'text-zinc-400'}"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-white truncate">${esc(p.name)}</p>
+            <p class="text-[10px] text-zinc-500 mt-0.5">${fmtDate(p.created_at)} · ${p.source_duration ? fmtDur(p.source_duration) : '—'}${p.reference_platform ? ' · ref: ' + esc(p.reference_platform) : ''}</p>
+            <div class="flex items-center gap-2 mt-1.5">
+              <span class="text-[10px] font-bold ${statusColor[p.status] || 'text-zinc-500'}">${esc((p.status || '').replace(/_/g, ' '))}</span>
+              ${p.last_job_id ? `<span class="text-[10px] text-zinc-600">job ${esc(p.last_job_id.slice(-6))}</span>` : ''}
             </div>
           </div>
-        `).join('');
+          <i class="ph ph-caret-right text-zinc-600"></i>
+        </div>
+      </button>`;
+    }).join('');
+  } catch (e) { showToast(e.message, 'error'); }
+}
 
-        // Failed / cancelled jobs with retry
-        html += failedJobs.map(j => `
-          <div class="card p-4 border-red-500/20 fade-in">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center flex-shrink-0">
-                <i class="ph ph-warning text-red-400"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-white truncate">${j.status === 'cancelled' ? 'Cancelled' : 'Job failed'} · ${esc(j.title || '')}</p>
-                <p class="text-[10px] text-red-300/80 truncate">${esc(j.error || 'Unknown error')}</p>
-              </div>
-              <button onclick="retryJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-white text-black font-bold flex-shrink-0 flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>
-              <button onclick="deleteJob('${j.id}')" class="text-[10px] px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 hover:text-red-400 font-bold flex-shrink-0 transition-colors"><i class="ph ph-trash"></i></button>
-            </div>
-          </div>
-        `).join('');
+let currentProjectId = null;
+async function openProject(projectId, refJobId) {
+  currentProjectId = projectId;
+  document.getElementById('project-view').classList.replace('hidden', 'block');
+  document.getElementById('pv-body').innerHTML = '<div class="h-24 rounded-2xl skeleton"></div><div class="h-40 rounded-2xl skeleton"></div>';
+  document.getElementById('pv-title').textContent = 'Loading…';
+  try {
+    const { project } = await api(`/api/projects/${projectId}`);
+    renderProject(project, refJobId);
+  } catch (e) {
+    document.getElementById('pv-body').innerHTML = `<div class="p-6 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-300">${esc(e.message)}</div>`;
+  }
+}
+function closeProject() { document.getElementById('project-view').classList.replace('block', 'hidden'); currentProjectId = null; loadProjects(); }
 
-        if (filtered.length === 0 && activeJobs.length === 0 && failedJobs.length === 0) {
-          container.innerHTML = `
-            <div class="card text-center py-14">
-              <i class="ph ph-film-strip text-4xl text-ink-500 mb-3"></i>
-              <p class="text-sm text-zinc-400 font-semibold">No clips yet</p>
-              <p class="text-xs text-zinc-600 mt-1">Paste a link or upload a video in the Create tab</p>
-            </div>`;
-          return;
-        }
+function renderProject(p, refJobId) {
+  document.getElementById('pv-title').textContent = p.name;
+  const info = [];
+  if (p.source_duration) info.push(fmtDur(p.source_duration));
+  if (p.source_width) info.push(`${p.source_width}×${p.source_height}`);
+  if (p.source_size) info.push(fmtBytes(p.source_size));
+  info.push(fmtDate(p.created_at));
+  document.getElementById('pv-meta').textContent = info.join(' · ');
 
-        html += filtered.map(c => renderClipCard(c)).join('');
-        container.innerHTML = html;
-      } catch (e) { if (e.message !== 'locked') console.error(e); }
-    }
+  const profile = p.reference_profile_obj;
+  const plan = (() => { try { return p.editing_plan ? JSON.parse(p.editing_plan) : null; } catch { return null; }})();
 
-    function renderClipCard(c) {
-      const meta = STATUS_META[c.status] || STATUS_META.ready;
-      const schedTime = c.scheduled_time
-        ? new Date(c.scheduled_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-        : '';
-      const missing = c.file_exists === false;
+  const refSection = `
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs font-bold text-zinc-300 flex items-center gap-2"><i class="ph-fill ph-shooting-star text-yellow-400"></i> Reference video</p>
+        <button onclick="addReference('${p.id}')" class="text-[11px] font-bold text-yellow-400 hover:text-yellow-300">${p.reference_url || p.reference_file ? 'Change' : '+ Add reference'}</button>
+      </div>
+      ${refJobId ? `<div id="ref-job-watcher" data-job="${refJobId}" class="text-[11px] text-zinc-400 flex items-center gap-2"><i class="ph ph-circle-notch animate-spin"></i> Analyzing reference…</div>` : ''}
+      ${(p.reference_url && !profile) ? `<p class="text-[11px] text-zinc-500 break-all"><i class="ph ph-link"></i> ${esc(p.reference_url)}</p>` : ''}
+      ${(p.reference_file && !profile) ? `<p class="text-[11px] text-zinc-500"><i class="ph ph-paperclip"></i> Uploaded reference file${p.reference_available ? '' : ' (missing on server — upload again)'}</p>` : ''}
+      ${profile ? renderProfileCard(profile) : ''}
+      ${p.error ? `<p class="mt-2 text-[11px] text-red-400">${esc(p.error)}</p>` : ''}
+    </div>`;
 
-      let actionBtns = '';
-      if (c.status !== 'posted') {
-        actionBtns = missing
-          ? `<span class="text-[11px] text-zinc-600 font-semibold px-1">File missing</span>`
-          : `
-          <button onclick="postNow('${c.id}')" class="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black font-bold rounded-lg text-[11px] flex items-center gap-1 transition-colors"><i class="ph ph-paper-plane-tilt"></i> Post</button>
-          <button onclick="openEditModal('${c.id}')" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-300 font-semibold rounded-lg text-[11px] flex items-center gap-1 transition-colors"><i class="ph ph-pencil-simple-line"></i> Edit</button>`;
-      } else {
-        const links = [];
-        if (c.ig_post_url) links.push(`<a href="${esc(c.ig_post_url)}" target="_blank" class="text-emerald-400 hover:underline">IG</a>`);
-        if (c.tiktok_post_url) links.push(`<a href="${esc(c.tiktok_post_url)}" target="_blank" class="text-emerald-400 hover:underline">TikTok</a>`);
-        if (c.youtube_post_url) links.push(`<a href="${esc(c.youtube_post_url)}" target="_blank" class="text-emerald-400 hover:underline">YT</a>`);
-        actionBtns = `<span class="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">✓ Posted${links.length ? ' · ' + links.join(' · ') : ''}</span>`;
-      }
+  const activeJob = (p.jobs || []).find(j => ['queued', 'processing'].includes(j.status));
+  const jobSection = activeJob ? `
+    <div class="p-4 rounded-2xl bg-ink-900 border border-yellow-400/25">
+      <div class="flex items-center gap-3">
+        <i class="ph ph-circle-notch animate-spin text-yellow-400 text-lg"></i>
+        <p class="text-xs font-bold text-white flex-1">${esc(activeJob.step)}</p>
+        <button onclick="cancelJob('${activeJob.id}').then(loadProjectView)" class="text-[11px] font-bold text-zinc-500 hover:text-red-400">Cancel</button>
+      </div>
+      <div class="mt-2.5 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full bg-yellow-400 transition-all duration-500" style="width:${Math.max(4, activeJob.progress)}%"></div></div>
+    </div>` : '';
 
-      return `
-        <div class="card p-4 space-y-3 fade-in ${missing ? 'opacity-60' : ''}">
-          <div class="flex items-start gap-3">
-            <div class="w-20 h-28 bg-black rounded-xl overflow-hidden relative ${missing ? '' : 'cursor-pointer'} flex-shrink-0 group border border-ink-700" ${missing ? '' : `onclick="openModal('${c.id}')"`}>
-              <div class="absolute inset-0 flex items-center justify-center bg-black/50 group-hover:bg-black/25 transition-colors">
-                ${missing ? '<i class="ph ph-file-video text-3xl text-ink-500"></i>' : '<i class="ph-fill ph-play-circle text-3xl text-white/90"></i>'}
-              </div>
-            </div>
-            <div class="flex-1 min-w-0 space-y-1.5">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                ${missing
-                  ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-400/10 text-red-300 border border-red-400/20">File missing</span>'
-                  : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-ink-800 text-zinc-300 border border-ink-600">Score ${c.score ?? '—'}</span>`}
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${meta.cls}">${meta.label}${c.status === 'scheduled' && schedTime ? ' · ' + esc(schedTime) : ''}</span>
-              </div>
-              <h4 class="text-xs font-bold text-white leading-snug line-clamp-2">${esc(c.hook_text || c.title || 'Untitled clip')}</h4>
-              <p class="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed">${esc(c.caption || '')}</p>
-              ${c.status === 'failed' && c.error ? `<p class="text-[10px] text-red-300/80 leading-snug">${esc(c.error)}</p>` : ''}
-              ${missing ? '<p class="text-[10px] text-zinc-600 leading-snug">Video file is gone from disk (cleanup or reset). Remove it or re-run the source from History.</p>' : ''}
-            </div>
-          </div>
+  const clipsSection = (p.clips || []).length ? `
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-3">Clips (${p.clips.length})</p>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        ${p.clips.map(c => clipCardHTML(c, true)).join('')}
+      </div>
+    </div>` : '';
 
-          <div class="pt-3 border-t border-ink-700 space-y-2.5">
-            <div class="grid grid-cols-2 gap-2">
-              <button onclick="shareToSocial('Instagram Reels', '${c.id}')" ${missing ? 'disabled' : ''} class="py-2 px-3 bg-ink-800 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95 ${missing ? 'opacity-30 cursor-not-allowed' : 'hover:bg-ink-700'}">
-                <i class="ph ph-instagram-logo text-sm"></i> Share to IG
-              </button>
-              <button onclick="shareToSocial('TikTok', '${c.id}')" ${missing ? 'disabled' : ''} class="py-2 px-3 bg-ink-800 border border-ink-600 rounded-xl text-[11px] font-bold text-zinc-200 flex items-center justify-center gap-1.5 transition-colors active:scale-95 ${missing ? 'opacity-30 cursor-not-allowed' : 'hover:bg-ink-700'}">
-                <i class="ph ph-tiktok-logo text-sm"></i> Share to TikTok
-              </button>
-            </div>
-            <div class="flex items-center justify-between text-[11px]">
-              <button onclick="copyCaption('${c.id}')" class="text-zinc-500 hover:text-white flex items-center gap-1 font-semibold transition-colors">
-                <i class="ph ph-copy"></i> Copy caption
-              </button>
-              <div class="flex items-center gap-2">
-                ${missing
-                  ? `<button onclick="deleteClip('${c.id}')" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-red-400 rounded-lg font-semibold flex items-center gap-1 transition-colors"><i class="ph ph-trash"></i> Remove</button>`
-                  : `
-                <a href="/api/clips/${c.id}/video" download="${esc(c.hook_text || c.title || 'clip')}.mp4" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-200 rounded-lg font-semibold flex items-center gap-1.5 transition-colors" title="Save clip to device storage">
-                  <i class="ph-bold ph-download-simple text-emerald-400 text-xs"></i> Save
-                </a>
-                <button onclick="deleteClip('${c.id}')" class="px-2.5 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-500 hover:text-red-400 rounded-lg font-semibold flex items-center transition-colors" title="Delete clip">
-                  <i class="ph ph-trash"></i>
-                </button>
-                ${actionBtns}`}
-              </div>
-            </div>
-          </div>
-        </div>`;
-    }
+  const editControls = `
+    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><i class="ph-fill ph-film-strip text-yellow-400"></i> Start editing</p>
+      ${p.source_available || p.source_url ? `
+      <div class="grid grid-cols-2 gap-2.5">
+        <div><label class="text-[10px] font-semibold text-zinc-500 uppercase">Aspect</label>
+          <select id="edit-aspect" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2 text-xs text-white">
+            <option value="9:16">9:16</option><option value="16:9">16:9</option><option value="1:1">1:1</option><option value="4:5">4:5</option></select></div>
+        <div><label class="text-[10px] font-semibold text-zinc-500 uppercase">Clips</label>
+          <select id="edit-num" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2 text-xs text-white">
+            <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+        <div><label class="text-[10px] font-semibold text-zinc-500 uppercase">Length</label>
+          <select id="edit-dur" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2 text-xs text-white">
+            <option value="25">~25s</option><option value="45" selected>~45s</option><option value="60">~60s</option></select></div>
+        <div><label class="text-[10px] font-semibold text-zinc-500 uppercase">Quality</label>
+          <select id="edit-res" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2 text-xs text-white">
+            <option value="720">720p</option><option value="1080">1080p</option></select></div>
+      </div>
+      <button onclick="startEdit('${p.id}')" class="mt-3 w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+        <i class="ph-fill ph-magic-wand"></i> Generate ${profile ? 'styled' : ''} clips
+      </button>
+      ${plan ? `<details class="mt-3"><summary class="text-[11px] font-bold text-zinc-500 cursor-pointer">Editing plan (AI)</summary>
+        <pre class="mt-2 text-[10px] text-zinc-500 bg-ink-950 rounded-xl p-3 overflow-x-auto whitespace-pre-wrap">${esc(JSON.stringify(plan, null, 2).slice(0, 3000))}</pre></details>` : ''}
+      ` : `
+      <p class="text-xs text-zinc-400">${p.source_url ? 'Source video will be downloaded from the link when editing starts.' : 'The source video file is missing on the server (cleaned up or lost). Re-create the project to continue.'}</p>
+      ${p.source_url ? `<button onclick="startEdit('${p.id}')" class="mt-3 w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm">Download & edit from link</button>` : ''}`}
+    </div>`;
 
-    /* ── Clip actions ── */
-    async function postNow(clipId) {
-      const ok = await confirmDialog('Post this clip now to every connected platform?', { yes: 'Post now', danger: false });
-      if (!ok) return;
-      try {
-        const res = await api(`/api/clips/${clipId}/post`, { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-          const err = data.clip && data.clip.error;
-          if (data.clip && data.clip.status === 'failed') showToast(err || 'Posting failed', 'error');
-          else showToast('Posted successfully', 'success');
-          loadClips();
-        }
-      } catch (err) { if (err.message !== 'locked') showToast('Failed to post: ' + err.message, 'error'); }
-    }
+  document.getElementById('pv-body').innerHTML = jobSection + editControls + refSection + clipsSection;
+  bindClipCards();
+  if (refJobId || activeJob) watchProjectJobs(p.id);
+}
 
-    async function deleteClip(clipId) {
-      const ok = await confirmDialog('Delete this clip and its video file? This cannot be undone.');
-      if (!ok) return;
-      await api(`/api/clips/${clipId}`, { method: 'DELETE' });
-      showToast('Clip deleted', 'success');
-      loadClips();
-    }
+async function loadProjectView() { if (currentProjectId) openProject(currentProjectId); }
 
-    function copyCaption(clipId) {
-      const c = CLIPS[clipId];
-      if (!c) return;
-      const tags = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
-      navigator.clipboard.writeText(`${c.caption || ''}\n\n${tags}`).then(
-        () => showToast('Caption & hashtags copied', 'success'),
-        () => showToast('Could not copy', 'error')
-      );
-    }
-
-    /* ── Edit modal ── */
-    function openEditModal(clipId) {
-      const c = CLIPS[clipId];
-      if (!c) return;
-      currentEditId = clipId;
-      document.getElementById('edit-hook').value = c.hook_text || '';
-      document.getElementById('edit-caption').value = c.caption || '';
-      document.getElementById('edit-hashtags').value = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
-      const modal = document.getElementById('edit-modal');
-      modal.classList.remove('hidden'); modal.classList.add('flex');
-    }
-    function closeEditModal() {
-      const modal = document.getElementById('edit-modal');
-      modal.classList.add('hidden'); modal.classList.remove('flex');
-    }
-    async function saveEdit() {
-      if (!currentEditId) return;
-      const tags = document.getElementById('edit-hashtags').value.trim().split(/\s+/).filter(Boolean);
-      try {
-        await api(`/api/clips/${currentEditId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            hook_text: document.getElementById('edit-hook').value.trim(),
-            caption: document.getElementById('edit-caption').value.trim(),
-            hashtags: tags
-          })
-        });
-        showToast('Clip updated', 'success');
-        closeEditModal();
-        loadClips();
-      } catch (e) { if (e.message !== 'locked') showToast('Save failed', 'error'); }
-    }
-
-    /* ── Job actions ── */
-    async function cancelJob(jobId) {
-      const ok = await confirmDialog('Stop this job? Finished clips from it are removed.', { yes: 'Stop job' });
-      if (!ok) return;
-      await api(`/api/jobs/${jobId}/cancel`, { method: 'POST' });
-      showToast('Cancelling…', 'info');
-      loadClips();
-    }
-    async function retryJob(jobId) {
-      await api(`/api/jobs/${jobId}/retry`, { method: 'POST' });
-      showToast('Retrying…', 'info');
-      pollActiveJobs();
-      loadClips();
-    }
-    async function deleteJob(jobId) {
-      const ok = await confirmDialog('Delete this source and all its clips? This cannot be undone.', { yes: 'Delete all' });
-      if (!ok) return;
-      await api(`/api/jobs/${jobId}`, { method: 'DELETE' });
-      showToast('Deleted', 'success');
-      loadClips();
-      loadHistory();
-    }
-
-    /* ═══════════════════ HISTORY ═══════════════════ */
-    async function loadHistory() {
-      const container = document.getElementById('history-list');
-      try {
-        const res = await api('/api/history');
-        const history = (await res.json()).history || [];
-        if (history.length === 0) {
-          container.innerHTML = `
-            <div class="card text-center py-14">
-              <i class="ph ph-clock-counter-clockwise text-4xl text-ink-500 mb-3"></i>
-              <p class="text-sm text-zinc-400 font-semibold">Nothing processed yet</p>
-              <p class="text-xs text-zinc-600 mt-1">Your clipped videos will show up here</p>
-            </div>`;
-          return;
-        }
-        container.innerHTML = history.map(j => {
-          const isUrl = j.source_type === 'url';
-          const statusCls = j.status === 'completed' ? 'text-emerald-400' : (j.status === 'failed' ? 'text-red-400' : (j.status === 'processing' ? 'text-amber-300' : 'text-zinc-500'));
-          const when = j.created_at ? new Date(j.created_at.replace(' ', 'T')).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-          const isRunning = j.status === 'processing' || j.status === 'pending';
-          return `
-            <div class="card p-4 flex items-center gap-3 fade-in">
-              <div class="w-10 h-10 rounded-xl bg-ink-800 border border-ink-600 flex items-center justify-center flex-shrink-0 text-zinc-300">
-                <i class="ph ${isUrl ? 'ph-link' : 'ph-video'} text-lg"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-white truncate">${esc(j.title || 'Untitled source')}</p>
-                <p class="text-[10px] text-zinc-500 truncate">
-                  ${when} · <span class="font-bold ${statusCls}">${j.status}</span> · ${j.clip_count || 0} clip${(j.clip_count || 0) === 1 ? '' : 's'}${j.is_short ? ' · short' : ''}
-                </p>
-              </div>
-              <div class="flex items-center gap-1.5 flex-shrink-0">
-                ${(j.status === 'failed' || j.status === 'cancelled') ? `
-                  <button onclick="retryJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-white text-black text-[10px] font-bold flex items-center gap-1 hover:bg-zinc-200 transition-colors"><i class="ph ph-arrow-clockwise"></i> Retry</button>` : ''}
-                ${isRunning ? `
-                  <button onclick="cancelJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-400 text-[10px] font-bold hover:text-white transition-colors">Stop</button>` : `
-                  <button onclick="deleteJob('${j.id}')" class="px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 text-zinc-500 hover:text-red-400 text-[10px] font-bold transition-colors" title="Delete source & clips"><i class="ph ph-trash"></i></button>`}
-              </div>
-            </div>`;
-        }).join('');
-      } catch (e) { if (e.message !== 'locked') console.error(e); }
-    }
-
-    /* ═══════════════════ ANALYTICS ═══════════════════ */
-    async function loadAnalytics() {
-      try {
-        const res = await api('/api/analytics');
-        const d = await res.json();
-        document.getElementById('stat-total').innerText = d.total_clips;
-        document.getElementById('stat-posted').innerText = d.posted;
-        document.getElementById('stat-scheduled').innerText = d.scheduled;
-        document.getElementById('stat-success').innerText =
-          d.success_rate === null || d.success_rate === undefined ? '—' : d.success_rate + '%';
-        document.getElementById('stat-avg-score').innerText = d.avg_score ? `Avg viral score · ${d.avg_score}` : '';
-
-        // 7-day bar chart
-        const chart = document.getElementById('week-chart');
-        const days = d.per_day || [];
-        const max = Math.max(1, ...days.map(x => x.count));
-        chart.innerHTML = days.map(x => {
-          const h = Math.max(6, Math.round((x.count / max) * 100));
-          const label = new Date(x.day + 'T00:00:00').toLocaleDateString([], { weekday: 'short' }).slice(0, 2);
-          return `
-            <div class="flex-1 flex flex-col items-center gap-1.5">
-              <span class="text-[9px] font-bold ${x.count ? 'text-zinc-300' : 'text-zinc-700'}">${x.count || ''}</span>
-              <div class="w-full flex items-end h-16">
-                <div class="w-full rounded-md ${x.count ? 'bg-zinc-400' : 'bg-ink-700'} transition-all" style="height:${h}%"></div>
-              </div>
-              <span class="text-[9px] text-zinc-600 font-semibold">${label}</span>
-            </div>`;
-        }).join('');
-
-        // Per-platform published counts
-        const pp = d.platform_posts || {};
-        const rows = [
-          { key: 'ig', name: 'Instagram', icon: 'ph-instagram-logo' },
-          { key: 'tiktok', name: 'TikTok', icon: 'ph-tiktok-logo' },
-          { key: 'youtube', name: 'YouTube', icon: 'ph-youtube-logo' }
-        ];
-        const maxP = Math.max(1, ...rows.map(r => pp[r.key] || 0));
-        document.getElementById('platform-posts').innerHTML = rows.map(r => `
-          <div class="flex items-center gap-3">
-            <i class="ph ${r.icon} text-zinc-400 text-base w-5"></i>
-            <span class="text-[11px] text-zinc-300 font-semibold w-16">${r.name}</span>
-            <div class="flex-1 h-2 bg-ink-800 rounded-full overflow-hidden">
-              <div class="h-full bg-zinc-400 rounded-full" style="width:${Math.round(((pp[r.key] || 0) / maxP) * 100)}%"></div>
-            </div>
-            <span class="text-[11px] text-white font-extrabold w-5 text-right">${pp[r.key] || 0}</span>
-          </div>`).join('') + `
-          <div class="flex items-center gap-3 pt-1 border-t border-ink-700">
-            <i class="ph ph-x-circle text-red-400/70 text-base w-5"></i>
-            <span class="text-[11px] text-zinc-500 font-semibold flex-1">Failed posts</span>
-            <span class="text-[11px] text-red-300 font-extrabold">${pp.failed || 0}</span>
-          </div>`;
-
-        // Real destination status
-        const conn = d.connections || {};
-        const dest = [
-          { name: 'Buffer (multi-platform)', on: conn.buffer },
-          { name: 'Instagram Reels', on: conn.instagram },
-          { name: 'TikTok', on: conn.tiktok },
-          { name: 'YouTube Shorts', on: conn.youtube }
-        ];
-        document.getElementById('destinations').innerHTML = dest.map(x => `
-          <div class="flex items-center justify-between px-3.5 py-2.5 bg-ink-900 rounded-xl border border-ink-700">
-            <span class="text-[11px] font-semibold text-zinc-200">${x.name}</span>
-            ${x.on
-              ? '<span class="text-[10px] font-bold text-emerald-400 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Connected</span>'
-              : '<span class="text-[10px] font-bold text-zinc-600">Not connected</span>'}
-          </div>`).join('');
-      } catch (e) { if (e.message !== 'locked') console.error(e); }
-    }
-
-    /* ═══════════════════ SETTINGS ═══════════════════ */
-    function connectBtn(platform) {
-      return `<button onclick="openSocialModal('${platform}')" class="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black text-[11px] font-bold rounded-lg flex items-center gap-1 transition-colors"><i class="ph ph-plug"></i> Connect</button>`;
-    }
-    function disconnectBtn(platform) {
-      return `<button onclick="disconnectAccount('${platform}')" class="px-3 py-1.5 bg-ink-800 hover:bg-ink-700 border border-ink-600 text-zinc-400 hover:text-red-400 text-[11px] font-bold rounded-lg flex items-center gap-1 transition-colors"><i class="ph ph-plug-x"></i> Disconnect</button>`;
-    }
-
-    async function loadSettings() {
-      try {
-        const res = await api('/api/settings');
-        const s = await res.json();
-
-        if (s.gemini_api_key_masked) {
-          document.getElementById('setting-gemini-key').placeholder = 'Saved: ' + s.gemini_api_key_masked;
-        }
-
-        // header AI chip
-        const chip = document.getElementById('gemini-status');
-        if (s.gemini_api_key_masked) {
-          chip.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> AI Ready';
-          chip.className = 'px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20 flex items-center gap-1.5 cursor-pointer hover:border-emerald-400/40 transition-colors';
-        } else {
-          chip.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Add API key';
-          chip.className = 'px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-red-400/10 text-red-300 border border-red-400/20 flex items-center gap-1.5 cursor-pointer hover:border-red-400/40 transition-colors';
-        }
-
-        // lock button visibility
-        const lockBtn = document.getElementById('lock-btn');
-        if (s.has_access_pin) { lockBtn.classList.remove('hidden'); lockBtn.classList.add('flex'); }
-        else { lockBtn.classList.add('hidden'); lockBtn.classList.remove('flex'); }
-
-        // remove-pin button
-        const rmPin = document.getElementById('btn-remove-pin');
-        if (s.has_access_pin) { rmPin.classList.remove('hidden'); rmPin.classList.add('flex'); }
-        else { rmPin.classList.add('hidden'); rmPin.classList.remove('flex'); }
-
-        // connections
-        const c = s.connections || {};
-        setText('buffer-status-text', c.buffer ? '✓ Connected — checking channels…' : 'Instagram + TikTok (+ YouTube) in one step');
-        setAction('buffer-action-area', c.buffer ? disconnectBtn('buffer') : connectBtn('buffer'));
-        if (c.buffer) {
-          api('/api/buffer/channels').then(r => r.json()).then(data => {
-            if (data.channels && data.channels.length > 0) {
-              const names = data.channels.map(ch => ch.service ? ch.service.charAt(0).toUpperCase() + ch.service.slice(1) : ch.name).join(', ');
-              setText('buffer-status-text', `✓ Connected (${data.channels.length} channels: ${names})`);
-            } else if (data.error) {
-              setText('buffer-status-text', `⚠️ ${data.error.slice(0, 50)}`);
-            } else {
-              setText('buffer-status-text', '✓ Connected — posts to linked channels');
-            }
-          }).catch(() => {});
-        }
-        setText('ig-status-text', c.instagram ? `✓ Connected${s.instagram_username && !s.instagram_username.startsWith('User_') ? ' · ' + s.instagram_username : ''}` : 'Not connected');
-        setAction('ig-action-area', c.instagram ? disconnectBtn('instagram') : connectBtn('instagram'));
-        setText('tiktok-status-text', c.tiktok ? '✓ Connected' : 'Not connected');
-        setAction('tiktok-action-area', c.tiktok ? disconnectBtn('tiktok') : connectBtn('tiktok'));
-        setText('youtube-status-text', c.youtube ? `✓ Connected${s.youtube_channel_title ? ' · ' + s.youtube_channel_title : ''}` : 'Not connected');
-        setAction('youtube-action-area', c.youtube ? disconnectBtn('youtube') : connectBtn('youtube'));
-
-        // preferences
-        document.getElementById('pref-review').checked = !!s.review_mode;
-        document.getElementById('pref-hashtags').value = s.default_hashtags || '';
-        // notification pref lives server-side so it follows you across devices
-        document.getElementById('pref-notify').checked = (s.notify_enabled === true) || (s.notify_enabled === undefined && localStorage.getItem('clipy_notify') === '1');
-        document.getElementById('pref-del-source').checked = !!s.delete_source_after;
-        document.getElementById('pref-keep-n').value = s.keep_last_clips || 0;
-        document.getElementById('pref-max-age').value = s.max_clip_age_days || 0;
-      } catch (e) { if (e.message !== 'locked') console.error(e); }
-    }
-
-    function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
-    function setAction(id, html) { const el = document.getElementById(id); if (el) el.innerHTML = html; }
-
-    async function saveApiKey() {
-      const key = document.getElementById('setting-gemini-key').value.trim();
-      if (!key) { showToast('Paste a key first', 'error'); return; }
-      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gemini_api_key: key }) });
-      document.getElementById('setting-gemini-key').value = '';
-      showToast('API key saved', 'success');
-      loadSettings();
-    }
-
-    async function savePrefs() {
-      const payload = {
-        review_mode: document.getElementById('pref-review').checked,
-        default_hashtags: document.getElementById('pref-hashtags').value.trim()
-      };
-      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      showToast('Posting preferences saved', 'success');
-    }
-
-    async function saveAutomation() {
-      const payload = {
-        delete_source_after: document.getElementById('pref-del-source').checked,
-        keep_last_clips: parseInt(document.getElementById('pref-keep-n').value || '0', 10) || 0,
-        max_clip_age_days: parseInt(document.getElementById('pref-max-age').value || '0', 10) || 0
-      };
-      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      showToast('Storage rules saved', 'success');
-    }
-
-    async function saveNotify() {
-      const on = document.getElementById('pref-notify').checked;
-      if (on && 'Notification' in window && Notification.permission !== 'granted') {
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') {
-          document.getElementById('pref-notify').checked = false;
-          showToast('Notification permission denied', 'error');
-          return;
+let projectWatchTimer = null;
+function watchProjectJobs(projectId) {
+  if (projectWatchTimer) clearInterval(projectWatchTimer);
+  projectWatchTimer = setInterval(async () => {
+    if (!currentProjectId) { clearInterval(projectWatchTimer); return; }
+    try {
+      const { project } = await api(`/api/projects/${projectId}`);
+      const activeJob = (project.jobs || []).find(j => ['queued', 'processing'].includes(j.status));
+      const refJobEl = document.getElementById('ref-job-watcher');
+      if (refJobEl) {
+        const { job } = await api(`/api/jobs/${refJobEl.dataset.job}`);
+        if (job && ['completed', 'failed', 'cancelled'].includes(job.status)) {
+          refJobEl.innerHTML = job.status === 'completed'
+            ? '<i class="ph-fill ph-check-circle text-emerald-400"></i> Reference analyzed'
+            : `<span class="text-red-400">Reference failed: ${esc(job.error || '')}</span>`;
+          if (job.status === 'completed') openProject(projectId);
         }
       }
-      localStorage.setItem('clipy_notify', on ? '1' : '0');
-      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notify_enabled: on }) });
-      showToast(on ? 'Notifications on' : 'Notifications off', 'success');
-    }
+      if (!activeJob) { clearInterval(projectWatchTimer); openProject(projectId); }
+    } catch {}
+  }, 3000);
+}
 
-    async function savePin() {
-      const pin = document.getElementById('setting-pin').value.trim();
-      if (!pin) { showToast('Enter a PIN first', 'error'); return; }
-      const res = await api('/api/settings/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) });
-      const data = await res.json();
-      if (data.success) {
-        document.getElementById('setting-pin').value = '';
-        showToast('PIN saved — app is now locked for others', 'success');
-        loadSettings();
-      } else showToast(data.error || 'Invalid PIN', 'error');
-    }
+function renderProfileCard(profile) {
+  const rows = [
+    ['Editing style', profile.editing_style], ['Hook structure', profile.hook_structure],
+    ['Avg shot', profile.avg_shot_duration_sec ? profile.avg_shot_duration_sec + 's' : null],
+    ['Transitions', profile.scene_transitions], ['Camera', profile.camera_movement],
+    ['Zooms', profile.zoom_effects], ['Captions', profile.caption_style],
+    ['Caption spot', profile.caption_position], ['Music', profile.music],
+    ['SFX', Array.isArray(profile.sound_effects) ? profile.sound_effects.join(', ') : profile.sound_effects],
+    ['Color grade', profile.color_grade], ['Aspect', profile.aspect_ratio],
+    ['Pacing', profile.pacing], ['Ending', profile.ending_style],
+  ].filter(r => r[1] && String(r[1]).toLowerCase() !== 'unknown');
+  return `<details open class="mt-3">
+    <summary class="text-[11px] font-bold text-yellow-400 cursor-pointer">AI analysis ready — view profile</summary>
+    <div class="mt-2 space-y-1.5 max-h-64 overflow-y-auto scrollbar-none">
+      ${rows.map(r => `<div class="flex justify-between gap-3 py-1.5 border-b border-white/5 text-[11px]">
+        <span class="text-zinc-500 flex-shrink-0">${esc(r[0])}</span><span class="text-zinc-200 text-right">${esc(String(r[1]).slice(0, 90))}</span></div>`).join('')}
+      ${profile.editing_plan_hint ? `<p class="text-[11px] text-zinc-400 leading-relaxed pt-2">${esc(profile.editing_plan_hint)}</p>` : ''}
+    </div></details>`;
+}
 
-    async function removePin() {
-      const ok = await confirmDialog('Remove the PIN? Anyone with the link can access the app.', { yes: 'Remove' });
-      if (!ok) return;
-      await api('/api/settings/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: '' }) });
-      showToast('PIN removed', 'success');
-      loadSettings();
-    }
+function addReference(projectId) {
+  const url = prompt('Paste a public TikTok / Instagram Reel / YouTube Shorts URL (leave empty to upload a file instead):');
+  if (url === null) return;
+  const fd = new FormData();
+  fd.append('reference_url', url || '');
+  api(`/api/projects/${projectId}/reference`, { method: 'POST', body: fd })
+    .then(r => { showToast('Reference analysis queued', 'success'); openProject(projectId, r.reference_job_id); })
+    .catch(e => showToast(e.message, 'error'));
+}
 
-    async function runCleanupNow() {
-      const res = await api('/api/cleanup', { method: 'POST' });
-      const data = await res.json();
-      showToast(data.removed ? `Cleaned up ${data.removed} old clip${data.removed === 1 ? '' : 's'}` : 'Nothing to clean up', 'success');
-    }
+async function startEdit(projectId) {
+  const fd = new FormData();
+  fd.append('num_clips', document.getElementById('edit-num')?.value || 3);
+  fd.append('clip_duration', document.getElementById('edit-dur')?.value || 45);
+  fd.append('aspect_ratio', document.getElementById('edit-aspect')?.value || '9:16');
+  fd.append('resolution', document.getElementById('edit-res')?.value || '720');
+  fd.append('caption_style', document.getElementById('select-caps')?.value || 'karaoke');
+  fd.append('editing_intensity', 'balanced');
+  fd.append('trim_silence', document.getElementById('pref-trim')?.checked ?? true);
+  try {
+    await api(`/api/projects/${projectId}/edit`, { method: 'POST', body: fd });
+    showToast('Editing job queued', 'success');
+    openProject(projectId);
+    startPolling();
+  } catch (e) { showToast(e.message, 'error'); }
+}
 
-    /* ── Social connect modals ── */
-    function openSocialModal(platform) {
-      currentModalPlatform = platform;
-      const modal = document.getElementById('social-modal');
-      const title = document.getElementById('social-modal-title');
-      const body = document.getElementById('social-modal-body');
+async function deleteCurrentProject() {
+  if (!currentProjectId) return;
+  if (!(await confirmDialog('Delete this project, its jobs and clips? This cannot be undone.'))) return;
+  try { await api(`/api/projects/${currentProjectId}`, { method: 'DELETE' }); showToast('Project deleted', 'success'); closeProject(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
 
-      if (platform === 'buffer') {
-        title.innerHTML = '<i class="ph-bold ph-stack text-lg"></i> Connect Buffer';
-        body.innerHTML = `
-          <p class="text-xs text-zinc-400">One token posts to <b class="text-white">all channels connected in your Buffer account</b> — Instagram, TikTok and YouTube.</p>
-          <div class="p-3.5 bg-ink-800 rounded-xl border border-ink-600 space-y-2">
-            <p class="text-xs font-bold text-white">Get your token (30 seconds)</p>
-            <ol class="text-[11px] text-zinc-500 space-y-1 list-decimal list-inside leading-relaxed">
-              <li>Connect your accounts in your Buffer dashboard first.</li>
-              <li>Go to <a href="https://buffer.com/developers/apps/create" target="_blank" class="text-zinc-300 underline font-semibold">buffer.com/developers/apps/create</a></li>
-              <li>Name it <b class="text-zinc-300">Clipy</b> and create the app.</li>
-              <li>Copy the <b class="text-zinc-300">Access Token</b> and paste it below.</li>
-            </ol>
-            <input id="modal-input-token" type="password" placeholder="Paste Buffer access token (1/…)" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
-            <label class="flex items-center gap-2.5 pt-1 cursor-pointer">
-              <input id="modal-buffer-youtube" type="checkbox" checked class="w-4 h-4 accent-zinc-300">
-              <span class="text-[11px] text-zinc-300 font-semibold">Also post to YouTube channels connected in Buffer</span>
-            </label>
-          </div>`;
-      } else if (platform === 'instagram') {
-        title.innerHTML = '<i class="ph ph-instagram-logo text-lg"></i> Connect Instagram';
-        body.innerHTML = `
-          <div class="p-3 bg-ink-800 rounded-xl border border-ink-600">
-            <p class="text-[11px] font-bold text-white">⚡ Zero setup</p>
-            <p class="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">Use the <b class="text-zinc-300">Share to IG</b> button on any clip — it copies the caption and opens Instagram on your phone.</p>
+// ---------- clips ----------
+let clipsCache = [], clipFilter = 'all', editingClipId = null;
+function setClipFilter(f) {
+  clipFilter = f;
+  document.querySelectorAll('.clip-filter').forEach(b => {
+    const active = b.dataset.f === f;
+    b.classList.toggle('bg-white', active); b.classList.toggle('text-black', active);
+    b.classList.toggle('text-zinc-400', !active); b.classList.toggle('bg-white/5', !active);
+  });
+  renderClips();
+}
+async function loadClips() {
+  try {
+    const { clips } = await api('/api/clips?limit=200');
+    clipsCache = clips;
+    document.getElementById('clips-empty').classList.toggle('hidden', clips.length > 0);
+    renderClips();
+  } catch {}
+}
+function statusChip(c) {
+  const map = { ready: ['bg-zinc-700 text-zinc-200', 'Ready'], scheduled: ['bg-blue-500/20 text-blue-300', 'Scheduled'],
+    posted: ['bg-emerald-500/20 text-emerald-300', 'Posted'], failed: ['bg-red-500/20 text-red-300', 'Failed'] };
+  const [cls, label] = map[c.status] || map.ready;
+  return `<span class="px-2 py-0.5 rounded-md text-[9px] font-bold ${cls}">${label}</span>`;
+}
+function clipCardHTML(c, compact = false) {
+  const thumb = c.file_available ? `<img src="/api/clips/${c.id}/thumb" loading="lazy" class="w-full h-full object-cover" onerror="this.style.display='none'">` : '';
+  return `<div class="rounded-2xl bg-ink-900 border border-white/5 overflow-hidden ${c.file_available ? 'cursor-pointer' : 'opacity-60'}" ${c.file_available ? `onclick="openModal('${c.id}')"` : ''}>
+    <div class="aspect-[9/16] bg-ink-800 relative">
+      ${thumb}
+      ${!c.file_available ? `<div class="absolute inset-0 grid place-items-center text-center p-3"><div><i class="ph ph-video-slash text-2xl text-zinc-600"></i><p class="text-[10px] text-zinc-600 mt-1.5">File missing — open project & re-render</p></div></div>` : ''}
+      <div class="absolute top-2 left-2">${statusChip(c)}</div>
+      ${c.score ? `<div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 text-[9px] font-bold text-yellow-400">${c.score}</div>` : ''}
+      ${c.duration ? `<div class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 text-[9px] font-bold text-white">${fmtDur(c.duration)}</div>` : ''}
+    </div>
+    <div class="p-3">
+      <p class="text-[11px] font-bold text-white line-clamp-2 leading-snug">${esc(c.hook_text || c.title || 'Untitled clip')}</p>
+      <p class="text-[9px] text-zinc-600 mt-1 truncate">${esc(c.caption || '')}</p>
+      <div class="flex items-center gap-1 mt-2 flex-wrap">
+        ${c.file_available ? `
+        <button onclick="event.stopPropagation(); openModal('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors" title="Play"><i class="ph-fill ph-play text-xs"></i></button>
+        <button onclick="event.stopPropagation(); openEditModal('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors" title="Edit text"><i class="ph ph-pencil-simple text-xs"></i></button>
+        <button onclick="event.stopPropagation(); postNow('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors" title="Post now"><i class="ph-fill ph-paper-plane-tilt text-xs"></i></button>
+        <button onclick="event.stopPropagation(); scheduleClip('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors" title="Schedule"><i class="ph ph-calendar-plus text-xs"></i></button>
+        <button onclick="event.stopPropagation(); deleteClip('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-zinc-500 transition-colors ml-auto" title="Delete"><i class="ph ph-trash text-xs"></i></button>` :
+        `<button onclick="event.stopPropagation(); deleteClip('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-zinc-500 transition-colors" title="Delete"><i class="ph ph-trash text-xs"></i></button>`}
+      </div>
+    </div>
+  </div>`;
+}
+let _clipCardsBound = false;
+function bindClipCards() {
+  // clicks are bound inline; nothing needed here for now
+}
+function renderClips() {
+  const filtered = clipFilter === 'all' ? clipsCache : clipsCache.filter(c => c.status === clipFilter);
+  document.getElementById('clips-list').innerHTML = filtered.map(c => clipCardHTML(c)).join('');
+}
+async function postNow(clipId) {
+  try {
+    const res = await api(`/api/clips/${clipId}/post`, { method: 'POST' });
+    if (res.success) showToast(res.message || 'Publish queued to your connected platforms', 'success');
+    else showToast(res.error || 'Publishing failed', 'error');
+    loadClips();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+function scheduleClip(clipId) {
+  const when = prompt('Schedule for (YYYY-MM-DD HH:MM):', new Date(Date.now() + 3600e3).toISOString().slice(0, 16));
+  if (!when) return;
+  api(`/api/clips/${clipId}/schedule`, { method: 'POST', json: { platform: 'all', scheduled_at: when.replace(' ', 'T') + (when.length === 16 ? ':00' : '') } })
+    .then(() => { showToast('Scheduled ✓', 'success'); loadClips(); })
+    .catch(e => showToast(e.message, 'error'));
+}
+async function deleteClip(clipId) {
+  if (!(await confirmDialog('Delete this clip and its files?'))) return;
+  try { await api(`/api/clips/${clipId}`, { method: 'DELETE' }); showToast('Clip deleted', 'success'); loadClips(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+
+// video modal
+let currentModalClip = null;
+function openModal(clipId) {
+  const c = clipsCache.find(x => x.id === clipId) || {};
+  currentModalClip = clipId;
+  document.getElementById('modal-title').textContent = c.hook_text || c.title || 'Preview';
+  document.getElementById('modal-download').href = `/api/clips/${clipId}/video?download=1`;
+  const v = document.getElementById('modal-video');
+  const missing = document.getElementById('modal-missing');
+  missing.classList.add('hidden'); missing.classList.remove('flex');
+  v.src = `/api/clips/${clipId}/video`;
+  document.getElementById('video-modal').classList.replace('hidden', 'flex');
+  v.onerror = () => { v.removeAttribute('src'); missing.classList.remove('hidden'); missing.classList.add('flex'); };
+  v.play().catch(() => {});
+}
+function closeModal() {
+  const v = document.getElementById('modal-video');
+  v.pause(); v.removeAttribute('src'); v.load();
+  document.getElementById('video-modal').classList.replace('flex', 'hidden');
+  currentModalClip = null;
+}
+async function removeFromModal() {
+  if (!currentModalClip) return;
+  closeModal();
+  await deleteClip(currentModalClip);
+}
+
+// edit modal
+function openEditModal(clipId) {
+  const c = clipsCache.find(x => x.id === clipId);
+  if (!c) return;
+  editingClipId = clipId;
+  document.getElementById('edit-hook').value = c.hook_text || '';
+  document.getElementById('edit-caption').value = c.caption || '';
+  document.getElementById('edit-hashtags').value = (c.hashtags || []).join(' ');
+  document.getElementById('edit-modal').classList.replace('hidden', 'flex');
+}
+function closeEditModal() { document.getElementById('edit-modal').classList.replace('flex', 'hidden'); }
+async function saveEdit() {
+  const tags = document.getElementById('edit-hashtags').value.trim().split(/[\s,]+/).filter(Boolean);
+  try {
+    await api(`/api/clips/${editingClipId}`, { method: 'PATCH', json: {
+      hook_text: document.getElementById('edit-hook').value,
+      caption: document.getElementById('edit-caption').value,
+      hashtags: tags } });
+    showToast('Saved ✓', 'success'); closeEditModal(); loadClips();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ---------- history ----------
+let historyState = { page: 0, limit: 15 };
+let historySearchTimer = null;
+function historySearchDebounced() { clearTimeout(historySearchTimer); historySearchTimer = setTimeout(loadHistory, 400); }
+function historyPage(dir) { historyState.page = Math.max(0, historyState.page + dir); loadHistory(); }
+async function loadHistory() {
+  const search = document.getElementById('history-search').value.trim();
+  const status = document.getElementById('history-status').value;
+  const days = document.getElementById('history-days').value;
+  const { items, total, limit, offset } = await api(`/api/history?search=${encodeURIComponent(search)}&status=${status}&days=${days}&limit=${historyState.limit}&offset=${historyState.page * historyState.limit}`);
+  const list = document.getElementById('history-list');
+  if (!items.length) {
+    list.innerHTML = `<div class="text-center py-14"><i class="ph ph-clock-counter-clockwise text-4xl text-zinc-700"></i><p class="mt-3 text-sm font-semibold text-zinc-400">Nothing here yet</p><p class="text-xs text-zinc-600 mt-1">Finished projects appear here — permanently.</p></div>`;
+  } else {
+    list.innerHTML = items.map(h => {
+      const badge = { completed: ['ph-check-circle text-emerald-400', 'Completed'], failed: ['ph-x-circle text-red-400', 'Failed'],
+        processing: ['ph-circle-notch animate-spin text-yellow-400', 'Processing'], queued: ['ph-hourglass text-zinc-400', 'Queued'],
+        cancelled: ['ph-prohibit text-zinc-500', 'Cancelled'] }[h.status] || ['ph-question text-zinc-500', h.status];
+      return `<div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+        <div class="flex items-start gap-3">
+          <i class="ph ${badge[0]} text-lg mt-0.5"></i>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-white truncate">${esc(h.project_name || h.title || 'Project')}</p>
+            <p class="text-[10px] text-zinc-500 mt-0.5">
+              ${fmtDate(h.created_at)}${h.clip_count ? ` · ${h.clip_count} clip${h.clip_count === 1 ? '' : 's'}` : ''}
+              ${h.duration_sec ? ` · ${fmtDur(h.duration_sec)}` : ''}${h.total_size ? ` · ${fmtBytes(h.total_size)}` : ''}
+              ${h.reference_platform ? ` · ref: ${esc(h.reference_platform)}` : ''}
+            </p>
+            ${h.error ? `<p class="text-[10px] text-red-400/90 mt-1 line-clamp-2">${esc(h.error)}</p>` : ''}
           </div>
-          <div class="p-3.5 bg-ink-800 rounded-xl border border-ink-600 space-y-2">
-            <p class="text-xs font-bold text-white">🤖 Automatic posting</p>
-            <p class="text-[10px] text-zinc-500 leading-relaxed">Paste a Meta Graph access token with <b class="text-zinc-400">instagram_content_publish</b> permission:</p>
-            <input id="modal-input-token" type="password" placeholder="Paste Instagram access token" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
-            <a href="https://developers.facebook.com/tools/explorer/" target="_blank" class="text-[11px] text-zinc-300 hover:text-white underline font-semibold inline-flex items-center gap-1"><i class="ph ph-arrow-square-out"></i> Get a token from Graph Explorer</a>
-          </div>`;
-      } else if (platform === 'tiktok') {
-        title.innerHTML = '<i class="ph ph-tiktok-logo text-lg"></i> Connect TikTok';
-        body.innerHTML = `
-          <div class="p-3 bg-ink-800 rounded-xl border border-ink-600">
-            <p class="text-[11px] font-bold text-white">⚡ Zero setup</p>
-            <p class="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">Use the <b class="text-zinc-300">Share to TikTok</b> button on any clip — caption copied, TikTok opens.</p>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            ${h.project_id ? `<button onclick="openProject('${h.project_id}')" class="px-3 py-1.5 text-[11px] font-bold text-yellow-400 hover:text-yellow-300 bg-yellow-400/10 rounded-lg">Open</button>` : ''}
+            ${['failed', 'cancelled'].includes(h.status) && h.project_id ? `<button onclick="retryJob('${h.id}')" class="px-3 py-1.5 text-[11px] font-bold text-zinc-300 bg-white/5 hover:bg-white/10 rounded-lg">Retry</button>` : ''}
+            ${!['processing', 'queued'].includes(h.status) ? `<button onclick="deleteHistoryJob('${h.id}')" class="w-8 h-8 grid place-items-center rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-zinc-500"><i class="ph ph-trash text-xs"></i></button>` : ''}
           </div>
-          <div class="p-3.5 bg-ink-800 rounded-xl border border-ink-600 space-y-2">
-            <p class="text-xs font-bold text-white">🤖 Automatic posting</p>
-            <p class="text-[10px] text-zinc-500 leading-relaxed">Log into tiktok.com on PC → F12 → Application → Cookies → copy the <b class="text-zinc-400">sessionid</b> value:</p>
-            <input id="modal-input-token" type="password" placeholder="Paste TikTok sessionid" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
-          </div>`;
-      } else if (platform === 'youtube') {
-        title.innerHTML = '<i class="ph ph-youtube-logo text-lg"></i> Connect YouTube';
-        body.innerHTML = `
-          <p class="text-xs text-zinc-400">Uploads clips as <b class="text-white">public YouTube Shorts</b> via Google OAuth.</p>
-          <div class="p-3.5 bg-ink-800 rounded-xl border border-ink-600 space-y-2">
-            <p class="text-xs font-bold text-white">One-time setup (free)</p>
-            <ol class="text-[11px] text-zinc-500 space-y-1 list-decimal list-inside leading-relaxed">
-              <li>Create a project at <a href="https://console.cloud.google.com/" target="_blank" class="text-zinc-300 underline font-semibold">console.cloud.google.com</a></li>
-              <li>Enable the <b class="text-zinc-300">YouTube Data API v3</b>.</li>
-              <li>Create an <b class="text-zinc-300">OAuth client (Web app)</b>.</li>
-              <li>Add this exact redirect URI: <code class="text-zinc-300 bg-ink-900 px-1 rounded" id="yt-redirect-uri">…</code></li>
-              <li>Paste the Client ID &amp; Secret below, then press Connect.</li>
-            </ol>
-            <input id="modal-input-yt-id" type="text" placeholder="Google OAuth Client ID" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
-            <input id="modal-input-token" type="password" placeholder="Google OAuth Client Secret" class="w-full px-3 py-2.5 bg-ink-900 border border-ink-600 rounded-lg text-xs text-white focus:outline-none focus:border-zinc-400 placeholder-zinc-600">
+        </div>
+      </div>`;
+    }).join('');
+  }
+  const page = Math.floor(offset / limit) + 1;
+  const pages = Math.max(1, Math.ceil(total / limit));
+  document.getElementById('history-page-info').textContent = total ? `Page ${page} of ${pages} · ${total} item${total === 1 ? '' : 's'}` : '';
+  document.getElementById('history-prev').disabled = offset === 0;
+  document.getElementById('history-next').disabled = offset + limit >= total;
+}
+async function deleteHistoryJob(jobId) {
+  if (!(await confirmDialog('Delete this history entry and its clips?'))) return;
+  try { await api(`/api/jobs/${jobId}`, { method: 'DELETE' }); showToast('Deleted', 'success'); loadHistory(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+
+// ---------- analytics ----------
+async function loadAnalytics() {
+  try {
+    const d = await api('/api/analytics');
+    document.getElementById('stat-total').textContent = d.total_clips;
+    document.getElementById('stat-posted').textContent = d.posted;
+    document.getElementById('stat-scheduled').textContent = d.scheduled;
+    document.getElementById('stat-success').textContent = d.success_rate != null ? d.success_rate + '%' : '—';
+    document.getElementById('stat-avg-score').textContent = d.avg_score ? 'Avg hook score ' + d.avg_score : '';
+    const max = Math.max(1, ...d.per_day.map(x => x.count));
+    document.getElementById('week-chart').innerHTML = d.per_day.map(x => `
+      <div class="flex-1 flex flex-col items-center gap-1.5">
+        <div class="w-full rounded-t-md bg-yellow-400/80 transition-all" style="height:${Math.max(4, (x.count / max) * 72)}px" title="${x.count}"></div>
+        <span class="text-[8px] text-zinc-600 font-bold">${x.day.slice(8)}</span>
+      </div>`).join('');
+    const pp = d.platform_posts;
+    document.getElementById('platform-posts').innerHTML = [
+      ['Instagram', pp.ig, 'ph-instagram-logo'], ['TikTok', pp.tiktok, 'ph-tiktok-logo'], ['YouTube', pp.youtube, 'ph-youtube-logo'], ['Failed attempts', pp.failed, 'ph-x-circle'],
+    ].map(([n, v, i]) => `<div class="flex items-center gap-3 py-1.5"><i class="ph ${i} text-lg text-zinc-400"></i><span class="text-xs text-zinc-300 flex-1">${n}</span><span class="text-xs font-bold text-white">${v}</span></div>`).join('');
+    const acc = d.connections || {};
+    document.getElementById('destinations').innerHTML = ['buffer', 'instagram', 'tiktok', 'youtube'].map(p => {
+      const s = acc[p] || { connected: false };
+      return `<div class="flex items-center justify-between py-1.5">
+        <span class="text-xs text-zinc-300 capitalize flex items-center gap-2"><i class="ph ph-${p === 'buffer' ? 'buffer-logo' : p + '-logo'} text-base"></i> ${p}</span>
+        ${s.connected ? '<span class="text-[10px] font-bold text-emerald-400">Connected</span>' : '<span class="text-[10px] font-bold text-zinc-600">Not connected</span>'}</div>`;
+    }).join('');
+  } catch {}
+}
+
+// ---------- accounts ----------
+async function loadAccounts() {
+  try {
+    const { accounts, oauth_configured } = await api('/api/accounts');
+    const items = [
+      ['instagram', 'Instagram', 'ph-instagram-logo', 'Publish Reels · needs Meta app + IG professional account'],
+      ['tiktok', 'TikTok', 'ph-tiktok-logo', 'Post videos · needs TikTok developer app'],
+      ['youtube', 'YouTube', 'ph-youtube-logo', 'Upload Shorts · needs Google OAuth client'],
+      ['buffer', 'Buffer', 'ph-buffer-logo', 'One token → all your channels'],
+    ];
+    document.getElementById('accounts-list').innerHTML = items.map(([id, name, icon, desc]) => {
+      const s = accounts[id];
+      const connected = s && s.connected;
+      return `<div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+        <div class="flex items-center gap-3">
+          <i class="ph-fill ${icon} text-2xl ${connected ? 'text-emerald-400' : 'text-zinc-500'}"></i>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-white flex items-center gap-2">${name}
+              ${connected ? `<span class="text-[9px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">Connected</span>`
+                : s && s.status === 'expired' ? `<span class="text-[9px] font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded-full">Expired</span>` : ''}</p>
+            <p class="text-[10px] text-zinc-500 truncate">${connected ? esc(s.display_name || '') + ' · ' : ''}${desc}</p>
           </div>
-          <button onclick="window.location.href='/auth/youtube/login'" class="w-full py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5"><i class="ph ph-sign-in"></i> Connect with Google</button>`;
-        fetch('/api/settings').then(r => r.json()).then(s => {
-          const base = location.origin;
-          const el = document.getElementById('yt-redirect-uri');
-          if (el) el.textContent = base + '/auth/youtube/callback';
-          if (s.youtube_client_id_masked) document.getElementById('modal-input-yt-id').placeholder = 'Saved: ' + s.youtube_client_id_masked;
-        }).catch(() => {});
-      }
-      modal.classList.remove('hidden'); modal.classList.add('flex');
-    }
+          <div class="flex gap-1.5">
+            ${connected ? `<button onclick="refreshAccount('${id}')" class="w-8 h-8 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400" title="Refresh token"><i class="ph ph-arrows-clockwise text-xs"></i></button>
+              <button onclick="disconnectAccount('${id}')" class="px-3 py-2 text-[11px] font-bold text-red-400 hover:bg-red-500/10 rounded-lg">Disconnect</button>`
+              : id !== 'buffer' ? `<a href="/auth/${id}/login" class="px-3.5 py-2 text-[11px] font-bold rounded-lg ${oauth_configured[id] ? 'bg-white text-black hover:bg-zinc-200' : 'bg-white/5 text-zinc-500 cursor-not-allowed'}">${oauth_configured[id] ? 'Connect' : 'Needs server setup'}</a>`
+              : `<span class="text-[10px] text-zinc-600">Use the form below</span>`}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch {}
+}
+async function connectBuffer() {
+  const token = document.getElementById('buffer-token-input').value.trim();
+  const st = document.getElementById('buffer-status');
+  if (!token) { st.innerHTML = '<span class="text-red-400">Paste your token first.</span>'; return; }
+  st.innerHTML = '<span class="text-zinc-500">Verifying token…</span>';
+  try {
+    const res = await api('/api/accounts/buffer', { method: 'POST', json: { access_token: token } });
+    st.innerHTML = `<span class="text-emerald-400">✓ Connected — ${(res.channels || []).length} channel(s)</span>`;
+    document.getElementById('buffer-token-input').value = '';
+    renderBufferChannels(res.channels || []);
+    loadAccounts();
+  } catch (e) { st.innerHTML = `<span class="text-red-400">${esc(e.message)}</span>`; }
+}
+function renderBufferChannels(channels) {
+  document.getElementById('buffer-channels').innerHTML = (channels || []).map(c =>
+    `<div class="flex items-center gap-2 text-[11px] text-zinc-400"><i class="ph ph-dot text-emerald-400"></i> ${esc((c.service || '').capitalize())} · ${esc(c.name || '')}</div>`).join('');
+}
+async function loadBufferChannels() {
+  try {
+    const d = await api('/api/accounts/buffer/channels');
+    if (d.connected) renderBufferChannels(d.channels);
+  } catch {}
+}
+async function disconnectAccount(p) {
+  if (!(await confirmDialog(`Disconnect ${p}? Scheduled posts to it will fail until reconnected.`))) return;
+  try { await api(`/api/accounts/${p}/disconnect`, { method: 'POST' }); showToast('Disconnected', 'success'); loadAccounts(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function refreshAccount(p) {
+  try { await api(`/api/accounts/${p}/refresh`, { method: 'POST' }); showToast('Token refreshed', 'success'); loadAccounts(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
 
-    function closeSocialModal() {
-      const modal = document.getElementById('social-modal');
-      modal.classList.add('hidden'); modal.classList.remove('flex');
-    }
+// ---------- settings ----------
+let prefsCache = {};
+async function loadSettings() {
+  try {
+    const { prefs, secrets, accounts, max_upload_mb } = await api('/api/settings');
+    prefsCache = prefs;
+    document.getElementById('pref-aspect').value = prefs.default_aspect_ratio;
+    document.getElementById('pref-num').value = prefs.default_num_clips;
+    document.getElementById('pref-caps').value = prefs.caption_style;
+    document.getElementById('pref-intensity').value = prefs.editing_intensity;
+    document.getElementById('pref-trim-silence').checked = !!prefs.trim_silence;
+    document.getElementById('pref-autopublish').checked = !!prefs.auto_publish;
+    document.getElementById('pref-review').checked = !!prefs.review_mode;
+    document.getElementById('pref-interval').value = prefs.schedule_interval_hours;
+    document.getElementById('pref-hashtags').value = prefs.default_hashtags || '';
+    document.getElementById('pref-notify').checked = !!prefs.notify_enabled;
+    document.getElementById('setting-gemini-model').value = prefs.gemini_model || '';
+    renderGeminiState(secrets);
+    loadScheduled();
+    loadStorage();
+  } catch {}
+}
+function renderGeminiState(secrets) {
+  const g = secrets.gemini_api_key || { set: false };
+  document.getElementById('gemini-key-label').textContent = g.set ? 'Key saved ✓' : 'No key saved';
+  document.getElementById('gemini-key-masked').textContent = g.set ? g.masked : 'AI features need a Gemini API key';
+  document.getElementById('gemini-key-actions').innerHTML = g.set
+    ? `<button onclick="showGeminiInput()" class="px-2.5 py-1.5 text-[10px] font-bold text-zinc-300 bg-white/5 hover:bg-white/10 rounded-lg">Update</button>
+       <button onclick="removeGeminiKey()" class="px-2.5 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-500/10 rounded-lg">Remove</button>
+       <button onclick="testGeminiKey()" class="px-2.5 py-1.5 text-[10px] font-bold text-yellow-400 hover:bg-yellow-400/10 rounded-lg">Test</button>`
+    : `<button onclick="showGeminiInput()" class="px-2.5 py-1.5 text-[10px] font-bold bg-yellow-400 hover:bg-yellow-300 text-black rounded-lg">Add key</button>`;
+  // header badge
+  const badge = document.getElementById('gemini-status');
+  badge.innerHTML = g.set
+    ? `<i class="ph-fill ph-sparkle text-yellow-400"></i><span class="text-zinc-300 hidden sm:inline">AI ready</span>`
+    : `<i class="ph ph-warning text-zinc-500"></i><span class="text-red-400 hidden sm:inline">Add AI key</span>`;
+  badge.className = 'cursor-pointer px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ' + (g.set ? 'bg-yellow-400/10' : 'bg-red-500/10');
+}
+function showGeminiInput() { document.getElementById('gemini-key-input-wrap').classList.remove('hidden'); }
+function hideGeminiInput() { document.getElementById('gemini-key-input-wrap').classList.add('hidden'); document.getElementById('gemini-test-result').textContent = ''; }
+async function saveGeminiKey() {
+  const key = document.getElementById('gemini-key-input').value.trim();
+  const out = document.getElementById('gemini-test-result');
+  if (!key) { out.innerHTML = '<span class="text-red-400">Paste a key first.</span>'; return; }
+  out.innerHTML = '<span class="text-zinc-500">Saving & testing…</span>';
+  try {
+    const res = await api('/api/settings/gemini', { method: 'POST', json: { api_key: key } });
+    if (res.test && res.test.ok) out.innerHTML = `<span class="text-emerald-400">✓ Key verified (${esc(res.test.model || 'gemini')})</span>`;
+    else out.innerHTML = `<span class="text-yellow-400">Saved, but test failed: ${esc((res.test && res.test.error) || '?')}</span>`;
+    document.getElementById('gemini-key-input').value = '';
+    setTimeout(() => { hideGeminiInput(); loadSettings(); }, 1200);
+  } catch (e) { out.innerHTML = `<span class="text-red-400">${esc(e.message)}</span>`; }
+}
+async function testGeminiKey() {
+  const out = document.getElementById('gemini-test-result');
+  out.innerHTML = '<span class="text-zinc-500">Testing connection…</span>';
+  try {
+    const r = await api('/api/settings/gemini/test', { method: 'POST' });
+    out.innerHTML = r.ok ? `<span class="text-emerald-400">✓ Working with ${esc(r.model)}</span>` : `<span class="text-red-400">${esc(r.error)}</span>`;
+  } catch (e) { out.innerHTML = `<span class="text-red-400">${esc(e.message)}</span>`; }
+}
+async function removeGeminiKey() {
+  if (!(await confirmDialog('Remove your saved Gemini API key? AI features will stop working until you add one.'))) return;
+  try { await api('/api/settings/gemini', { method: 'DELETE' }); showToast('Key removed', 'success'); loadSettings(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function saveModelOverride() {
+  const v = document.getElementById('setting-gemini-model').value.trim();
+  await api('/api/settings', { method: 'POST', json: { prefs: { gemini_model: v } } });
+  showToast('Model override saved', 'success');
+}
+async function savePrefs() {
+  const body = { prefs: {
+    default_aspect_ratio: document.getElementById('pref-aspect').value,
+    default_num_clips: +document.getElementById('pref-num').value,
+    caption_style: document.getElementById('pref-caps').value,
+    editing_intensity: document.getElementById('pref-intensity').value,
+    trim_silence: document.getElementById('pref-trim-silence').checked,
+    auto_publish: document.getElementById('pref-autopublish').checked,
+    review_mode: document.getElementById('pref-review').checked,
+    schedule_interval_hours: +document.getElementById('pref-interval').value || 3,
+    default_hashtags: document.getElementById('pref-hashtags').value,
+  }};
+  await api('/api/settings', { method: 'POST', json: body });
+  showToast('Settings saved ✓', 'success');
+}
+async function saveNotify() {
+  const on = document.getElementById('pref-notify').checked;
+  if (on && 'Notification' in window && Notification.permission !== 'granted') await Notification.requestPermission();
+  await api('/api/settings', { method: 'POST', json: { prefs: { notify_enabled: on } } });
+}
+async function loadScheduled() {
+  try {
+    const { scheduled } = await api('/api/scheduled');
+    const pending = scheduled.filter(s => s.status === 'pending');
+    document.getElementById('scheduled-list').innerHTML = pending.length ? pending.slice(0, 6).map(s => `
+      <div class="flex items-center gap-2.5 py-2 px-3 bg-ink-950 border border-ink-700 rounded-lg">
+        <i class="ph ph-clock text-zinc-500"></i>
+        <div class="min-w-0 flex-1"><p class="text-[11px] font-semibold text-zinc-200 truncate">${esc(s.clip_title || s.hook_text || 'Clip')}</p>
+        <p class="text-[9px] text-zinc-600">${esc(s.scheduled_at.replace('T', ' '))} · ${esc(s.platform)}</p></div>
+        <button onclick="unschedule(${s.id})" class="text-[10px] font-bold text-zinc-500 hover:text-red-400">Cancel</button>
+      </div>`).join('') : '<p class="text-[11px] text-zinc-600">No scheduled posts.</p>';
+  } catch {}
+}
+async function unschedule(id) {
+  try { await api(`/api/scheduled/${id}`, { method: 'DELETE' }); showToast('Schedule cancelled', 'success'); loadScheduled(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function loadStorage() {
+  try {
+    const s = await api('/api/storage');
+    const pct = Math.min(100, Math.round((s.db_mirror_bytes / (s.quota_mb * 1024 * 1024)) * 100));
+    document.getElementById('storage-info').innerHTML = `
+      <div class="flex justify-between text-zinc-300"><span>Clips stored</span><span class="font-bold">${s.clips_count} (${fmtBytes(s.clips_bytes)})</span></div>
+      <div class="flex justify-between text-zinc-300"><span>Persistent mirror</span><span class="font-bold">${fmtBytes(s.db_mirror_bytes)} / ${s.quota_mb} MB</span></div>
+      <div class="h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full bg-yellow-400 rounded-full" style="width:${pct}%"></div></div>
+      ${s.missing_clips.length ? `<p class="text-[11px] text-yellow-400/90">${s.missing_clips.length} clip(s) missing files — open their projects to re-render.</p>` : ''}`;
+  } catch {}
+}
+async function runCleanupNow() {
+  try { const r = await api('/api/cleanup', { method: 'POST' }); showToast(`Cleanup done — ${r.removed} clip(s) removed`, 'success'); loadStorage(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
 
-    async function saveSocialModal() {
-      const input = document.getElementById('modal-input-token');
-      const val = input ? input.value.trim() : '';
-      const payload = {};
+// ---------- profile ----------
+function openProfile() {
+  document.getElementById('profile-info').innerHTML =
+    `<div class="flex items-center gap-3">
+       <div class="w-10 h-10 rounded-full bg-yellow-400 text-black grid place-items-center font-black text-sm">${(user.name || '?')[0].toUpperCase()}</div>
+       <div><p class="text-white font-bold text-sm">${esc(user.name)}</p><p class="text-zinc-500 text-[11px]">${esc(user.email)}</p></div>
+     </div>`;
+  document.getElementById('profile-modal').classList.replace('hidden', 'flex');
+}
+function closeProfile() { document.getElementById('profile-modal').classList.replace('flex', 'hidden'); }
+async function changePassword() {
+  const st = document.getElementById('pw-status');
+  try {
+    await api('/api/auth/change-password', { method: 'POST', json: {
+      current: document.getElementById('pw-current').value,
+      new: document.getElementById('pw-new').value } });
+    st.innerHTML = '<span class="text-emerald-400">✓ Password updated</span>';
+    document.getElementById('pw-current').value = ''; document.getElementById('pw-new').value = '';
+  } catch (e) { st.innerHTML = `<span class="text-red-400">${esc(e.message)}</span>`; }
+}
+async function logout() {
+  try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
+  location.href = '/login';
+}
 
-      if (currentModalPlatform === 'buffer') {
-        if (!val) { showToast('Paste your Buffer token first', 'error'); return; }
-        payload.buffer_access_token = val;
-        payload.buffer_post_youtube = document.getElementById('modal-buffer-youtube').checked;
-      } else if (currentModalPlatform === 'instagram') {
-        if (!val) { showToast('Tip: the Share to IG button works with zero setup', 'info'); closeSocialModal(); return; }
-        payload.instagram_access_token = val;
-        payload.auto_post_instagram = true;
-      } else if (currentModalPlatform === 'tiktok') {
-        if (!val) { showToast('Tip: the Share to TikTok button works with zero setup', 'info'); closeSocialModal(); return; }
-        payload.tiktok_session_id = val;
-        payload.auto_post_tiktok = true;
-      } else if (currentModalPlatform === 'youtube') {
-        const cid = document.getElementById('modal-input-yt-id').value.trim();
-        const csec = val;
-        if (!cid && !csec) { showToast('Enter your Google Client ID & Secret, then press Connect', 'info'); closeSocialModal(); return; }
-        if (cid) payload.youtube_client_id = cid;
-        if (csec) payload.youtube_client_secret = csec;
-        if (cid || csec) {
-          await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          showToast('Credentials saved — now press "Connect with Google"', 'success');
-          closeSocialModal();
-          loadSettings();
-          return;
-        }
-      }
+// ---------- boot ----------
+(async function init() {
+  const params = new URLSearchParams(location.search);
+  switchTab(params.get('tab') || 'create');
+  if (params.get('connected')) showToast(`${params.get('connected')[0].toUpperCase() + params.get('connected').slice(1)} connected ✓`, 'success');
+  if (params.get('error')) showToast('Account connection failed: ' + params.get('error'), 'error');
+  await Promise.all([loadProjects(), loadClips(), pollActiveJobs(), loadSettings()]);
+  startPolling();
+  // Default preferences into the create form
+  try {
+    const { prefs } = await api('/api/settings');
+    document.getElementById('select-aspect').value = prefs.default_aspect_ratio;
+    document.getElementById('select-num').value = prefs.default_num_clips;
+    document.getElementById('select-dur').value = prefs.default_clip_duration;
+    document.getElementById('select-res').value = prefs.default_resolution;
+    document.getElementById('select-caps').value = prefs.caption_style;
+    document.getElementById('select-intensity').value = prefs.editing_intensity;
+    document.getElementById('pref-trim').checked = !!prefs.trim_silence;
+  } catch {}
+})();
 
-      await api('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      closeSocialModal();
-      if (currentModalPlatform === 'buffer') {
-        try {
-          const r = await api('/api/buffer/channels');
-          const d = await r.json();
-          if (d.channels && d.channels.length > 0) {
-            const names = d.channels.map(ch => ch.service ? ch.service.charAt(0).toUpperCase() + ch.service.slice(1) : ch.name).join(', ');
-            showToast(`Buffer connected! Found ${d.channels.length} channels (${names})`, 'success');
-          } else if (d.error) {
-            showToast(d.error, 'error');
-          } else {
-            showToast('Buffer connected', 'success');
-          }
-        } catch (_) { showToast('Buffer connected', 'success'); }
-      } else {
-        showToast(currentModalPlatform + ' connected', 'success');
-      }
-      loadSettings();
-    }
-
-    async function disconnectAccount(platform) {
-      const ok = await confirmDialog('Disconnect ' + platform + '?', { yes: 'Disconnect' });
-      if (!ok) return;
-      await api(`/auth/disconnect/${platform}`, { method: 'POST' });
-      showToast(platform + ' disconnected', 'success');
-      loadSettings();
-    }
-
-    /* ═══════════════════ VIDEO PLAYER ═══════════════════ */
-    let currentModalId = null;
-    function openModal(clipId) {
-      const c = CLIPS[clipId];
-      if (!c) return;
-      currentModalId = clipId;
-      const modal = document.getElementById('video-modal');
-      const video = document.getElementById('modal-video');
-      const missingEl = document.getElementById('modal-missing');
-      document.getElementById('modal-title').innerText = c.hook_text || c.title || 'Preview';
-      modal.classList.remove('hidden'); modal.classList.add('flex');
-
-      const showMissing = () => {
-        video.pause(); video.removeAttribute('src'); video.load();
-        missingEl.classList.remove('hidden'); missingEl.classList.add('flex');
-      };
-      const showPlayer = () => {
-        missingEl.classList.add('hidden'); missingEl.classList.remove('flex');
-      };
-
-      video.onerror = showMissing;
-      if (c.file_exists === false) { showMissing(); return; }
-      showPlayer();
-      video.src = '/api/clips/' + c.id + '/video';
-      video.play().catch(() => {});
-    }
-    async function removeFromModal() {
-      if (!currentModalId) return;
-      const ok = await confirmDialog('Remove this clip entry? Its video file is already gone.');
-      if (!ok) return;
-      await api(`/api/clips/${currentModalId}`, { method: 'DELETE' });
-      currentModalId = null;
-      closeModal();
-      showToast('Clip removed', 'success');
-      loadClips();
-    }
-    function closeModal() {
-      const modal = document.getElementById('video-modal');
-      const video = document.getElementById('modal-video');
-      video.onerror = null;
-      video.pause(); video.removeAttribute('src'); video.load();
-      modal.classList.add('hidden'); modal.classList.remove('flex');
-      document.getElementById('modal-missing').classList.add('hidden');
-      currentModalId = null;
-    }
-
-    /* ═══════════════════ 1-TAP MOBILE SHARE ═══════════════════ */
-    async function shareToSocial(platform, clipId) {
-      const c = CLIPS[clipId];
-      if (!c) return;
-      if (c.file_exists === false) { showToast('Video file is missing — cannot share', 'error'); return; }
-      const filename = (c.file_path || '').split(/[\\/]/).pop() || (c.id + '.mp4');
-      const videoUrl = '/api/clips/' + c.id + '/video';
-      const tags = Array.isArray(c.hashtags) ? c.hashtags.join(' ') : (c.hashtags || '');
-      const fullText = (c.caption || '') + '\n\n' + tags;
-
-      try { await navigator.clipboard.writeText(fullText); } catch (e) {}
-
-      if (navigator.canShare) {
-        try {
-          const resp = await fetch(videoUrl);
-          const blob = await resp.blob();
-          const file = new File([blob], filename, { type: 'video/mp4' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: c.hook_text || platform, text: fullText });
-            return;
-          }
-        } catch (err) { if (err.name === 'AbortError') return; }
-      }
-      showToast('Caption copied — downloading video for ' + platform, 'info');
-      const a = document.createElement('a');
-      a.href = videoUrl; a.download = filename; a.click();
-    }
-
-    /* ═══════════════════ BOOT ═══════════════════ */
-    function startApp() {
-      loadSettings();
-      loadClips();
-      pollActiveJobs();
-      // deep link ?tab=settings&connected=…
-      const params = new URLSearchParams(location.search);
-      const tab = params.get('tab');
-      if (params.get('connected')) showToast(params.get('connected') + ' connected successfully', 'success');
-      if (params.get('error')) showToast('Connection failed: ' + params.get('error').replace(/_/g, ' '), 'error');
-      if (tab) switchTab(tab); else switchTab('create');
-      if (params.get('modal')) openSocialModal(params.get('modal'));
-      history.replaceState(null, '', location.pathname);
-    }
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    }
-
-    (async function init() {
-      try {
-        const res = await fetch('/api/auth/status');
-        const st = await res.json();
-        if (st.locked) showLock();
-        else startApp();
-      } catch { startApp(); }
-    })();
-  </script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+</script>
 </body>
 </html>

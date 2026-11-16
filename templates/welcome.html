@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Clipy — Turn any video into viral clips with AI</title>
+  <meta name="description" content="Upload a video, pick a TikTok or Reels video as your editing reference, and let Clipy's AI cut, caption and style professional clips for you.">
+  <link rel="icon" href="/static/icons/favicon.png">
+  <link rel="stylesheet" href="/static/vendor/fonts/inter.css">
+  <link rel="stylesheet" href="/static/vendor/phosphor/regular/style.css">
+  <link rel="stylesheet" href="/static/vendor/phosphor/fill/style.css">
+  <script src="/static/vendor/tailwind.js"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } }
+    }
+  </script>
+  <style>
+    html { color-scheme: dark; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .fade-up { animation: fadeUp .7s ease both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px);} to { opacity: 1; transform: none;} }
+    .d1 { animation-delay: .08s } .d2 { animation-delay: .16s } .d3 { animation-delay: .24s } .d4 { animation-delay: .32s }
+    .phone-frame { box-shadow: 0 30px 80px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.06); }
+    ::selection { background: #facc15; color: #000; }
+  </style>
+</head>
+<body class="bg-ink-950 text-zinc-200 antialiased overflow-x-hidden">
+
+  <!-- NAV -->
+  <header class="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-ink-950/70 border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <span class="w-8 h-8 rounded-lg bg-yellow-400 text-black grid place-items-center font-black text-lg">C</span>
+        <span class="font-extrabold text-white tracking-tight text-lg">Clipy</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-7 text-sm text-zinc-400">
+        <a href="#how" class="hover:text-white transition-colors">How it works</a>
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#reference" class="hover:text-white transition-colors">Reference editing</a>
+      </nav>
+      <div class="flex items-center gap-2.5">
+        <a href="/login" class="px-4 py-2 text-sm font-semibold text-zinc-300 hover:text-white rounded-lg hover:bg-white/5 transition-colors">Sign in</a>
+        <a href="/register" class="px-4 py-2 text-sm font-bold bg-yellow-400 hover:bg-yellow-300 text-black rounded-lg transition-colors">Get started</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="pt-32 pb-16 px-5">
+    <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <div class="fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-yellow-400/20 bg-yellow-400/10 text-yellow-300 text-xs font-semibold mb-6">
+          <i class="ph-fill ph-sparkle text-sm"></i> AI editing with reference videos
+        </div>
+        <h1 class="fade-up d1 text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-[1.05] tracking-tight">
+          Turn any video into<br>
+          <span class="text-yellow-400">viral clips</span> — styled like<br>
+          your favorite creators.
+        </h1>
+        <p class="fade-up d2 mt-5 text-zinc-400 text-base sm:text-lg leading-relaxed max-w-xl">
+          Upload your footage, drop in a TikTok, Reel or Short as inspiration, and Clipy's AI
+          studies its editing style — cuts, captions, zooms, pacing — then rebuilds it on your video.
+          Real rendering with FFmpeg. Your projects stay saved forever.
+        </p>
+        <div class="fade-up d3 mt-8 flex flex-wrap items-center gap-3">
+          <a href="/register" class="px-6 py-3.5 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl transition-colors inline-flex items-center gap-2">
+            <i class="ph-fill ph-rocket-launch text-lg"></i> Start creating — free
+          </a>
+          <a href="/login" class="px-6 py-3.5 border border-white/10 hover:border-white/25 bg-white/5 text-white font-semibold rounded-xl transition-colors inline-flex items-center gap-2">
+            <i class="ph ph-sign-in text-lg"></i> Sign in
+          </a>
+        </div>
+        <div class="fade-up d4 mt-7 flex items-center gap-5 text-xs text-zinc-500">
+          <span class="flex items-center gap-1.5"><i class="ph-fill ph-lock-simple text-zinc-300"></i> Encrypted keys</span>
+          <span class="flex items-center gap-1.5"><i class="ph-fill ph-database text-zinc-300"></i> Persistent projects</span>
+          <span class="flex items-center gap-1.5"><i class="ph-fill ph-device-mobile text-zinc-300"></i> Works on mobile</span>
+        </div>
+      </div>
+
+      <!-- Product preview -->
+      <div class="fade-up d2 relative mx-auto w-full max-w-[340px]">
+        <div class="phone-frame rounded-[2.2rem] bg-ink-900 border border-white/10 overflow-hidden aspect-[9/16] relative">
+          <div class="absolute top-3 left-3 right-3 flex items-center gap-2">
+            <div class="px-2.5 py-1 rounded-lg bg-black/70 border border-yellow-400/40 text-[10px] font-bold text-yellow-300 truncate">He COULD NOT believe it 💀</div>
+          </div>
+          <div class="absolute inset-0 grid place-items-center bg-gradient-to-b from-ink-800 via-ink-900 to-black">
+            <div class="text-center px-8">
+              <div class="w-16 h-16 mx-auto rounded-2xl bg-yellow-400/15 border border-yellow-400/30 grid place-items-center mb-4">
+                <i class="ph-fill ph-scissors text-yellow-300 text-2xl"></i>
+              </div>
+              <p class="text-white font-bold text-sm">Rendering clip 2 of 3</p>
+              <div class="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div class="h-full w-2/3 bg-yellow-400 rounded-full"></div>
+              </div>
+              <p class="mt-2 text-[10px] text-zinc-500">Captions · Zoom punch · -14 LUFS audio</p>
+            </div>
+          </div>
+          <div class="absolute bottom-0 inset-x-0 p-4">
+            <div class="flex items-end justify-center gap-1 text-white font-black text-lg leading-tight text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+              <span class="bg-yellow-400 text-black px-1 rounded">NO WAY</span>&nbsp;<span>that</span>&nbsp;<span class="bg-yellow-400 text-black px-1 rounded">just</span>&nbsp;<span>happened</span>
+            </div>
+          </div>
+        </div>
+        <div class="absolute -bottom-5 -left-4 sm:-left-8 px-3.5 py-2.5 rounded-xl bg-ink-900 border border-white/10 shadow-xl flex items-center gap-2.5">
+          <i class="ph-fill ph-tiktok-logo text-lg text-zinc-200"></i>
+          <div class="text-[10px] leading-tight"><p class="text-white font-bold">Reference style applied</p><p class="text-zinc-500">@viralcreator · karaoke captions</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="py-20 px-5 border-t border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <p class="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-2">Workflow</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">From raw video to ready-to-post</h2>
+      <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-6 rounded-2xl bg-ink-900 border border-white/5 hover:border-white/15 transition-colors">
+          <div class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center mb-4"><i class="ph-fill ph-upload-simple text-yellow-300 text-xl"></i></div>
+          <p class="text-white font-bold mb-1.5">1 · Upload your video</p>
+          <p class="text-zinc-500 text-sm leading-relaxed">MP4, MOV, WEBM from your phone or desktop — or paste a public link.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-ink-900 border border-white/5 hover:border-white/15 transition-colors">
+          <div class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center mb-4"><i class="ph-fill ph-shooting-star text-yellow-300 text-xl"></i></div>
+          <p class="text-white font-bold mb-1.5">2 · Add a reference</p>
+          <p class="text-zinc-500 text-sm leading-relaxed">Paste a TikTok / Reel / Short you love. Clipy retrieves it and analyzes its edit style.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-ink-900 border border-white/5 hover:border-white/15 transition-colors">
+          <div class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center mb-4"><i class="ph-fill ph-brain text-yellow-300 text-xl"></i></div>
+          <p class="text-white font-bold mb-1.5">3 · AI builds the plan</p>
+          <p class="text-zinc-500 text-sm leading-relaxed">Best moments, hooks, captions, zooms and pacing — mapped onto your video.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-ink-900 border border-white/5 hover:border-white/15 transition-colors">
+          <div class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center mb-4"><i class="ph-fill ph-film-strip text-yellow-300 text-xl"></i></div>
+          <p class="text-white font-bold mb-1.5">4 · Render & publish</p>
+          <p class="text-zinc-500 text-sm leading-relaxed">Real FFmpeg rendering, then schedule posts to TikTok, Reels or Shorts.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REFERENCE FEATURE -->
+  <section id="reference" class="py-20 px-5 border-t border-white/5 bg-ink-900/40">
+    <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <p class="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-2">New</p>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">"Use a video as inspiration"</h2>
+        <p class="mt-4 text-zinc-400 leading-relaxed">
+          The AI doesn't just read a URL — Clipy actually retrieves the public reference video,
+          samples its frames, listens to its audio, and produces a structured editing profile:
+        </p>
+        <ul class="mt-5 space-y-2.5 text-sm text-zinc-300">
+          <li class="flex gap-2.5"><i class="ph-fill ph-check-circle text-yellow-400 mt-0.5"></i> Editing style, hook structure & opening sequence</li>
+          <li class="flex gap-2.5"><i class="ph-fill ph-check-circle text-yellow-400 mt-0.5"></i> Shot pacing, transitions and camera movement</li>
+          <li class="flex gap-2.5"><i class="ph-fill ph-check-circle text-yellow-400 mt-0.5"></i> Caption style, position and animation</li>
+          <li class="flex gap-2.5"><i class="ph-fill ph-check-circle text-yellow-400 mt-0.5"></i> Zoom effects, color grade and sound cues</li>
+          <li class="flex gap-2.5"><i class="ph-fill ph-check-circle text-yellow-400 mt-0.5"></i> Ending style and storytelling rhythm</li>
+        </ul>
+        <p class="mt-5 text-xs text-zinc-500">Public videos only. If a platform refuses access, upload the reference file instead — we never bypass access controls.</p>
+      </div>
+      <div class="rounded-2xl bg-ink-900 border border-white/10 p-5 phone-frame">
+        <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Reference analysis</p>
+        <div class="space-y-2.5 text-xs">
+          <div class="flex justify-between items-center py-2 border-b border-white/5"><span class="text-zinc-500">Editing style</span><span class="text-white font-semibold text-right">Fast-paced, energetic cuts</span></div>
+          <div class="flex justify-between items-center py-2 border-b border-white/5"><span class="text-zinc-500">Avg shot duration</span><span class="text-white font-semibold">2.4s</span></div>
+          <div class="flex justify-between items-center py-2 border-b border-white/5"><span class="text-zinc-500">Transitions</span><span class="text-white font-semibold">Zoom punch</span></div>
+          <div class="flex justify-between items-center py-2 border-b border-white/5"><span class="text-zinc-500">Captions</span><span class="text-white font-semibold">Karaoke · center</span></div>
+          <div class="flex justify-between items-center py-2 border-b border-white/5"><span class="text-zinc-500">Color grade</span><span class="text-white font-semibold">Vibrant</span></div>
+          <div class="flex justify-between items-center py-2"><span class="text-zinc-500">Pacing</span><span class="text-white font-semibold">Very fast</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-20 px-5 border-t border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-10">Everything you need to clip fast</h2>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="p-5 rounded-2xl bg-ink-900 border border-white/5"><i class="ph-fill ph-magic-wand text-yellow-300 text-2xl mb-3"></i><p class="text-white font-bold text-sm">Highlight detection</p><p class="text-zinc-500 text-xs mt-1.5 leading-relaxed">Whisper transcription + Gemini finds the strongest moments.</p></div>
+        <div class="p-5 rounded-2xl bg-ink-900 border border-white/5"><i class="ph-fill ph-closed-captioning text-yellow-300 text-2xl mb-3"></i><p class="text-white font-bold text-sm">Animated captions</p><p class="text-zinc-500 text-xs mt-1.5 leading-relaxed">Karaoke word-by-word, bold blocks or minimal styles.</p></div>
+        <div class="p-5 rounded-2xl bg-ink-900 border border-white/5"><i class="ph-fill ph-crop text-yellow-300 text-2xl mb-3"></i><p class="text-white font-bold text-sm">Every aspect ratio</p><p class="text-zinc-500 text-xs mt-1.5 leading-relaxed">9:16, 16:9, 1:1 and 4:5 — facecam stacks and smart reframing.</p></div>
+        <div class="p-5 rounded-2xl bg-ink-900 border border-white/5"><i class="ph-fill ph-waveform text-yellow-300 text-2xl mb-3"></i><p class="text-white font-bold text-sm">Silence removal</p><p class="text-zinc-500 text-xs mt-1.5 leading-relaxed">Tight cuts with subtitles re-timed automatically.</p></div>
+        <div class="p-5 rounded-2xl bg-ink-900 border border-white/5"><i class="ph-fill ph-calendar-check text-yellow-300 text-2xl mb-3"></i><p class="text-white font-bold text-sm">Scheduling</p><p class="text-zinc-500 text-xs mt-1.5 leading-relaxed">Queue posts to Buffer, TikTok, Instagram and YouTube.</p></div>
+        <div class="p-5 rounded-2xl bg-ink-900 border border-white/5"><i class="ph-fill ph-hard-drives text-yellow-300 text-2xl mb-3"></i><p class="text-white font-bold text-sm">Permanent projects</p><p class="text-zinc-500 text-xs mt-1.5 leading-relaxed">History, clips and API keys survive restarts — stored in a real database.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20 px-5 border-t border-white/5">
+    <div class="max-w-3xl mx-auto text-center">
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Ready to make your next viral clip?</h2>
+      <p class="mt-4 text-zinc-400">Free to start. Bring your own Gemini API key (free tier works).</p>
+      <a href="/register" class="mt-8 inline-flex px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl transition-colors items-center gap-2">
+        <i class="ph-fill ph-rocket-launch text-lg"></i> Create your free account
+      </a>
+    </div>
+  </section>
+
+  <footer class="border-t border-white/5 py-8 px-5">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-600">
+      <div class="flex items-center gap-2">
+        <span class="w-6 h-6 rounded-md bg-yellow-400 text-black grid place-items-center font-black text-xs">C</span>
+        <span>Clipy — AI video clipping platform</span>
+      </div>
+      <span>Built with FastAPI · Gemini · Whisper · FFmpeg</span>
+    </div>
+  </footer>
+
+</body>
+</html>

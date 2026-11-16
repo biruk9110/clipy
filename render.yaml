@@ -1,0 +1,22 @@
+# Render blueprint for Clipy
+# Requires a PostgreSQL instance (create one in the Render dashboard, then paste
+# its internal connection string into DATABASE_URL after the first deploy).
+
+services:
+  - type: web
+    name: clipy
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false      # set to your Postgres internal connection string
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false      # optional server-wide fallback key
+      - key: CLIPY_MAX_UPLOAD_MB
+        value: "300"
+
+# Free-tier note: the free web plan has no persistent disk. Clipy mirrors media
+# into the PostgreSQL `files` table automatically when DATABASE_URL is set.

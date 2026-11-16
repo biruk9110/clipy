@@ -231,18 +231,18 @@ def _post_rest_profiles(token: str, profile_ids: list, text: str, video_url: str
     except Exception as e:
         return False, [], str(e)
 
-def post_to_buffer(video_url: str, caption: str, hashtags: list, schedule_timestamp: int = None, exclude_services: list = None):
+def post_to_buffer(token: str, video_url: str, caption: str, hashtags: list,
+                   schedule_timestamp: int = None, exclude_services: list = None):
     """
     Schedules/Posts a video clip to all connected channels on Buffer (Instagram, TikTok, YouTube, etc.).
     Supports both modern GraphQL channels and legacy REST channels.
+    `token` is the user's Buffer access token (from their connected account).
     """
-    settings = get_settings()
-    access_token = settings.get("buffer_access_token") or os.getenv("BUFFER_ACCESS_TOKEN")
-    token = _clean_token(access_token)
-    if not token:
+    access_token = _clean_token(token)
+    if not access_token:
         return {"success": False, "error": "No Buffer access token configured"}
 
-    profiles, prof_err = get_buffer_profiles(token)
+    profiles, prof_err = get_buffer_profiles(access_token)
     if not profiles:
         return {"success": False, "error": prof_err or "No connected channels found on your Buffer account"}
 
@@ -268,7 +268,7 @@ def post_to_buffer(video_url: str, caption: str, hashtags: list, schedule_timest
     for ch in gql_profiles:
         ch_id = ch["id"]
         ch_name = (ch.get("service") or ch.get("name") or "channel").capitalize()
-        ok, post_id, err = _post_graphql_channel(token, ch_id, full_text, video_url, schedule_timestamp)
+        ok, post_id, err = _post_graphql_channel(access_token, ch_id, full_text, video_url, schedule_timestamp)
         if ok:
             succeeded_channels.append(ch_name)
         else:
@@ -277,7 +277,7 @@ def post_to_buffer(video_url: str, caption: str, hashtags: list, schedule_timest
     # 2. Post to REST channels
     if rest_profiles:
         profile_ids = [p["id"] for p in rest_profiles]
-        ok, updates, err = _post_rest_profiles(token, profile_ids, full_text, video_url, schedule_timestamp)
+        ok, updates, err = _post_rest_profiles(access_token, profile_ids, full_text, video_url, schedule_timestamp)
         if ok:
             for p in rest_profiles:
                 succeeded_channels.append((p.get("service") or p.get("name") or "channel").capitalize())

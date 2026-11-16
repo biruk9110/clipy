@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{{ mode and (mode | capitalize) }} — Clipy</title>
+  <link rel="icon" href="/static/icons/favicon.png">
+  <link rel="stylesheet" href="/static/vendor/fonts/inter.css">
+  <link rel="stylesheet" href="/static/vendor/phosphor/regular/style.css">
+  <link rel="stylesheet" href="/static/vendor/phosphor/fill/style.css">
+  <script src="/static/vendor/tailwind.js"></script>
+  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } };</script>
+  <style>
+    html { color-scheme: dark; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    input:focus { outline: none; }
+  </style>
+</head>
+<body class="bg-ink-950 text-zinc-200 antialiased min-h-screen">
+  <div class="min-h-screen grid lg:grid-cols-2">
+    <!-- Brand side -->
+    <div class="hidden lg:flex flex-col justify-between p-12 border-r border-white/5 bg-ink-900/40">
+      <a href="/" class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-lg bg-yellow-400 text-black grid place-items-center font-black text-xl">C</span>
+        <span class="font-extrabold text-white text-xl tracking-tight">Clipy</span>
+      </a>
+      <div>
+        <h2 class="text-3xl font-extrabold text-white leading-tight">Your editing copilot<br>for short-form video.</h2>
+        <p class="mt-4 text-zinc-500 text-sm leading-relaxed max-w-md">
+          Upload footage, borrow the style of any public video, and let AI cut captions,
+          zooms and hooks — then publish everywhere from one place.
+        </p>
+        <div class="mt-8 space-y-3 text-sm text-zinc-400">
+          <p class="flex items-center gap-3"><i class="ph-fill ph-scissors text-yellow-400"></i> Real FFmpeg rendering</p>
+          <p class="flex items-center gap-3"><i class="ph-fill ph-database text-yellow-400"></i> Projects & history that persist</p>
+          <p class="flex items-center gap-3"><i class="ph-fill ph-lock-simple text-yellow-400"></i> Encrypted API keys</p>
+        </div>
+      </div>
+      <p class="text-xs text-zinc-600">© 2026 Clipy</p>
+    </div>
+
+    <!-- Form side -->
+    <div class="flex items-center justify-center p-6">
+      <div class="w-full max-w-sm">
+        <a href="/" class="lg:hidden flex items-center gap-2 mb-10">
+          <span class="w-8 h-8 rounded-lg bg-yellow-400 text-black grid place-items-center font-black">C</span>
+          <span class="font-extrabold text-white text-lg">Clipy</span>
+        </a>
+
+        <div id="pane-login" class="pane hidden">
+          <h1 class="text-2xl font-extrabold text-white">Welcome back</h1>
+          <p class="text-sm text-zinc-500 mt-1.5 mb-6">Sign in to continue editing.</p>
+          <form id="form-login" class="space-y-3.5">
+            <div>
+              <label class="text-xs font-semibold text-zinc-400">Email</label>
+              <input name="email" type="email" required autocomplete="email"
+                     class="mt-1.5 w-full px-3.5 py-3 bg-ink-900 border border-white/10 focus:border-yellow-400/60 rounded-xl text-sm text-white placeholder-zinc-600 transition-colors" placeholder="you@example.com">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-zinc-400">Password</label>
+              <input name="password" type="password" required autocomplete="current-password"
+                     class="mt-1.5 w-full px-3.5 py-3 bg-ink-900 border border-white/10 focus:border-yellow-400/60 rounded-xl text-sm text-white placeholder-zinc-600 transition-colors" placeholder="••••••••">
+            </div>
+            <div class="flex justify-end">
+              <a href="/forgot" class="text-xs font-semibold text-yellow-400 hover:text-yellow-300">Forgot password?</a>
+            </div>
+            <button class="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm transition-colors">Sign in</button>
+          </form>
+          <p class="text-sm text-zinc-500 mt-6 text-center">New to Clipy? <a href="/register" class="text-yellow-400 font-semibold hover:text-yellow-300">Create an account</a></p>
+        </div>
+
+        <div id="pane-register" class="pane hidden">
+          <h1 class="text-2xl font-extrabold text-white">Create your account</h1>
+          <p class="text-sm text-zinc-500 mt-1.5 mb-6">Free to start — bring your own Gemini key.</p>
+          <form id="form-register" class="space-y-3.5">
+            <div>
+              <label class="text-xs font-semibold text-zinc-400">Name</label>
+              <input name="name" type="text" required autocomplete="name"
+                     class="mt-1.5 w-full px-3.5 py-3 bg-ink-900 border border-white/10 focus:border-yellow-400/60 rounded-xl text-sm text-white placeholder-zinc-600 transition-colors" placeholder="Your name">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-zinc-400">Email</label>
+              <input name="email" type="email" required autocomplete="email"
+                     class="mt-1.5 w-full px-3.5 py-3 bg-ink-900 border border-white/10 focus:border-yellow-400/60 rounded-xl text-sm text-white placeholder-zinc-600 transition-colors" placeholder="you@example.com">
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-zinc-400">Password</label>
+              <input name="password" type="password" required minlength="8" autocomplete="new-password"
+                     class="mt-1.5 w-full px-3.5 py-3 bg-ink-900 border border-white/10 focus:border-yellow-400/60 rounded-xl text-sm text-white placeholder-zinc-600 transition-colors" placeholder="At least 8 characters">
+            </div>
+            <button class="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm transition-colors">Create account</button>
+            <p class="text-[11px] text-zinc-600 leading-relaxed">By creating an account you agree that you own the rights to the videos you edit and reference.</p>
+          </form>
+          <p class="text-sm text-zinc-500 mt-6 text-center">Already have an account? <a href="/login" class="text-yellow-400 font-semibold hover:text-yellow-300">Sign in</a></p>
+        </div>
+
+        <div id="pane-forgot" class="pane hidden">
+          <h1 class="text-2xl font-extrabold text-white">Reset your password</h1>
+          <p class="text-sm text-zinc-500 mt-1.5 mb-6">Enter your email — we'll generate a secure reset link.</p>
+          <form id="form-forgot" class="space-y-3.5">
+            <div>
+              <label class="text-xs font-semibold text-zinc-400">Email</label>
+              <input name="email" type="email" required autocomplete="email"
+                     class="mt-1.5 w-full px-3.5 py-3 bg-ink-900 border border-white/10 focus:border-yellow-400/60 rounded-xl text-sm text-white placeholder-zinc-600 transition-colors" placeholder="you@example.com">
+            </div>
+            <button class="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm transition-colors">Generate reset link</button>
+          </form>
+          <div id="forgot-result" class="hidden mt-4 p-3.5 rounded-xl bg-ink-900 border border-white/10 text-xs break-all"></div>
+          <p class="text-sm text-zinc-500 mt-6 text-center"><a href="/login" class="text-yellow-400 font-semibold hover:text-yellow-300">Back to sign in</a></p>
+        </div>
+
+        <div id="pane-reset" class="pane hidden">
+          <h1 class="text-2xl font-extrabold text-white">Choose a new password</h1>
+          <p class="text-sm text-zinc-500 mt-1.5 mb-6">Your reset link was validated — set a new password below.</p>
+          <form id="form-reset" class="space-y-3.5">
+            <input type="hidden" name="token" value="{{ token }}">
+            <div>
+              <label class="text-xs font-semibold text-zinc-400">New password</label>
+              <input name="password" type="password" required minlength="8" autocomplete="new-password"
+                     class="mt-1.5 w-full px-3.5 py-3 bg-ink-900 border border-white/10 focus:border-yellow-400/60 rounded-xl text-sm text-white placeholder-zinc-600 transition-colors" placeholder="At least 8 characters">
+            </div>
+            <button class="w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm transition-colors">Update password</button>
+          </form>
+          <p class="text-sm text-zinc-500 mt-6 text-center"><a href="/login" class="text-yellow-400 font-semibold hover:text-yellow-300">Back to sign in</a></p>
+        </div>
+
+        <div id="form-error" class="hidden mt-4 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const mode = "{{ mode }}";
+    const pane = document.getElementById('pane-' + mode);
+    if (pane) pane.classList.remove('hidden');
+
+    function showError(msg) {
+      const el = document.getElementById('form-error');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    async function post(url, body) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, data };
+    }
+
+    const loginForm = document.getElementById('form-login');
+    if (loginForm) loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(loginForm);
+      const { ok, data } = await post('/api/auth/login', {
+        email: f.get('email'), password: f.get('password'),
+        next: "{{ next }}",
+      });
+      if (ok && data.redirect) location.href = data.redirect;
+      else showError(data.error || 'Sign in failed. Try again.');
+    });
+
+    const regForm = document.getElementById('form-register');
+    if (regForm) regForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(regForm);
+      const { ok, data } = await post('/api/auth/register', {
+        name: f.get('name'), email: f.get('email'), password: f.get('password'),
+      });
+      if (ok && data.redirect) location.href = data.redirect;
+      else showError(data.error || 'Registration failed.');
+    });
+
+    const forgotForm = document.getElementById('form-forgot');
+    if (forgotForm) forgotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(forgotForm);
+      const { ok, data } = await post('/api/auth/forgot', { email: f.get('email') });
+      const box = document.getElementById('forgot-result');
+      box.classList.remove('hidden');
+      if (ok) {
+        box.innerHTML = data.reset_url
+          ? '<p class="text-zinc-300 mb-2 font-semibold">Reset link generated:</p><a class="text-yellow-400 break-all" href="' + data.reset_url + '">' + data.reset_url + '</a><p class="text-zinc-600 mt-2">Self-hosted mode: no email server is configured, so the link is shown here. It expires in 1 hour.</p>'
+          : (data.message || 'If that account exists, check your email.');
+      } else {
+        box.textContent = data.error || 'Request failed.';
+      }
+    });
+
+    const resetForm = document.getElementById('form-reset');
+    if (resetForm) resetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(resetForm);
+      const { ok, data } = await post('/api/auth/reset', {
+        token: f.get('token'), password: f.get('password'),
+      });
+      if (ok) { location.href = '/login'; }
+      else showError(data.error || 'Reset failed.');
+    });
+  </script>
+</body>
+</html>
