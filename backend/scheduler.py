@@ -237,7 +237,6 @@ def process_job(job_id: str):
     info = probe_video(video_file)
     dur = info["duration"] or 0
     is_vertical = info["aspect"] < 0.75
-    is_short = dur <= 150.0
     if project:
         update_project(project["id"], source_duration=dur,
                        source_width=info["width"], source_height=info["height"])
@@ -263,11 +262,16 @@ def process_job(job_id: str):
     interval_hours = float(job.get("interval_hours") or prefs.get("schedule_interval_hours", 3))
 
     plan = None
+    # Single-clip polish (keeping whole video as 1 clip) only applies when user specifically asks for 1 clip
+    # and the video is short (<= 90s). If user asks for 2+ clips on TikTok/Shorts, divide into distinct parts!
+    single_short_mode = (num_clips == 1 and dur <= 90.0)
+
     if reference_profile:
         update_job(job_id, step="Applying reference editing style (AI)...", progress=45)
-        min_d = max(15, clip_duration - 20)
-        max_d = clip_duration + 25
-        if is_short:
+        clip_target = max(10, min(60, int(dur / max(1, num_clips)))) if dur < 180 else clip_duration
+        min_d = max(8, int(clip_target * 0.7))
+        max_d = min(int(dur), max(min_d + 10, int(clip_target * 1.35)))
+        if single_short_mode:
             plan = {"clips": [{
                 "start": 0.0, "end": dur, "hook_text": "", "caption": "", "hashtags": [],
                 "score": 0, "zoom_intensity": 1, "transition": "hard_cut", "sfx_hint": "",
@@ -278,7 +282,7 @@ def process_job(job_id: str):
                 num_clips, min_d, max_d, trim_silence, user_id=user_id, project=project)
         if project:
             update_project(project["id"], editing_plan=json.dumps(plan, ensure_ascii=False))
-    elif is_short:
+    elif single_short_mode:
         update_job(job_id, step="AI is writing hook & caption...", progress=45)
         polish = polish_short_video(transcript_data["text"], dur, user_id=user_id, project=project)
         plan = {"clips": [{"start": 0.0, "end": dur, "hook_text": polish.get("hook_text", ""),
@@ -288,8 +292,11 @@ def process_job(job_id: str):
                 "global": {}}
     else:
         update_job(job_id, step="AI is searching for the best moments...", progress=45)
+        clip_target = max(10, min(60, int(dur / max(1, num_clips)))) if dur < 180 else clip_duration
+        min_d = max(8, int(clip_target * 0.7))
+        max_d = min(int(dur), max(min_d + 10, int(clip_target * 1.35)))
         moments = pick_stream_moments(transcript_data["text"], dur, count=num_clips,
-                                      min_d=25, max_d=60, user_id=user_id, project=project)
+                                      min_d=min_d, max_d=max_d, user_id=user_id, project=project)
         plan = {"clips": moments, "global": {}}
 
     _check_cancel(job_id)
@@ -307,7 +314,7 @@ def process_job(job_id: str):
         end = min(dur if dur > 0 else m.get("end", start + 30), float(m.get("end") or (start + 30)))
         if end - start < 3:
             end = start + min(30, max(3, dur - start))
-        c_dur = min(end - start, max(5, clip_duration + 25)) if not is_short else dur
+        c_dur = dur if single_short_mode else max(3.0, end - start)
 
         update_job(job_id, step=f"Rendering clip {i + 1} of {total}...",
                    progress=int(50 + (i / total) * 45))
@@ -318,7 +325,7 @@ def process_job(job_id: str):
                 source_video=video_file,
                 start_time=start,
                 duration=c_dur,
-                hook_text=m.get("hook_text") or "Watch till the END! 😱",
+                hook_text=m.get("hook_text") or f"Part {i + 1} — Watch till the END! 😱",
                 words=transcript_data["words"],
                 output_clip_path=out_clip,
                 is_vertical_already=is_vertical,
@@ -328,7 +335,7 @@ def process_job(job_id: str):
                 captions_enabled=bool(prefs.get("captions_enabled", True)),
                 hook_banner=bool(prefs.get("hook_banner", True)),
                 zoom_intensity=int(m.get("zoom_intensity") or (1 if intensity != "light" else 0)),
-                trim_silence=trim_silence and not is_short,
+                trim_silence=trim_silence and (dur > 90),
                 audio_enhance=bool(prefs.get("audio_enhance", True)),
             )
         except RuntimeError as e:

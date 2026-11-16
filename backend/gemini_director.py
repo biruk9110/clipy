@@ -146,11 +146,17 @@ You are given a timestamped transcript of a video, with annotations for audio lo
 
 Your goal: Find the {want} STRONGEST, most engaging standalone moments ({min_d} to {max_d} seconds long).
 
+IMPORTANT CRITERIA:
+1. You MUST return EXACTLY {want} distinct moments.
+2. If the video is short (under 2.5 minutes), divide the video into {want} logical sequential parts (e.g. Part 1 covers the setup/beginning, Part 2 covers the climax/payoff/ending).
+3. Do NOT return the full video for any clip when {want} > 1. Each clip must cover a different segment/portion (e.g. first half, second half).
+4. If dividing into sequential parts, prefix the "hook_text" with "Part 1 — ...", "Part 2 — ...", etc.
+
 Editing profile from a reference video (match this style where possible):
 {reference_profile}
 
 For EACH moment, write:
-1. "start" and "end" in seconds (must be inside 0 and {duration:.0f}).
+1. "start" and "end" in seconds (must be inside 0 and {duration:.0f}, with end > start).
 2. "hook_text": A punchy 4-10 word title overlay. CAPITALISE the 2-3 most dramatic words. Add 1-2 fitting emojis.
 3. "caption": A short viral caption driving comments (under 150 characters).
 4. "hashtags": 4-7 relevant hashtags.
@@ -158,9 +164,9 @@ For EACH moment, write:
 6. "reason": Why this moment will go viral.
 
 Return ONLY a valid JSON array:
-[{{"start": 120.5, "end": 165.0, "kind": "reaction", "title": "Insane moment",
-"hook_text": "He COULD NOT BELIEVE this happened 💀", "caption": "Ain't no way... 👇",
-"hashtags": ["#viral", "#shorts"], "score": 92, "reason": "..."}}]
+[{{"start": 0.0, "end": 28.5, "kind": "part_1", "title": "Part 1",
+"hook_text": "Part 1 — He COULD NOT BELIEVE this happened 💀", "caption": "Ain't no way... 👇",
+"hashtags": ["#viral", "#shorts", "#part1"], "score": 92, "reason": "..."}}]
 
 TRANSCRIPT:
 {transcript}
@@ -249,18 +255,52 @@ def _profile_text(project: dict) -> str:
 def pick_stream_moments(transcript_text: str, duration: float, count: int = 3,
                         min_d: int = 25, max_d: int = 60, user_id: int = 0,
                         project: dict | None = None) -> list:
+    count = max(1, int(count or 1))
+    dur = max(float(duration or 0), 5.0)
     profile = _profile_text(project)
     prompt = MOMENTS_PROMPT.format(
-        want=count, min_d=min_d, max_d=max_d, duration=duration,
+        want=count, min_d=min_d, max_d=max_d, duration=dur,
         reference_profile=profile, transcript=(transcript_text or "")[:12000])
     res = gemini_generate(user_id, prompt, temperature=0.8)
+    raw_clips = []
     if res["ok"] and isinstance(res["data"], list) and res["data"]:
-        return res["data"][:count]
-    if res["ok"] and isinstance(res["data"], dict) and isinstance(res["data"].get("clips"), list):
-        return res["data"]["clips"][:count]
+        raw_clips = res["data"]
+    elif res["ok"] and isinstance(res["data"], dict) and isinstance(res["data"].get("clips"), list):
+        raw_clips = res["data"]["clips"]
     if res.get("error") not in ("no_api_key", ""):
         print(f"[Gemini] pick_stream_moments fallback: {res.get('error', '')[:200]}")
-    return fallback_stream_moments(duration, count)
+
+    valid_clips = []
+    for c in raw_clips:
+        if isinstance(c, dict) and "start" in c and "end" in c:
+            try:
+                s = float(c["start"])
+                e = float(c["end"])
+                if e > s:
+                    c["start"] = max(0.0, round(s, 1))
+                    c["end"] = min(dur, round(e, 1))
+                    valid_clips.append(c)
+            except (ValueError, TypeError):
+                continue
+
+    # If count > 1, reject clips that cover virtually the entire video (>= 90%)
+    if count > 1 and dur > 12.0:
+        valid_clips = [c for c in valid_clips if (c["end"] - c["start"]) < dur * 0.90]
+
+    # If we have enough distinct clips, return exactly count
+    if len(valid_clips) >= count:
+        return valid_clips[:count]
+
+    fallback = fallback_stream_moments(dur, count)
+    if not valid_clips:
+        return fallback
+
+    # Pad missing moments from fallback so we always satisfy count
+    for fb in fallback:
+        if len(valid_clips) >= count:
+            break
+        valid_clips.append(fb)
+    return valid_clips[:count]
 
 
 def polish_short_video(transcript_text: str, duration: float, user_id: int = 0,
@@ -284,9 +324,11 @@ def build_editing_plan(transcript_text: str, duration: float, language: str,
                        user_id: int = 0, project: dict | None = None) -> dict:
     """Reference-style editing plan for the user's video. Falls back to a
     heuristic plan (even segments) when AI is unavailable."""
+    count = max(1, int(count or 1))
+    dur = max(float(duration or 0), 5.0)
     prompt = PLAN_PROMPT.format(
         transcript=(transcript_text or "(no speech detected - background audio only)")[:12000],
-        duration=duration, language=language or "unknown", count=count,
+        duration=dur, language=language or "unknown", count=count,
         min_d=min_d, max_d=max_d, reference_profile=_profile_text(project),
     )
     prompt += f'\nGlobal flags: trim_silence={bool(trim_silence)}'
@@ -297,8 +339,17 @@ def build_editing_plan(transcript_text: str, duration: float, language: str,
         plan["global"].setdefault("caption_style", "karaoke")
         plan["source"] = "gemini"
         plan["model"] = res.get("model", "")
+        # Ensure plan has count clips
+        clips = plan.get("clips") or []
+        if len(clips) < count:
+            fb_clips = fallback_plan(dur, count, min_d, max_d, trim_silence).get("clips", [])
+            for fb in fb_clips:
+                if len(clips) >= count:
+                    break
+                clips.append(fb)
+            plan["clips"] = clips
         return plan
-    return fallback_plan(duration, count, min_d, max_d, trim_silence)
+    return fallback_plan(dur, count, min_d, max_d, trim_silence)
 
 
 def analyze_reference(frames: list[str], transcript_text: str, duration: float,
@@ -320,17 +371,67 @@ def analyze_reference(frames: list[str], transcript_text: str, duration: float,
 
 
 def fallback_stream_moments(duration: float, count: int = 3) -> list:
+    count = max(1, int(count or 1))
+    dur = max(float(duration or 0), 5.0)
+
+    if dur <= 150.0 and count > 1:
+        # Short video (TikTok / Shorts / Reels) sliced into sequential parts (e.g. halves or thirds)
+        step = dur / count
+        overlap = min(2.5, step * 0.15)
+        hooks = [
+            "Part 1 — Look What HAPPENED! 😱",
+            "Part 2 — The CRAZIEST Part! 👀",
+            "Part 3 — The FINAL Ending! 🔥",
+            "Part 4 — You WON'T Believe This! 💀",
+            "Part 5 — The EPIC Finale! ✨",
+            "Part 6 — Watch Till THE END! 🚀",
+        ]
+        moments = []
+        for i in range(count):
+            start = 0.0 if i == 0 else max(0.0, round(i * step - overlap, 1))
+            end = dur if i == count - 1 else min(dur, round((i + 1) * step + overlap, 1))
+            if end - start < 4.0:
+                end = min(dur, start + 4.0)
+            hook = hooks[i] if i < len(hooks) else f"Part {i + 1} — Watch Till THE END! 😱"
+            moments.append({
+                "start": round(start, 1),
+                "end": round(end, 1),
+                "kind": f"part_{i + 1}",
+                "title": f"Part {i + 1}",
+                "hook_text": hook,
+                "caption": f"Part {i + 1} of {count}! Drop your reaction below 👇",
+                "hashtags": ["#shorts", "#viral", "#fyp", f"#part{i + 1}"],
+                "score": 90 - (i * 2),
+                "reason": f"Sequential Part {i + 1} of {count} covering this segment.",
+                "zoom_intensity": 1,
+            })
+        return moments
+
     moments = []
-    chunk = duration / (count + 1)
+    chunk = dur / (count + 1)
+    default_hooks = [
+        "Wait TILL YOU SEE What Happened! 😱",
+        "Nobody Expected THIS To Happen! 👀",
+        "The Most INSANE Moment Yet! 🔥",
+        "He COULD NOT BELIEVE This! 💀",
+        "Watch Till THE VERY END! 🚀",
+        "This Turned Out SO WILD! 🤯",
+    ]
     for i in range(1, count + 1):
-        start = max(0, chunk * i - 15)
-        end = min(duration, start + 35)
+        start = max(0.0, round(chunk * i - 15, 1))
+        end = min(dur, round(start + 35, 1))
+        hook = default_hooks[(i - 1) % len(default_hooks)]
         moments.append({
-            "start": round(start, 1), "end": round(end, 1), "kind": "reaction",
-            "title": f"Highlight {i}", "hook_text": "Wait TILL YOU SEE What Happened! 😱",
+            "start": start,
+            "end": end,
+            "kind": "highlight",
+            "title": f"Highlight {i}",
+            "hook_text": hook,
             "caption": "You won't believe this moment! What are your thoughts? 👇",
-            "hashtags": ["#shorts", "#viral", "#trending", "#fyp"], "score": 88,
-            "reason": "Balanced segment chosen without AI analysis.", "zoom_intensity": 1,
+            "hashtags": ["#shorts", "#viral", "#trending", "#fyp"],
+            "score": 88,
+            "reason": "Balanced segment chosen without AI analysis.",
+            "zoom_intensity": 1,
         })
     return moments
 
@@ -345,20 +446,37 @@ def fallback_short_polish(duration: float) -> dict:
 
 
 def fallback_plan(duration: float, count: int, min_d: int, max_d: int, trim_silence: bool) -> dict:
+    count = max(1, int(count or 1))
+    usable = max(float(duration or 0), 5.0)
+    hooks = [
+        "Part 1 — Look What HAPPENED! 😱",
+        "Part 2 — The CRAZIEST Part! 👀",
+        "Part 3 — The FINAL Ending! 🔥",
+        "Part 4 — You WON'T Believe This! 💀",
+    ]
     clips = []
-    usable = max(duration, 1.0)
-    seg = min(max_d, usable / count)
-    seg = max(min_d, min(seg, max_d))
+    step = usable / count
+    overlap = min(2.5, step * 0.15) if count > 1 else 0.0
     for i in range(count):
-        start = min(usable - seg, i * (usable / count) + (i * 0.5))
+        start = 0.0 if i == 0 else max(0.0, round(i * step - overlap, 2))
+        end = usable if i == count - 1 else min(usable, round((i + 1) * step + overlap, 2))
+        if end - start < 4.0:
+            end = min(usable, start + 4.0)
+        hook = hooks[i] if i < len(hooks) else f"Part {i + 1} — You NEED to see this 👀"
         clips.append({
-            "start": round(start, 2), "end": round(min(usable, start + seg), 2),
-            "hook_text": f"Part {i + 1} — You NEED to see this 👀",
-            "caption": "Full breakdown in the clip — drop a comment! 👇",
-            "hashtags": ["#shorts", "#viral", "#fyp"], "score": 80,
-            "zoom_intensity": 1, "transition": "hard_cut", "sfx_hint": "",
+            "start": round(start, 2),
+            "end": round(end, 2),
+            "hook_text": hook,
+            "caption": f"Part {i + 1} of {count} — drop your thoughts! 👇",
+            "hashtags": ["#shorts", "#viral", "#fyp", f"#part{i + 1}"],
+            "score": 85 - (i * 2),
+            "zoom_intensity": 1,
+            "transition": "hard_cut",
+            "sfx_hint": "",
             "silence_gaps": [],
         })
-    return {"clips": clips, "global": {"caption_style": "karaoke", "pacing": "medium",
-                                       "hook_strategy": "Direct highlight excerpts."},
-            "source": "fallback"}
+    return {
+        "clips": clips,
+        "global": {"caption_style": "karaoke", "pacing": "medium", "hook_strategy": "Sequential highlights."},
+        "source": "fallback",
+    }

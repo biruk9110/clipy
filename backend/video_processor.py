@@ -124,6 +124,22 @@ def download_video(url: str, output_dir: Path):
             "format": "bestvideo*+bestaudio/best",
             "extractor_args": {"youtube": {
                 "player_client": ["tv_embedded", "web_embedded", "android", "ios"]}}})
+    elif is_tiktok:
+        strategies.append({
+            **base_opts,
+            "format": "best",
+            "merge_output_format": None,
+        })
+
+    def _find_downloaded():
+        for pattern in ("*.mp4", "*.mkv", "*.webm", "*.mov", "*.m4a"):
+            for f in sorted(output_dir.glob(pattern)):
+                if f.is_file() and f.stat().st_size > 10000:
+                    return f
+        for f in sorted(output_dir.iterdir()):
+            if f.is_file() and f.suffix.lower() not in (".txt", ".json", ".part", ".ytdl") and f.stat().st_size > 50000:
+                return f
+        return None
 
     for strat in strategies:
         try:
@@ -131,18 +147,16 @@ def download_video(url: str, output_dir: Path):
                 info = ydl.extract_info(url, download=True)
                 if info:
                     title = info.get("title", "")
-            for pattern in ("*.mp4", "*.mkv", "*.webm", "*.mov", "*.m4a"):
-                files = sorted(output_dir.glob(pattern))
-                if files:
-                    return files[0], title
+            found = _find_downloaded()
+            if found:
+                return found, title
         except Exception as e:
             errors.append(_short_err(e))
             print(f"[yt-dlp] Strategy error: {errors[-1]}")
 
-    for pattern in ("*.mp4", "*.mkv", "*.webm", "*.mov", "*.m4a"):
-        files = sorted(output_dir.glob(pattern))
-        if files:
-            return files[0], title
+    found = _find_downloaded()
+    if found:
+        return found, title
 
     detail = errors[-1] if errors else "yt-dlp returned no video file (unsupported or private link?)"
     raise RuntimeError(f"Download failed: {detail}")
