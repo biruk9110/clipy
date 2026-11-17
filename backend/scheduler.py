@@ -487,7 +487,8 @@ def publish_clip(clip_id: str, user_id: int, platform: str = "all", manual: bool
     buffer_acc = accounts.get("buffer")
     if buffer_acc and (platform in ("all", "buffer")):
         attempted += 1
-        token = refresh_account_token(buffer_acc) or get_secret(user_id, "buffer_access_token")
+        acc = refresh_account_token(buffer_acc)
+        token = (acc.get("access_token") if isinstance(acc, dict) else str(acc or "")) or get_secret(user_id, "buffer_access_token")
         if token:
             res = post_to_buffer(token, video_url, caption, final_tags)
             if res.get("success"):

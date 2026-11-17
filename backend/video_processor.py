@@ -117,18 +117,21 @@ def download_video(url: str, output_dir: Path):
         strategies.insert(0, {
             **base_opts,
             "extractor_args": {"youtube": {
-                "player_client": ["android", "ios", "web"],
-                "player_skip": ["configs", "webpage"]}}})
+                "player_client": ["ios", "mweb", "android"]}}})
         strategies.append({
             **base_opts,
             "format": "bestvideo*+bestaudio/best",
             "extractor_args": {"youtube": {
-                "player_client": ["tv_embedded", "web_embedded", "android", "ios"]}}})
+                "player_client": ["tv", "tv_embedded", "web_embedded"]}}})
     elif is_tiktok:
-        strategies.append({
+        strategies.insert(0, {
             **base_opts,
             "format": "best",
             "merge_output_format": None,
+            "http_headers": {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+                "Referer": "https://www.tiktok.com/",
+            }
         })
 
     def _find_downloaded():
@@ -218,10 +221,10 @@ def create_hook_image(hook_text: str, output_path: Path, width=1080, height=200)
 
     words = hook_text.split()
     max_w = (width - margin_x * 2) - int(width * 0.06)
-    best_font_size = int(height * 0.38)
+    best_font_size = int(height * 0.40)
     best_lines = []
-    for test_size in [int(height * s) for s in (0.42, 0.38, 0.34, 0.30, 0.26, 0.22)]:
-        if test_size < 16:
+    for test_size in [int(height * s) for s in (0.58, 0.52, 0.46, 0.40, 0.35, 0.30, 0.25)]:
+        if test_size < 18:
             continue
         cand_font = get_hook_font(test_size)
         cand_lines, cand_curr = [], []
@@ -235,9 +238,13 @@ def create_hook_image(hook_text: str, output_path: Path, width=1080, height=200)
                 cand_curr = [w]
         if cand_curr:
             cand_lines.append(" ".join(cand_curr))
-        best_font_size, best_lines = test_size, cand_lines
-        if len(cand_lines) <= 2:
+        line_spacing = int(test_size * 0.18)
+        tot_h = len(cand_lines) * test_size + (len(cand_lines) - 1) * line_spacing
+        if len(cand_lines) <= 2 and tot_h <= (height - margin_y * 2 - 6):
+            best_font_size, best_lines = test_size, cand_lines
             break
+        elif not best_lines:
+            best_font_size, best_lines = test_size, cand_lines
 
     font = get_hook_font(best_font_size)
     lines = best_lines
@@ -480,7 +487,7 @@ def render_clip(
     # --- hook banner ---------------------------------------------------------
     hook_img = None
     hook_escaped = ""
-    hook_h = int(W * 200 / 1080)
+    hook_h = max(170, int(W * 0.23))
     if hook_banner:
         hook_img = work_dir / f"hook_{uuid.uuid4().hex[:6]}.png"
         create_hook_image(hook_text, hook_img, width=W, height=hook_h)

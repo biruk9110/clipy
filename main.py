@@ -771,7 +771,9 @@ async def api_buffer_channels(request: Request):
     acc = refresh_account_token(acc)
     from backend.posters.buffer import get_buffer_profiles
     profiles, err = get_buffer_profiles(acc.get("access_token", ""))
-    return {"connected": bool(profiles), "channels": profiles, "error": err}
+    if not profiles and acc.get("meta", {}).get("channels"):
+        profiles = acc["meta"]["channels"]
+    return {"connected": bool(profiles), "channels": profiles, "error": err if not profiles else None}
 
 
 @app.post("/api/accounts/{platform}/disconnect")
