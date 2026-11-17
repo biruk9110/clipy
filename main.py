@@ -20,8 +20,8 @@ from backend import maintenance
 from backend.accounts import (account_status_summary, get_account, refresh_account_token,
                               remove_account, upsert_account)
 from backend.auth import (COOKIE_NAME, authenticate, change_password, consume_reset_token,
-                          create_reset_token, create_session, destroy_session, get_user,
-                          normalize_email, register, session_user)
+                          create_reset_token, create_session, destroy_session, get_or_create_default_user,
+                          get_user, normalize_email, register, session_user)
 from backend.config import (BASE_DIR, DATA_DIR, HOST_SETTINGS, OUTPUT_DIR, STATIC_DIR,
                             TEMPLATES_DIR, UPLOADS_DIR)
 from backend.crypto import is_masked
@@ -91,35 +91,16 @@ class SessionGuardMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         path = request.url.path
         token = request.cookies.get(COOKIE_NAME)
-        user = session_user(token)
-        request.state.user = user
-        request.state.session_token = token
-
-        if path.startswith("/api"):
-            if path in PUBLIC_API:
-                return await call_next(request)
-            if not user:
-                return JSONResponse(status_code=401,
-                                    content={"error": "Not signed in", "auth": True})
-            # Light rate limiting for expensive/abusable endpoints
-            if path.startswith("/api/projects") and request.method == "POST":
-                if not rate_ok(f"jobs:{user['id']}", 10, 60):
-                    return JSONResponse(status_code=429, content={"error": "Too many requests - wait a minute."})
-            return await call_next(request)
-
-        if path.startswith(("/static", "/media", "/health", "/manifest.json", "/sw.js",
-                            "/favicon.ico", "/auth/", "/icons")):
-            return await call_next(request)
-
-        if path in PUBLIC_PAGES:
-            if user and path in AUTH_PAGES:
-                return RedirectResponse("/", status_code=302)
-            return await call_next(request)
-
+        user = session_user(token) if token else None
         if not user:
-            return RedirectResponse(f"/login?next={path}", status_code=302)
-        if path == "/onboarding" and user.get("onboarding_done"):
+            user = get_or_create_default_user()
+        request.state.user = user
+        request.state.session_token = token or ""
+
+        # Directly redirect all old landing/auth pages to the studio
+        if path in ("/welcome", "/login", "/register", "/forgot", "/reset", "/onboarding"):
             return RedirectResponse("/", status_code=302)
+
         return await call_next(request)
 
 
@@ -127,9 +108,9 @@ app.add_middleware(SessionGuardMiddleware)
 
 
 def require_user(request: Request) -> dict:
-    user = request.state.user
+    user = getattr(request.state, "user", None)
     if not user:
-        raise PermissionError("Not signed in")
+        user = get_or_create_default_user()
     return user
 
 
@@ -161,41 +142,38 @@ def _page(request: Request, name: str, **ctx):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    if not request.state.user:
-        return _page(request, "welcome.html")
-    return _page(request, "index.html", user=request.state.user)
+    user = request.state.user or get_or_create_default_user()
+    return _page(request, "index.html", user=user)
 
 
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome(request: Request):
-    if request.state.user:
-        return RedirectResponse("/", status_code=302)
-    return _page(request, "welcome.html")
+    return RedirectResponse("/", status_code=302)
 
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return _page(request, "auth.html", mode="login", next=request.query_params.get("next", ""))
+    return RedirectResponse("/", status_code=302)
 
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    return _page(request, "auth.html", mode="register")
+    return RedirectResponse("/", status_code=302)
 
 
 @app.get("/forgot", response_class=HTMLResponse)
 async def forgot_page(request: Request):
-    return _page(request, "auth.html", mode="forgot")
+    return RedirectResponse("/", status_code=302)
 
 
 @app.get("/reset", response_class=HTMLResponse)
 async def reset_page(request: Request):
-    return _page(request, "auth.html", mode="reset", token=request.query_params.get("token", ""))
+    return RedirectResponse("/", status_code=302)
 
 
 @app.get("/onboarding", response_class=HTMLResponse)
 async def onboarding_page(request: Request):
-    return _page(request, "onboarding.html", user=request.state.user)
+    return RedirectResponse("/", status_code=302)
 
 
 @app.get("/manifest.json")

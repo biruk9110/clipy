@@ -1,0 +1,26 @@
+/*
+ * Clipy — input stylesheet for the Tailwind build.
+ * The generated output (static/vendor/tailwind.min.css) is what pages load.
+ * Custom app CSS that used to live inline in templates is kept here so every
+ * page shares one small, fast stylesheet.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { color-scheme: dark; }
+body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+input:focus, select:focus, textarea:focus { outline: none; }
+
+/* Shared app utilities (were inline <style> blocks in templates) */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.tab-btn.active { color: #facc15; }
+.tab-btn.active .tab-ind { opacity: 1; }
+::selection { background: #facc15; color: #000; }
+input[type="checkbox"].toggle { appearance: none; }
+.skeleton { background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.progress-ring { transform: rotate(-90deg); }

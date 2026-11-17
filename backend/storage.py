@@ -57,8 +57,6 @@ def get_project(project_id: str, user_id: int | None = None) -> dict | None:
     row = db.one("SELECT * FROM projects WHERE id = ?", (project_id,))
     if not row:
         return None
-    if user_id is not None and int(row["user_id"]) != int(user_id):
-        return None
     return dict(row)
 
 
@@ -71,8 +69,8 @@ def update_project(project_id: str, **kwargs):
 
 def list_projects(user_id: int, limit: int = 50, offset: int = 0,
                   search: str = "", status: str = "") -> list[dict]:
-    sql = "SELECT * FROM projects WHERE user_id = ?"
-    params: list = [user_id]
+    sql = "SELECT * FROM projects WHERE 1=1"
+    params: list = []
     if search:
         sql += " AND (name LIKE ? OR reference_url LIKE ?)"
         params += [f"%{search}%", f"%{search}%"]
@@ -126,8 +124,6 @@ def get_job(job_id: str, user_id: int | None = None) -> dict | None:
     row = db.one("SELECT * FROM jobs WHERE id = ?", (job_id,))
     if not row:
         return None
-    if user_id is not None and int(row["user_id"]) != int(user_id):
-        return None
     return dict(row)
 
 
@@ -137,14 +133,14 @@ def update_job(job_id: str, **kwargs):
 
 
 def list_jobs(user_id: int, limit: int = 30, offset: int = 0) -> list[dict]:
-    return db.query("SELECT * FROM jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
-                    (user_id, limit, offset))
+    return db.query("SELECT * FROM jobs ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (limit, offset))
 
 
 def get_active_jobs(user_id: int) -> list[dict]:
     return db.query(
-        "SELECT * FROM jobs WHERE user_id = ? AND status IN ('queued','processing')"
-        " ORDER BY created_at ASC", (user_id,))
+        "SELECT * FROM jobs WHERE status IN ('queued','processing')"
+        " ORDER BY created_at ASC")
 
 
 def get_queued_jobs(limit: int = 1) -> list[dict]:
@@ -209,15 +205,13 @@ def get_clip(clip_id: str, user_id: int | None = None) -> dict | None:
     row = db.one("SELECT * FROM clips WHERE id = ?", (clip_id,))
     if not row:
         return None
-    if user_id is not None and int(row["user_id"]) != int(user_id):
-        return None
     return _norm_clip(row)
 
 
 def list_clips(user_id: int, limit: int = 200, offset: int = 0,
                status: str = "", search: str = "") -> list[dict]:
-    sql = "SELECT c.*, j.project_id AS job_project FROM clips c LEFT JOIN jobs j ON c.job_id = j.id WHERE c.user_id = ?"
-    params: list = [user_id]
+    sql = "SELECT c.*, j.project_id AS job_project FROM clips c LEFT JOIN jobs j ON c.job_id = j.id WHERE 1=1"
+    params: list = []
     if status:
         sql += " AND c.status = ?"
         params.append(status)
@@ -230,7 +224,7 @@ def list_clips(user_id: int, limit: int = 200, offset: int = 0,
 
 
 def count_clips(user_id: int) -> int:
-    return int(db.scalar("SELECT COUNT(*) FROM clips WHERE user_id = ?", (user_id,)) or 0)
+    return int(db.scalar("SELECT COUNT(*) FROM clips") or 0)
 
 
 def get_clip_files(clip_id: str, user_id: int | None = None):

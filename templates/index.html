@@ -3,412 +3,507 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Clipy — Dashboard</title>
-  <meta name="theme-color" content="#09090b">
+  <title>Clipy — AI Clip Studio</title>
+  <meta name="theme-color" content="#000000">
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/static/icons/favicon.png">
   <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="/static/vendor/fonts/inter.css">
   <link rel="stylesheet" href="/static/vendor/phosphor/regular/style.css">
   <link rel="stylesheet" href="/static/vendor/phosphor/fill/style.css">
+  <link rel="stylesheet" href="/static/vendor/tailwind.min.css">
   <script src="/static/vendor/tailwind.js"></script>
-  <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } };</script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
+          colors: {
+            brand: {
+              black: '#000000',
+              card: '#121214',
+              surface: '#18181b',
+              border: '#27272a',
+            }
+          }
+        }
+      }
+    };
+  </script>
   <style>
-    html { color-scheme: dark; }
-    body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-    input:focus, select:focus, textarea:focus { outline: none; }
-    .tab-content { display: none; } .tab-content.active { display: block; }
-    .tab-btn.active { color: #facc15; }
-    .tab-btn.active .tab-ind { opacity: 1; }
-    ::selection { background: #facc15; color: #000; }
-    input[type="checkbox"].toggle { appearance: none; }
-    .skeleton { background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+    html { color-scheme: dark; background-color: #000000; }
+    body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; background-color: #000000; color: #f4f4f5; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #ffffff !important; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .tab-btn.active { color: #ffffff !important; }
+    .tab-btn.active .tab-ind { opacity: 1 !important; background-color: #ffffff !important; }
+    ::selection { background: #ffffff; color: #000000; }
+    input[type="checkbox"].toggle { appearance: none; -webkit-appearance: none; }
+    .skeleton { background: linear-gradient(90deg, #121214 25%, #27272a 50%, #121214 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     .scrollbar-none::-webkit-scrollbar { display: none; }
     .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .progress-ring { transform: rotate(-90deg); }
   </style>
 </head>
-<body class="bg-ink-950 text-zinc-200 antialiased">
+<body class="bg-black text-zinc-200 antialiased min-h-screen selection:bg-white selection:text-black">
 
 <!-- ================= HEADER ================= -->
-<header class="sticky top-0 z-40 bg-ink-950/85 backdrop-blur-md border-b border-white/5">
+<header class="sticky top-0 z-40 bg-black/90 backdrop-blur-md border-b border-zinc-800/80">
   <div class="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
-    <div class="flex items-center gap-2 mr-auto">
-      <span class="w-7 h-7 rounded-lg bg-yellow-400 text-black grid place-items-center font-black text-sm">C</span>
-      <span class="font-extrabold text-white tracking-tight">Clipy</span>
+    <div class="flex items-center gap-2.5 mr-auto cursor-pointer" onclick="switchTab('create')">
+      <div class="w-7 h-7 rounded-lg bg-white text-black flex items-center justify-center font-black text-sm shadow-sm">
+        <i class="ph-bold ph-scissors"></i>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="font-black text-white tracking-tight text-base">Clipy</span>
+        <span class="text-[9px] font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded tracking-wider uppercase">Studio</span>
+      </div>
     </div>
-    <span id="gemini-status" onclick="switchTab('settings')" title="Gemini key status" class="cursor-pointer px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"></span>
-    <a href="/api/export/csv" class="hidden sm:grid w-8 h-8 place-items-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors" title="Export CSV backup">
-      <i class="ph ph-download-simple"></i>
+    <span id="gemini-status" onclick="switchTab('settings')" title="Gemini AI Key Status" class="cursor-pointer px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 transition-colors">
+      <span class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span> Check AI
+    </span>
+    <a href="/api/export/csv" class="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors" title="Export CSV backup">
+      <i class="ph ph-download-simple text-sm"></i>
     </a>
-    <button onclick="openProfile()" class="w-8 h-8 grid place-items-center rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors" title="Profile & security">
-      <i class="ph ph-user-circle text-xl"></i>
+    <button onclick="openProfile()" class="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors" title="Workspace Info">
+      <i class="ph ph-user text-sm"></i>
     </button>
   </div>
 </header>
 
-<main class="max-w-5xl mx-auto px-4 pb-28 md:pb-10 pt-5">
+<main class="max-w-5xl mx-auto px-4 pb-28 md:pb-12 pt-6">
 
   <!-- ================= TAB: CREATE ================= -->
-  <section id="tab-create" class="tab-content space-y-5">
+  <section id="tab-create" class="tab-content active space-y-5">
     <div>
-      <h1 class="text-xl font-extrabold text-white tracking-tight">New project</h1>
-      <p class="text-xs text-zinc-500 mt-0.5">Upload your video, optionally add a reference for the style.</p>
+      <h1 class="text-2xl font-black text-white tracking-tight">Create Clips</h1>
+      <p class="text-xs text-zinc-400 mt-1">Upload a video or paste a link. AI detects the best viral hooks and auto-cuts vertical clips.</p>
     </div>
 
     <form id="new-project-form" onsubmit="submitProject(event)" class="space-y-4">
-      <!-- Source -->
-      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-        <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-yellow-400/15 text-yellow-300 grid place-items-center text-[10px] font-black">1</span> Your video</p>
-        <div id="drop-area" class="border border-dashed border-ink-600 hover:border-zinc-500 rounded-xl p-6 text-center cursor-pointer bg-ink-950 transition-all"
+      <!-- Source Video Card -->
+      <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+        <p class="text-xs font-bold text-white mb-3 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-white text-black flex items-center justify-center text-[10px] font-black">1</span>
+          Source Video
+        </p>
+        <div id="drop-area" class="border border-dashed border-zinc-700 hover:border-zinc-500 rounded-2xl p-7 text-center cursor-pointer bg-black/60 hover:bg-zinc-950/80 transition-all"
              onclick="document.getElementById('input-file').click()">
           <input type="file" id="input-file" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,.mp4,.mov,.webm,.mkv" class="hidden">
-          <i class="ph-fill ph-upload-simple text-2xl text-zinc-500"></i>
-          <p id="file-label" class="text-xs text-zinc-300 font-semibold mt-2">Tap to pick a video (MP4, MOV, WEBM)</p>
-          <p id="file-meta" class="text-[10px] text-zinc-600 mt-1">or paste a public link below</p>
+          <div class="w-12 h-12 rounded-full bg-zinc-800 text-white flex items-center justify-center mx-auto mb-3">
+            <i class="ph-bold ph-video-camera text-xl"></i>
+          </div>
+          <p id="file-label" class="text-xs text-white font-bold">Tap to pick a video (MP4, MOV, WEBM)</p>
+          <p id="file-meta" class="text-[11px] text-zinc-500 mt-1">or paste a YouTube / TikTok public link below</p>
         </div>
-        <div class="mt-3">
-          <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=… (public video link)"
-                 class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-zinc-400 transition-colors">
+        <div class="mt-3.5">
+          <input id="input-url" type="url" placeholder="https://youtube.com/watch?v=… or TikTok / Shorts link"
+                 class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-3.5 text-xs text-white placeholder-zinc-600 focus:border-white transition-colors">
         </div>
       </div>
 
-      <!-- Reference -->
-      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-        <p class="text-xs font-bold text-zinc-300 mb-1 flex items-center gap-2">
-          <span class="w-5 h-5 rounded-md bg-yellow-400/15 text-yellow-300 grid place-items-center text-[10px] font-black">2</span>
-          Use a video as inspiration
-          <span class="text-[9px] font-bold text-yellow-400/80 bg-yellow-400/10 px-1.5 py-0.5 rounded-full">NEW</span>
+      <!-- Reference Style Card -->
+      <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+        <p class="text-xs font-bold text-white mb-1 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700 flex items-center justify-center text-[10px] font-black">2</span>
+          Style Reference (Optional)
+          <span class="text-[9px] font-bold text-zinc-300 bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded-full">AI Match</span>
         </p>
-        <p class="text-[10px] text-zinc-500 mb-3 ml-7">Optional — paste a public TikTok, Reel or Short URL and the AI will study its editing style and apply it to your video.</p>
-        <div class="flex gap-2">
-          <input id="input-reference" type="url" placeholder="https://www.tiktok.com/@creator/video/… or IG Reel / YT Short"
-                 class="flex-1 bg-ink-800 border border-ink-600 rounded-lg py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-yellow-400/50 transition-colors">
+        <p class="text-[11px] text-zinc-400 mb-3 ml-7">Paste any viral TikTok, Reel, or Short link. Clipy's AI will study its pacing, hook style, and visual framing.</p>
+        <div>
+          <input id="input-reference" type="url" placeholder="https://www.tiktok.com/@creator/video/… or Instagram Reel"
+                 class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-3 px-3.5 text-xs text-white placeholder-zinc-600 focus:border-white transition-colors">
         </div>
-        <div class="mt-2 flex items-center gap-2">
+        <div class="mt-2.5 flex items-center gap-2">
           <button type="button" onclick="document.getElementById('input-reference-file').click()"
-                  class="text-[11px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-ink-800 border border-ink-600 transition-colors">
-            <i class="ph ph-paperclip"></i> Or upload the reference file
+                  class="text-[11px] font-semibold text-zinc-300 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 transition-colors">
+            <i class="ph ph-paperclip"></i> Upload reference file instead
           </button>
           <input type="file" id="input-reference-file" accept="video/*" class="hidden">
-          <span id="ref-file-label" class="text-[10px] text-zinc-500"></span>
+          <span id="ref-file-label" class="text-[10px] text-zinc-400 truncate max-w-xs"></span>
         </div>
-        <p class="mt-2 text-[10px] text-zinc-600 flex items-start gap-1"><i class="ph ph-info text-[11px] mt-0.5"></i> Public videos only — if a platform refuses access, upload the file instead. Clipy never bypasses access controls.</p>
       </div>
 
-      <!-- Settings -->
-      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-        <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><span class="w-5 h-5 rounded-md bg-yellow-400/15 text-yellow-300 grid place-items-center text-[10px] font-black">3</span> Editing defaults</p>
-        <div class="grid grid-cols-2 gap-2.5">
+      <!-- Editing Parameters Card -->
+      <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+        <p class="text-xs font-bold text-white mb-3 flex items-center gap-2">
+          <span class="w-5 h-5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700 flex items-center justify-center text-[10px] font-black">3</span>
+          Clip Settings
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Aspect ratio</label>
-            <select id="select-aspect" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="9:16">9:16 · TikTok / Reels / Shorts</option>
-              <option value="16:9">16:9 · YouTube</option>
+            <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Aspect Ratio</label>
+            <select id="select-aspect" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-2.5 text-xs font-semibold text-white focus:border-white">
+              <option value="9:16">9:16 · Vertical (TikTok/Shorts)</option>
+              <option value="16:9">16:9 · Horizontal</option>
               <option value="1:1">1:1 · Square</option>
-              <option value="4:5">4:5 · IG feed</option>
+              <option value="4:5">4:5 · IG Feed</option>
             </select>
           </div>
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Clips</label>
-            <select id="select-num" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="1">1 clip</option><option value="2">2 clips</option><option value="3" selected>3 clips</option>
-              <option value="4">4 clips</option><option value="5">5 clips</option><option value="6">6 clips</option>
+            <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Clips to Generate</label>
+            <select id="select-num" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-2.5 text-xs font-semibold text-white focus:border-white">
+              <option value="1">1 clip</option>
+              <option value="2">2 clips (halves for short videos)</option>
+              <option value="3" selected>3 clips</option>
+              <option value="4">4 clips</option>
+              <option value="5">5 clips</option>
+              <option value="6">6 clips</option>
             </select>
           </div>
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Clip length</label>
-            <select id="select-dur" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="25">~25s</option><option value="45" selected>~45s</option><option value="60">~60s</option><option value="90">~90s</option>
+            <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Target Duration</label>
+            <select id="select-dur" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-2.5 text-xs font-semibold text-white focus:border-white">
+              <option value="25">~25s</option>
+              <option value="45" selected>~45s</option>
+              <option value="60">~60s</option>
+              <option value="90">~90s</option>
             </select>
           </div>
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Quality</label>
-            <select id="select-res" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="720" selected>720p (fast)</option><option value="1080">1080p (sharp)</option>
+            <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Quality</label>
+            <select id="select-res" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-2.5 text-xs font-semibold text-white focus:border-white">
+              <option value="720" selected>720p (Fast)</option>
+              <option value="1080">1080p (Crisp)</option>
             </select>
           </div>
         </div>
-        <div class="mt-2.5 grid grid-cols-2 gap-2.5">
+        <div class="mt-3.5 grid grid-cols-2 gap-3">
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Captions</label>
-            <select id="select-caps" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="karaoke" selected>Karaoke (word-by-word)</option>
+            <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Captions</label>
+            <select id="select-caps" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-2.5 text-xs font-semibold text-white focus:border-white">
+              <option value="karaoke" selected>Karaoke (Word-by-word)</option>
               <option value="bold">Bold blocks</option>
               <option value="minimal">Minimal</option>
               <option value="none">Off</option>
             </select>
           </div>
           <div>
-            <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Intensity</label>
-            <select id="select-intensity" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white focus:outline-none">
-              <option value="light">Light</option><option value="balanced" selected>Balanced</option><option value="aggressive">Aggressive</option>
+            <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Editing Intensity</label>
+            <select id="select-intensity" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-2.5 text-xs font-semibold text-white focus:border-white">
+              <option value="light">Light</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="aggressive">Aggressive zooms</option>
             </select>
           </div>
         </div>
-        <label class="mt-3 flex items-center justify-between bg-ink-950 border border-ink-700 rounded-lg px-3 py-2.5 cursor-pointer">
-          <span class="text-xs font-semibold text-zinc-300">Remove silences<span class="text-zinc-600 font-normal"> · tighter cuts</span></span>
-          <input id="pref-trim" type="checkbox" checked class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+        <label class="mt-4 flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 cursor-pointer">
+          <span class="text-xs font-semibold text-zinc-200">Remove silences <span class="text-zinc-500 font-normal">· tight cuts</span></span>
+          <input id="pref-trim" type="checkbox" checked class="toggle w-10 h-5 bg-zinc-800 rounded-full relative cursor-pointer transition-all checked:bg-white before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-zinc-400 checked:before:bg-black before:transition-all checked:before:translate-x-5">
         </label>
       </div>
 
+      <!-- Submit Action -->
       <button id="btn-submit" type="submit"
-              class="w-full py-3.5 bg-yellow-400 hover:bg-yellow-300 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-        <i class="ph-fill ph-magic-wand text-base"></i> Create project & analyze
+              class="w-full py-4 bg-white hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black rounded-xl text-sm transition-all shadow-lg shadow-white/5 flex items-center justify-center gap-2">
+        <i class="ph-bold ph-magic-wand text-base"></i> Auto-Clip & Generate
       </button>
-      <p id="submit-error" class="hidden text-xs text-red-400 text-center"></p>
+      <p id="submit-error" class="hidden text-xs text-red-400 text-center font-medium"></p>
     </form>
 
-    <!-- Active jobs (live) -->
-    <div id="active-jobs" class="space-y-2.5"></div>
-  </section>
-
-  <!-- ================= TAB: PROJECTS ================= -->
-  <section id="tab-projects" class="tab-content hidden space-y-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-extrabold text-white tracking-tight">Projects</h1>
-      <button onclick="switchTab('create')" class="px-3.5 py-2 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5"><i class="ph-bold ph-plus"></i> New</button>
-    </div>
-    <div id="projects-list" class="space-y-3"></div>
-    <div id="projects-empty" class="hidden text-center py-16">
-      <i class="ph ph-folder-open text-4xl text-zinc-700"></i>
-      <p class="mt-3 text-sm font-semibold text-zinc-400">No projects yet</p>
-      <p class="text-xs text-zinc-600 mt-1">Create your first project from the Create tab.</p>
-    </div>
+    <!-- Active Jobs Section -->
+    <div id="active-jobs" class="space-y-3 pt-2"></div>
   </section>
 
   <!-- ================= TAB: CLIPS ================= -->
-  <section id="tab-clips" class="tab-content hidden space-y-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-extrabold text-white tracking-tight">Clips</h1>
-      <div class="flex gap-1.5" id="clip-filters">
-        <button data-f="all" onclick="setClipFilter('all')" class="clip-filter px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white text-black">All</button>
-        <button data-f="ready" onclick="setClipFilter('ready')" class="clip-filter px-3 py-1.5 rounded-lg text-[11px] font-bold text-zinc-400 hover:text-white bg-white/5">Ready</button>
-        <button data-f="scheduled" onclick="setClipFilter('scheduled')" class="clip-filter px-3 py-1.5 rounded-lg text-[11px] font-bold text-zinc-400 hover:text-white bg-white/5">Scheduled</button>
-        <button data-f="posted" onclick="setClipFilter('posted')" class="clip-filter px-3 py-1.5 rounded-lg text-[11px] font-bold text-zinc-400 hover:text-white bg-white/5">Posted</button>
+  <section id="tab-clips" class="tab-content space-y-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h1 class="text-2xl font-black text-white tracking-tight">Your Clips</h1>
+        <p class="text-xs text-zinc-400 mt-0.5">Ready-to-post vertical videos generated by AI.</p>
+      </div>
+      <div class="flex gap-1.5 bg-zinc-900 border border-zinc-800 p-1 rounded-xl" id="clip-filters">
+        <button data-f="all" onclick="setClipFilter('all')" class="clip-filter px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-black transition-colors">All</button>
+        <button data-f="ready" onclick="setClipFilter('ready')" class="clip-filter px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition-colors">Ready</button>
+        <button data-f="scheduled" onclick="setClipFilter('scheduled')" class="clip-filter px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition-colors">Scheduled</button>
+        <button data-f="posted" onclick="setClipFilter('posted')" class="clip-filter px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-400 hover:text-white transition-colors">Posted</button>
       </div>
     </div>
-    <div id="clips-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
-    <div id="clips-empty" class="hidden text-center py-16">
-      <i class="ph ph-film-strip text-4xl text-zinc-700"></i>
-      <p class="mt-3 text-sm font-semibold text-zinc-400">No clips yet</p>
-      <p class="text-xs text-zinc-600 mt-1">Finished jobs drop their clips here.</p>
+    <div id="clips-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+    <div id="clips-empty" class="hidden text-center py-20 bg-zinc-900/40 rounded-2xl border border-zinc-800/60">
+      <div class="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400 mb-3">
+        <i class="ph-bold ph-film-strip text-xl"></i>
+      </div>
+      <p class="text-sm font-bold text-white">No clips yet</p>
+      <p class="text-xs text-zinc-500 mt-1">Start by creating a project in the Create tab.</p>
+      <button onclick="switchTab('create')" class="mt-4 px-4 py-2 bg-white text-black text-xs font-bold rounded-xl hover:bg-zinc-200 transition-colors">Create First Clip</button>
+    </div>
+  </section>
+
+  <!-- ================= TAB: PROJECTS ================= -->
+  <section id="tab-projects" class="tab-content space-y-5">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-black text-white tracking-tight">Projects</h1>
+        <p class="text-xs text-zinc-400 mt-0.5">Source videos and AI editing workspaces.</p>
+      </div>
+      <button onclick="switchTab('create')" class="px-3.5 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-black rounded-xl transition-colors flex items-center gap-1.5">
+        <i class="ph-bold ph-plus"></i> New Project
+      </button>
+    </div>
+    <div id="projects-list" class="space-y-3"></div>
+    <div id="projects-empty" class="hidden text-center py-20 bg-zinc-900/40 rounded-2xl border border-zinc-800/60">
+      <div class="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto text-zinc-400 mb-3">
+        <i class="ph-bold ph-folder text-xl"></i>
+      </div>
+      <p class="text-sm font-bold text-white">No projects yet</p>
+      <p class="text-xs text-zinc-500 mt-1">Your video clipping workspaces will be listed here.</p>
     </div>
   </section>
 
   <!-- ================= TAB: HISTORY ================= -->
-  <section id="tab-history" class="tab-content hidden space-y-4">
-    <h1 class="text-xl font-extrabold text-white tracking-tight">History</h1>
-    <div class="flex gap-2">
-      <div class="relative flex-1">
-        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm"></i>
+  <section id="tab-history" class="tab-content space-y-5">
+    <div>
+      <h1 class="text-2xl font-black text-white tracking-tight">Job History</h1>
+      <p class="text-xs text-zinc-400 mt-0.5">Live background render jobs and completion logs.</p>
+    </div>
+    <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+      <div class="relative flex-1 min-w-[200px]">
+        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm"></i>
         <input id="history-search" oninput="historySearchDebounced()" placeholder="Search projects…"
-               class="w-full bg-ink-900 border border-ink-600 rounded-lg py-2.5 pl-9 pr-3 text-xs text-white placeholder-zinc-600 focus:border-zinc-400">
+               class="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 pl-9 pr-3 text-xs text-white placeholder-zinc-500 focus:border-white">
       </div>
-      <select id="history-status" onchange="loadHistory()" class="bg-ink-900 border border-ink-600 rounded-lg py-2.5 px-2 text-xs font-semibold text-white">
-        <option value="">All status</option><option value="completed">Completed</option><option value="failed">Failed</option>
-        <option value="processing">Processing</option><option value="cancelled">Cancelled</option><option value="queued">Queued</option>
+      <select id="history-status" onchange="loadHistory()" class="bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs font-semibold text-white focus:border-white">
+        <option value="">All Statuses</option>
+        <option value="completed">Completed</option>
+        <option value="failed">Failed</option>
+        <option value="processing">Processing</option>
+        <option value="cancelled">Cancelled</option>
+        <option value="queued">Queued</option>
       </select>
-      <select id="history-days" onchange="loadHistory()" class="bg-ink-900 border border-ink-600 rounded-lg py-2.5 px-2 text-xs font-semibold text-white">
-        <option value="0">Any time</option><option value="1">24h</option><option value="7">7 days</option><option value="30">30 days</option>
+      <select id="history-days" onchange="loadHistory()" class="bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs font-semibold text-white focus:border-white">
+        <option value="0">All Time</option>
+        <option value="1">Last 24 Hours</option>
+        <option value="7">Last 7 Days</option>
+        <option value="30">Last 30 Days</option>
       </select>
     </div>
     <div id="history-list" class="space-y-3"></div>
-    <div class="flex items-center justify-between pt-1">
-      <button id="history-prev" onclick="historyPage(-1)" class="px-3.5 py-2 text-xs font-bold text-zinc-400 hover:text-white bg-white/5 rounded-lg disabled:opacity-30 transition-colors" disabled>← Prev</button>
-      <span id="history-page-info" class="text-[11px] text-zinc-600 font-semibold"></span>
-      <button id="history-next" onclick="historyPage(1)" class="px-3.5 py-2 text-xs font-bold text-zinc-400 hover:text-white bg-white/5 rounded-lg disabled:opacity-30 transition-colors" disabled>Next →</button>
+    <div class="flex items-center justify-between pt-2">
+      <button id="history-prev" onclick="historyPage(-1)" class="px-4 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl disabled:opacity-30 transition-colors" disabled>← Previous</button>
+      <span id="history-page-info" class="text-xs text-zinc-500 font-semibold"></span>
+      <button id="history-next" onclick="historyPage(1)" class="px-4 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl disabled:opacity-30 transition-colors" disabled>Next →</button>
     </div>
   </section>
 
   <!-- ================= TAB: ANALYTICS ================= -->
-  <section id="tab-analytics" class="tab-content hidden space-y-4">
-    <h1 class="text-xl font-extrabold text-white tracking-tight">Analytics</h1>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Clips</p><p id="stat-total" class="text-2xl font-extrabold text-white mt-1">—</p></div>
-      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Published</p><p id="stat-posted" class="text-2xl font-extrabold text-emerald-400 mt-1">—</p></div>
-      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Scheduled</p><p id="stat-scheduled" class="text-2xl font-extrabold text-white mt-1">—</p></div>
-      <div class="p-4 rounded-2xl bg-ink-900 border border-white/5"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Success</p><p id="stat-success" class="text-2xl font-extrabold text-white mt-1">—</p></div>
+  <section id="tab-analytics" class="tab-content space-y-5">
+    <div>
+      <h1 class="text-2xl font-black text-white tracking-tight">Analytics & Stats</h1>
+      <p class="text-xs text-zinc-400 mt-0.5">Track your clips, posting frequency, and retention scores.</p>
     </div>
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-xs font-bold text-zinc-300">Last 7 days</p>
-        <span id="stat-avg-score" class="text-[10px] text-zinc-500 font-semibold"></span>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Total Clips</p><p id="stat-total" class="text-2xl font-black text-white mt-1">—</p></div>
+      <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Published</p><p id="stat-posted" class="text-2xl font-black text-emerald-400 mt-1">—</p></div>
+      <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Scheduled</p><p id="stat-scheduled" class="text-2xl font-black text-white mt-1">—</p></div>
+      <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800"><p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Success Rate</p><p id="stat-success" class="text-2xl font-black text-white mt-1">—</p></div>
+    </div>
+    <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-xs font-bold text-white">Clips Activity (Last 7 Days)</p>
+        <span id="stat-avg-score" class="text-xs text-zinc-400 font-semibold"></span>
       </div>
-      <div id="week-chart" class="flex items-end justify-between gap-2 h-24"></div>
+      <div id="week-chart" class="flex items-end justify-between gap-2 h-28 pt-2"></div>
     </div>
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-3">Publishing per platform</p>
-      <div id="platform-posts" class="space-y-2.5"></div>
-    </div>
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-3">Connected destinations</p>
-      <div id="destinations" class="space-y-2"></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+        <p class="text-xs font-bold text-white mb-3">Posts by Platform</p>
+        <div id="platform-posts" class="space-y-2.5"></div>
+      </div>
+      <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+        <p class="text-xs font-bold text-white mb-3">Connected Channels</p>
+        <div id="destinations" class="space-y-2.5"></div>
+      </div>
     </div>
   </section>
 
   <!-- ================= TAB: ACCOUNTS ================= -->
-  <section id="tab-accounts" class="tab-content hidden space-y-4">
+  <section id="tab-accounts" class="tab-content space-y-5">
     <div>
-      <h1 class="text-xl font-extrabold text-white tracking-tight">Connected accounts</h1>
-      <p class="text-xs text-zinc-500 mt-0.5">Publish and schedule your clips.</p>
+      <h1 class="text-2xl font-black text-white tracking-tight">Social Accounts</h1>
+      <p class="text-xs text-zinc-400 mt-0.5">Connect Instagram, TikTok, YouTube, and Buffer to publish automatically.</p>
     </div>
-    <div id="accounts-list" class="space-y-2.5"></div>
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-1">Buffer — one token, all platforms</p>
-      <p class="text-[11px] text-zinc-500 mb-3">Easiest way to publish to Instagram + TikTok + YouTube at once. Create a token in your Buffer dashboard.</p>
+    <div id="accounts-list" class="space-y-3"></div>
+    <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+      <p class="text-xs font-bold text-white mb-1">Buffer Integration — One token for all channels</p>
+      <p class="text-[11px] text-zinc-400 mb-3.5">Publishes to your TikTok, Instagram, and YouTube accounts simultaneously through Buffer.</p>
       <div class="flex gap-2">
-        <input id="buffer-token-input" type="password" placeholder="1/… (Buffer access token)"
-               class="flex-1 bg-ink-800 border border-ink-600 rounded-lg py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-yellow-400/50">
-        <button onclick="connectBuffer()" class="px-4 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded-lg transition-colors">Connect</button>
+        <input id="buffer-token-input" type="password" placeholder="Paste your Buffer access token (1/…)"
+               class="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3.5 text-xs text-white placeholder-zinc-600 focus:border-white">
+        <button onclick="connectBuffer()" class="px-4 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-black rounded-xl transition-colors">Connect</button>
       </div>
-      <p id="buffer-status" class="mt-2 text-[11px]"></p>
+      <p id="buffer-status" class="mt-2 text-[11px] font-medium"></p>
       <div id="buffer-channels" class="mt-2 space-y-1.5"></div>
     </div>
   </section>
 
   <!-- ================= TAB: SETTINGS ================= -->
-  <section id="tab-settings" class="tab-content hidden space-y-4">
-    <h1 class="text-xl font-extrabold text-white tracking-tight">Settings</h1>
+  <section id="tab-settings" class="tab-content space-y-5">
+    <div>
+      <h1 class="text-2xl font-black text-white tracking-tight">Settings & AI Keys</h1>
+      <p class="text-xs text-zinc-400 mt-0.5">Manage your Gemini AI integration, social channels, and video preferences.</p>
+    </div>
 
-    <!-- AI -->
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-1 flex items-center gap-2"><i class="ph-fill ph-sparkle text-yellow-400"></i> Gemini AI</p>
-      <p class="text-[11px] text-zinc-500 mb-3">Uses Gemini 2.5 Flash (free-tier friendly) with automatic fallback. Your key is encrypted at rest and never shown in full.</p>
-      <div id="gemini-key-state" class="mb-3 px-3.5 py-3 rounded-xl bg-ink-950 border border-ink-700 flex items-center justify-between gap-3">
+    <!-- Quick shortcuts for Accounts & Analytics on mobile -->
+    <div class="grid grid-cols-2 gap-3 md:hidden">
+      <button onclick="switchTab('accounts')" class="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-left transition-colors flex items-center gap-2.5">
+        <i class="ph-bold ph-share-network text-lg text-white"></i>
         <div>
-          <p class="text-xs font-semibold text-white" id="gemini-key-label">No key saved</p>
-          <p class="text-[10px] text-zinc-600 font-mono" id="gemini-key-masked"></p>
+          <p class="text-xs font-bold text-white">Accounts</p>
+          <p class="text-[10px] text-zinc-500">Buffer, IG, TikTok</p>
+        </div>
+      </button>
+      <button onclick="switchTab('analytics')" class="p-3.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-left transition-colors flex items-center gap-2.5">
+        <i class="ph-bold ph-chart-bar text-lg text-white"></i>
+        <div>
+          <p class="text-xs font-bold text-white">Analytics</p>
+          <p class="text-[10px] text-zinc-500">Performance & stats</p>
+        </div>
+      </button>
+    </div>
+
+    <!-- AI Key Card -->
+    <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+      <p class="text-xs font-bold text-white mb-1 flex items-center gap-2">
+        <i class="ph-bold ph-sparkle text-white"></i> Google Gemini AI
+      </p>
+      <p class="text-[11px] text-zinc-400 mb-3.5">Powers viral moment detection, hook writing, and styling. Keys are stored encrypted.</p>
+      <div id="gemini-key-state" class="mb-3.5 px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-bold text-white" id="gemini-key-label">No key saved</p>
+          <p class="text-[10px] text-zinc-500 font-mono" id="gemini-key-masked"></p>
         </div>
         <div class="flex gap-1.5" id="gemini-key-actions"></div>
       </div>
-      <div id="gemini-key-input-wrap" class="hidden mb-3">
-        <input id="gemini-key-input" type="password" placeholder="Paste new Gemini API key (AQ.Ab8… or AIzaSy…)"
-               class="w-full bg-ink-800 border border-ink-600 rounded-lg py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-yellow-400/50">
+      <div id="gemini-key-input-wrap" class="hidden mb-3.5">
+        <input id="gemini-key-input" type="password" placeholder="Paste your Gemini API key (AIzaSy… or AQ.Ab8…)"
+               class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-white">
         <div class="flex gap-2 mt-2">
-          <button onclick="saveGeminiKey()" class="px-4 py-2 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded-lg">Save & test</button>
-          <button onclick="hideGeminiInput()" class="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white bg-white/5 rounded-lg">Cancel</button>
+          <button onclick="saveGeminiKey()" class="px-4 py-2 bg-white hover:bg-zinc-200 text-black text-xs font-black rounded-xl">Save & Test</button>
+          <button onclick="hideGeminiInput()" class="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-800 rounded-xl">Cancel</button>
         </div>
-        <p id="gemini-test-result" class="mt-2 text-[11px]"></p>
+        <p id="gemini-test-result" class="mt-2 text-[11px] font-medium"></p>
       </div>
-      <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Model override <span class="normal-case">(optional, blank = automatic)</span></label>
-      <input id="setting-gemini-model" placeholder="gemini-2.5-flash"
-             class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs text-white placeholder-zinc-600">
-      <button onclick="saveModelOverride()" class="mt-2 px-3.5 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors">Save model</button>
+      <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Model Override <span class="normal-case text-zinc-500 font-normal">(Leave blank for automatic chain)</span></label>
+      <div class="flex gap-2 mt-1.5">
+        <input id="setting-gemini-model" placeholder="gemini-2.5-flash"
+               class="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-3 text-xs text-white placeholder-zinc-600 focus:border-white">
+        <button onclick="saveModelOverride()" class="px-3.5 py-2 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl transition-colors">Save</button>
+      </div>
     </div>
 
-    <!-- Editing defaults -->
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><i class="ph-fill ph-sliders text-yellow-400"></i> Editing defaults</p>
-      <div class="grid grid-cols-2 gap-2.5">
+    <!-- Default Preferences -->
+    <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+      <p class="text-xs font-bold text-white mb-3 flex items-center gap-2">
+        <i class="ph-bold ph-sliders text-white"></i> Default Video Preferences
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Aspect ratio</label>
-          <select id="pref-aspect" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white">
-            <option value="9:16">9:16 · vertical</option><option value="16:9">16:9 · wide</option><option value="1:1">1:1 · square</option><option value="4:5">4:5 · feed</option>
+          <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Aspect Ratio</label>
+          <select id="pref-aspect" onchange="savePrefs()" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs font-semibold text-white focus:border-white">
+            <option value="9:16">9:16 · Vertical</option>
+            <option value="16:9">16:9 · Wide</option>
+            <option value="1:1">1:1 · Square</option>
+            <option value="4:5">4:5 · Feed</option>
           </select>
         </div>
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Clips per project</label>
-          <select id="pref-num" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+          <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Clips per Project</label>
+          <select id="pref-num" onchange="savePrefs()" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs font-semibold text-white focus:border-white">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
           </select>
         </div>
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Caption style</label>
-          <select id="pref-caps" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white">
-            <option value="karaoke">Karaoke</option><option value="bold">Bold blocks</option><option value="minimal">Minimal</option><option value="none">Off</option>
+          <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Captions</label>
+          <select id="pref-caps" onchange="savePrefs()" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs font-semibold text-white focus:border-white">
+            <option value="karaoke">Karaoke</option><option value="bold">Bold</option><option value="minimal">Minimal</option><option value="none">Off</option>
           </select>
         </div>
         <div>
-          <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Intensity</label>
-          <select id="pref-intensity" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs font-semibold text-white">
+          <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Intensity</label>
+          <select id="pref-intensity" onchange="savePrefs()" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs font-semibold text-white focus:border-white">
             <option value="light">Light</option><option value="balanced">Balanced</option><option value="aggressive">Aggressive</option>
           </select>
         </div>
       </div>
-      <label class="mt-2.5 flex items-center justify-between bg-ink-950 border border-ink-700 rounded-lg px-3 py-2.5 cursor-pointer">
-        <span class="text-xs font-semibold text-zinc-300">Remove silences by default</span>
-        <input id="pref-trim-silence" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
+      <label class="mt-3.5 flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 cursor-pointer">
+        <span class="text-xs font-semibold text-zinc-300">Remove silences automatically</span>
+        <input id="pref-trim-silence" type="checkbox" onchange="savePrefs()" class="toggle w-10 h-5 bg-zinc-800 rounded-full relative cursor-pointer transition-all checked:bg-white before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-zinc-400 checked:before:bg-black before:transition-all checked:before:translate-x-5">
       </label>
-      <div class="mt-2.5">
-        <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Default hashtags (appended to captions)</label>
-        <input id="pref-hashtags" type="text" placeholder="#gaming #clips #viral" onchange="savePrefs()"
-               class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs text-white placeholder-zinc-600">
-      </div>
-      <label class="mt-2.5 flex items-center justify-between bg-ink-950 border border-ink-700 rounded-lg px-3 py-2.5 cursor-pointer">
-        <span class="text-xs font-semibold text-zinc-300">Auto-publish first clip when a job finishes</span>
-        <input id="pref-autopublish" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
-      </label>
-    </div>
-
-    <!-- Publishing behaviour -->
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><i class="ph-fill ph-calendar-check text-yellow-400"></i> Publishing & scheduling</p>
-      <label class="flex items-center justify-between bg-ink-950 border border-ink-700 rounded-lg px-3 py-2.5 mb-2 cursor-pointer">
-        <span class="text-xs font-semibold text-zinc-300">Review mode <span class="text-zinc-600 font-normal">(hold scheduled posts for approval)</span></span>
-        <input id="pref-review" type="checkbox" onchange="savePrefs()" class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
-      </label>
-      <div>
-        <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Stagger between auto-posts (hours)</label>
-        <input id="pref-interval" type="number" min="0" step="0.5" onchange="savePrefs()" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2.5 text-xs text-white">
-      </div>
-      <div id="scheduled-list" class="mt-3 space-y-1.5"></div>
-    </div>
-
-    <!-- Storage -->
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><i class="ph-fill ph-hard-drives text-yellow-400"></i> Storage</p>
-      <div id="storage-info" class="space-y-2 text-xs"></div>
-      <div class="flex gap-2 mt-3">
-        <button onclick="runCleanupNow()" class="px-3.5 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors">Apply retention rules</button>
-        <a href="/api/export/csv" class="px-3.5 py-2 text-xs font-bold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors">Export CSV</a>
+      <div class="mt-3">
+        <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Default Hashtags</label>
+        <input id="pref-hashtags" type="text" placeholder="#shorts #viral #trending" onchange="savePrefs()"
+               class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs text-white placeholder-zinc-600 focus:border-white">
       </div>
     </div>
 
-    <!-- Notifications -->
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <label class="flex items-center justify-between cursor-pointer">
-        <div><p class="text-xs font-bold text-zinc-300 flex items-center gap-2"><i class="ph-fill ph-bell text-yellow-400"></i> Notifications</p>
-        <p class="text-[11px] text-zinc-500 mt-0.5">Browser notification when jobs finish</p></div>
-        <input id="pref-notify" type="checkbox" onchange="saveNotify()" class="toggle w-9 h-5 bg-ink-600 rounded-full relative cursor-pointer transition-all checked:bg-yellow-400 before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-white before:transition-all checked:before:translate-x-4">
-      </label>
+    <!-- Publishing & Storage -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+        <p class="text-xs font-bold text-white mb-3 flex items-center gap-2">
+          <i class="ph-bold ph-calendar text-white"></i> Auto-Posting Stagger
+        </p>
+        <div>
+          <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Interval Between Posts (Hours)</label>
+          <input id="pref-interval" type="number" min="0" step="0.5" onchange="savePrefs()" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs text-white focus:border-white">
+        </div>
+        <div id="scheduled-list" class="mt-3 space-y-2"></div>
+      </div>
+      <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+        <p class="text-xs font-bold text-white mb-3 flex items-center gap-2">
+          <i class="ph-bold ph-hard-drive text-white"></i> Storage & Exports
+        </p>
+        <div id="storage-info" class="space-y-2 text-xs"></div>
+        <div class="flex gap-2 mt-4">
+          <button onclick="runCleanupNow()" class="px-3.5 py-2 text-xs font-bold text-zinc-200 hover:text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl transition-colors">Clean Temp Files</button>
+          <a href="/api/export/csv" class="px-3.5 py-2 text-xs font-bold text-black bg-white hover:bg-zinc-200 rounded-xl transition-colors">Export CSV</a>
+        </div>
+      </div>
     </div>
   </section>
 </main>
 
-<!-- ================= PROJECT DETAIL (full-screen overlay) ================= -->
-<div id="project-view" class="hidden fixed inset-0 z-50 bg-ink-950 overflow-y-auto">
+<!-- ================= PROJECT DETAIL OVERLAY ================= -->
+<div id="project-view" class="hidden fixed inset-0 z-50 bg-black overflow-y-auto">
   <div class="max-w-3xl mx-auto p-4 pb-16">
-    <div class="flex items-center gap-3 py-3 sticky top-0 bg-ink-950/90 backdrop-blur z-10">
-      <button onclick="closeProject()" class="w-9 h-9 grid place-items-center rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors"><i class="ph-bold ph-arrow-left"></i></button>
-      <div class="min-w-0">
-        <h2 id="pv-title" class="font-extrabold text-white truncate text-sm">Project</h2>
-        <p id="pv-meta" class="text-[10px] text-zinc-500 truncate"></p>
+    <div class="flex items-center gap-3 py-3 sticky top-0 bg-black/90 backdrop-blur z-10 border-b border-zinc-800/60 mb-4">
+      <button onclick="closeProject()" class="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 transition-colors">
+        <i class="ph-bold ph-arrow-left"></i>
+      </button>
+      <div class="min-w-0 flex-1">
+        <h2 id="pv-title" class="font-black text-white truncate text-base">Project</h2>
+        <p id="pv-meta" class="text-[10px] text-zinc-400 truncate"></p>
       </div>
-      <button onclick="deleteCurrentProject()" class="ml-auto w-9 h-9 grid place-items-center rounded-xl bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-zinc-500 transition-colors" title="Delete project"><i class="ph ph-trash"></i></button>
+      <button onclick="deleteCurrentProject()" class="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-900 hover:bg-red-950/60 hover:text-red-400 border border-zinc-800 text-zinc-400 transition-colors" title="Delete project">
+        <i class="ph-bold ph-trash"></i>
+      </button>
     </div>
-
-    <div id="pv-body" class="space-y-4 mt-2"></div>
+    <div id="pv-body" class="space-y-4"></div>
   </div>
 </div>
 
-<!-- ================= VIDEO MODAL ================= -->
+<!-- ================= VIDEO PREVIEW MODAL ================= -->
 <div id="video-modal" class="fixed inset-0 z-[60] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
   <div class="w-full max-w-md">
-    <div class="flex items-center justify-between mb-3">
-      <h3 id="modal-title" class="text-xs font-bold text-white truncate max-w-[240px]">Preview</h3>
+    <div class="flex items-center justify-between mb-3 px-1">
+      <h3 id="modal-title" class="text-xs font-bold text-white truncate max-w-[260px]">Clip Preview</h3>
       <div class="flex gap-2">
-        <a id="modal-download" href="#" download class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg transition-colors">Download</a>
-        <button onclick="closeModal()" class="w-8 h-8 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white"><i class="ph-bold ph-x"></i></button>
+        <a id="modal-download" href="#" download class="px-3 py-1.5 bg-white hover:bg-zinc-200 text-black text-xs font-bold rounded-lg transition-colors flex items-center gap-1">
+          <i class="ph-bold ph-download-simple"></i> Download
+        </a>
+        <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800">
+          <i class="ph-bold ph-x"></i>
+        </button>
       </div>
     </div>
-    <div class="relative rounded-2xl overflow-hidden bg-black aspect-[9/16] max-h-[70vh] mx-auto">
+    <div class="relative rounded-2xl overflow-hidden bg-black aspect-[9/16] max-h-[72vh] mx-auto border border-zinc-800 shadow-2xl">
       <video id="modal-video" controls playsinline class="w-full h-full object-contain"></video>
-      <div id="modal-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-ink-950 text-center p-6">
-        <i class="ph ph-video-slash text-3xl text-zinc-600"></i>
-        <p class="text-xs text-zinc-400">This clip's file is no longer on the server (cleaned up or lost during a restart).<br>Open the project and re-render to restore it.</p>
-        <button id="modal-remove-btn" onclick="removeFromModal()" class="mt-1 px-4 py-2 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl">Remove from library</button>
+      <div id="modal-missing" class="absolute inset-0 hidden flex-col items-center justify-center gap-3 bg-black text-center p-6">
+        <i class="ph-bold ph-video-camera-slash text-4xl text-zinc-600"></i>
+        <p class="text-xs text-zinc-400">Video file is temporarily not found.<br>Click re-render in the project to restore it.</p>
+        <button id="modal-remove-btn" onclick="removeFromModal()" class="mt-2 px-4 py-2 bg-zinc-900 border border-zinc-800 hover:text-red-400 text-zinc-300 text-xs font-bold rounded-xl">Remove from library</button>
       </div>
     </div>
   </div>
@@ -416,50 +511,57 @@
 
 <!-- ================= EDIT MODAL ================= -->
 <div id="edit-modal" class="fixed inset-0 z-[60] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-  <div class="w-full max-w-sm bg-ink-900 border border-white/10 rounded-2xl p-5">
-    <h3 class="text-sm font-bold text-white mb-3">Edit clip metadata</h3>
+  <div class="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl">
+    <h3 class="text-sm font-black text-white mb-3">Edit Clip Overlay & Caption</h3>
     <div class="space-y-3">
-      <div><label class="text-[10px] font-bold text-zinc-500 uppercase">Hook text (overlay)</label>
-        <input id="edit-hook" class="mt-1 w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white"></div>
-      <div><label class="text-[10px] font-bold text-zinc-500 uppercase">Caption</label>
-        <textarea id="edit-caption" rows="4" class="mt-1 w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white resize-none"></textarea></div>
-      <div><label class="text-[10px] font-bold text-zinc-500 uppercase">Hashtags (comma separated)</label>
-        <input id="edit-hashtags" class="mt-1 w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white"></div>
+      <div>
+        <label class="text-[10px] font-bold text-zinc-400 uppercase">Hook Banner Text</label>
+        <input id="edit-hook" class="mt-1 w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white">
+      </div>
+      <div>
+        <label class="text-[10px] font-bold text-zinc-400 uppercase">Social Caption</label>
+        <textarea id="edit-caption" rows="4" class="mt-1 w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white resize-none focus:border-white"></textarea>
+      </div>
+      <div>
+        <label class="text-[10px] font-bold text-zinc-400 uppercase">Hashtags</label>
+        <input id="edit-hashtags" class="mt-1 w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white focus:border-white">
+      </div>
     </div>
     <div class="flex gap-2 mt-4">
-      <button onclick="closeEditModal()" class="flex-1 py-2.5 text-xs font-bold text-zinc-400 bg-white/5 rounded-xl">Cancel</button>
-      <button onclick="saveEdit()" class="flex-1 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded-xl">Save</button>
+      <button onclick="closeEditModal()" class="flex-1 py-2.5 text-xs font-bold text-zinc-400 bg-zinc-800 hover:bg-zinc-700 rounded-xl transition-colors">Cancel</button>
+      <button onclick="saveEdit()" class="flex-1 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-black rounded-xl transition-colors">Save Changes</button>
     </div>
   </div>
 </div>
 
 <!-- ================= CONFIRM MODAL ================= -->
 <div id="confirm-modal" class="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-  <div class="w-full max-w-xs bg-ink-900 border border-white/10 rounded-2xl p-5 text-center">
-    <i id="confirm-icon" class="ph ph-warning text-2xl text-yellow-400"></i>
-    <p id="confirm-message" class="text-xs text-zinc-200 font-medium leading-relaxed mt-2"></p>
+  <div class="w-full max-w-xs bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-center shadow-2xl">
+    <div class="w-10 h-10 rounded-full bg-zinc-800 text-white flex items-center justify-center mx-auto mb-2.5">
+      <i id="confirm-icon" class="ph-bold ph-warning text-lg"></i>
+    </div>
+    <p id="confirm-message" class="text-xs text-zinc-200 font-medium leading-relaxed"></p>
     <div class="flex gap-2 mt-4">
-      <button onclick="resolveConfirm(false)" class="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-zinc-300 text-xs font-bold rounded-xl transition-colors">Cancel</button>
-      <button id="confirm-yes" onclick="resolveConfirm(true)" class="flex-1 py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors">Confirm</button>
+      <button onclick="resolveConfirm(false)" class="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold rounded-xl transition-colors">Cancel</button>
+      <button id="confirm-yes" onclick="resolveConfirm(true)" class="flex-1 py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-black rounded-xl transition-colors">Confirm</button>
     </div>
   </div>
 </div>
 
-<!-- ================= PROFILE MODAL ================= -->
+<!-- ================= PROFILE / WORKSPACE MODAL ================= -->
 <div id="profile-modal" class="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-  <div class="w-full max-w-sm bg-ink-900 border border-white/10 rounded-2xl p-5">
+  <div class="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-2xl">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-sm font-bold text-white">Profile & security</h3>
-      <button onclick="closeProfile()" class="w-8 h-8 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300"><i class="ph-bold ph-x"></i></button>
+      <h3 class="text-sm font-black text-white">Studio Workspace</h3>
+      <button onclick="closeProfile()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 text-zinc-400 hover:text-white"><i class="ph-bold ph-x"></i></button>
     </div>
     <div id="profile-info" class="text-xs text-zinc-400 mb-4"></div>
-    <p class="text-[10px] font-bold text-zinc-500 uppercase mb-1.5">Change password</p>
-    <input id="pw-current" type="password" placeholder="Current password" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white placeholder-zinc-600 mb-2">
-    <input id="pw-new" type="password" placeholder="New password (8+ chars)" class="w-full px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-lg text-xs text-white placeholder-zinc-600 mb-2">
-    <button onclick="changePassword()" class="w-full py-2.5 bg-white/10 hover:bg-white/15 text-white text-xs font-bold rounded-xl transition-colors mb-4">Update password</button>
-    <p id="pw-status" class="text-[11px] mb-3"></p>
-    <button onclick="logout()" class="w-full py-2.5 bg-red-500/90 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
-      <i class="ph ph-sign-out"></i> Sign out
+    <div class="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-400 space-y-1 mb-4">
+      <p class="font-bold text-white flex items-center gap-1.5"><i class="ph-fill ph-check-circle text-emerald-400"></i> Single-User Creator Mode Active</p>
+      <p class="text-[11px] text-zinc-500">All features, downloads, and AI functions are unlocked directly without requiring a login.</p>
+    </div>
+    <button onclick="closeProfile(); switchTab('settings')" class="w-full py-2.5 bg-white hover:bg-zinc-200 text-black text-xs font-black rounded-xl transition-colors">
+      Open Studio Settings
     </button>
   </div>
 </div>
@@ -467,45 +569,53 @@
 <!-- ================= TOASTS ================= -->
 <div id="toast-area" class="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[80] space-y-2 w-[calc(100%-2rem)] max-w-xs pointer-events-none"></div>
 
-<!-- ================= BOTTOM NAV (mobile) / SIDE NAV (desktop) ================= -->
-<nav class="fixed bottom-0 inset-x-0 z-40 bg-ink-950/90 backdrop-blur-md border-t border-white/5 md:hidden">
-  <div class="grid grid-cols-7 h-16" id="mobile-nav"></div>
+<!-- ================= BOTTOM NAV (Mobile: 5 core tabs) / SIDEBAR (Desktop: 7 tabs) ================= -->
+<nav class="fixed bottom-0 inset-x-0 z-40 bg-black/95 backdrop-blur-md border-t border-zinc-800/80 md:hidden">
+  <div class="grid grid-cols-5 h-16" id="mobile-nav"></div>
 </nav>
-<div class="hidden md:block fixed left-0 top-0 bottom-0 w-14 z-30 border-r border-white/5 bg-ink-950/60 pt-20" id="desktop-nav"></div>
+<div class="hidden md:flex flex-col items-center fixed left-0 top-0 bottom-0 w-16 z-30 border-r border-zinc-800/80 bg-black/95 pt-20 gap-3" id="desktop-nav"></div>
 
 <script>
 const user = {{ user | tojson }};
 const tabs = [
-  { id: 'create', icon: 'ph-plus-circle', label: 'Create' },
-  { id: 'projects', icon: 'ph-folder-open', label: 'Projects' },
-  { id: 'clips', icon: 'ph-film-strip', label: 'Clips' },
-  { id: 'history', icon: 'ph-clock-counter-clockwise', label: 'History' },
-  { id: 'analytics', icon: 'ph-chart-bar', label: 'Analytics' },
-  { id: 'accounts', icon: 'ph-users-three', label: 'Accounts' },
-  { id: 'settings', icon: 'ph-gear-six', label: 'Settings' },
+  { id: 'create', icon: 'ph-plus-circle', label: 'Create', mobile: true },
+  { id: 'clips', icon: 'ph-film-strip', label: 'Clips', mobile: true },
+  { id: 'projects', icon: 'ph-folder-simple', label: 'Projects', mobile: true },
+  { id: 'history', icon: 'ph-clock-counter-clockwise', label: 'History', mobile: true },
+  { id: 'analytics', icon: 'ph-chart-bar', label: 'Analytics', mobile: false },
+  { id: 'accounts', icon: 'ph-share-network', label: 'Accounts', mobile: false },
+  { id: 'settings', icon: 'ph-gear-six', label: 'Settings', mobile: true },
 ];
 
 // ---------- helpers ----------
 function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
 
 async function api(url, opts = {}) {
-  if (opts.json) { opts.body = JSON.stringify(opts.json); opts.headers = { 'Content-Type': 'application/json' }; delete opts.json; }
+  if (opts.json) {
+    opts.body = JSON.stringify(opts.json);
+    opts.headers = { 'Content-Type': 'application/json' };
+    delete opts.json;
+  }
   const res = await fetch(url, opts);
-  if (res.status === 401) { location.href = '/login'; throw new Error('Not signed in'); }
-  let data = {}; try { data = await res.json(); } catch {}
+  let data = {};
+  try { data = await res.json(); } catch {}
   if (!res.ok) throw Object.assign(new Error(data.error || res.statusText), { status: res.status, data });
   return data;
 }
 
 function showToast(msg, type = 'info') {
   const area = document.getElementById('toast-area');
-  const colors = { info: 'bg-ink-800 border-white/10 text-white', success: 'bg-emerald-500/90 text-white border-emerald-400', error: 'bg-red-500/90 text-white border-red-400' };
+  const colors = {
+    info: 'bg-zinc-900 border-zinc-700 text-white',
+    success: 'bg-white text-black border-white',
+    error: 'bg-red-950 border-red-800 text-white'
+  };
   const icons = { info: 'ph-info', success: 'ph-check-circle', error: 'ph-warning-circle' };
   const el = document.createElement('div');
-  el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold flex items-center gap-2 ${colors[type]}`;
-  el.innerHTML = `<i class="ph-fill ${icons[type]}"></i> ${esc(msg)}`;
+  el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-2xl text-xs font-bold flex items-center gap-2.5 ${colors[type] || colors.info}`;
+  el.innerHTML = `<i class="ph-bold ${icons[type] || 'ph-info'} text-sm"></i> <span>${esc(msg)}</span>`;
   area.appendChild(el);
-  setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 4200);
+  setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 3800);
 }
 
 let _confirmResolver = null;
@@ -513,7 +623,6 @@ function confirmDialog(message, opts = {}) {
   document.getElementById('confirm-message').textContent = message;
   const yes = document.getElementById('confirm-yes');
   yes.textContent = opts.yesLabel || 'Confirm';
-  yes.className = `flex-1 py-2.5 text-white text-xs font-bold rounded-xl transition-colors ${opts.danger !== false ? 'bg-red-500/90 hover:bg-red-500' : 'bg-yellow-400 hover:bg-yellow-300 text-black'}`;
   document.getElementById('confirm-modal').classList.replace('hidden', 'flex');
   return new Promise(r => _confirmResolver = r);
 }
@@ -528,8 +637,14 @@ function fmtDate(iso) { try { const d = new Date(iso); return d.toLocaleDateStri
 
 // ---------- navigation ----------
 function switchTab(tabId) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tabId));
-  document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === tabId));
+  document.querySelectorAll('.tab-content').forEach(t => {
+    const isTarget = (t.id === 'tab-' + tabId);
+    t.classList.toggle('active', isTarget);
+    t.classList.toggle('hidden', !isTarget);
+  });
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    b.classList.toggle('active', b.dataset.nav === tabId);
+  });
   history.replaceState(null, '', '?tab=' + tabId);
   window.scrollTo({ top: 0 });
   if (tabId === 'projects') loadProjects();
@@ -543,12 +658,18 @@ function switchTab(tabId) {
 const mobileNav = document.getElementById('mobile-nav');
 const desktopNav = document.getElementById('desktop-nav');
 tabs.forEach(t => {
-  mobileNav.insertAdjacentHTML('beforeend',
-    `<button data-nav="${t.id}" onclick="switchTab('${t.id}')" class="tab-btn flex flex-col items-center justify-center gap-0.5 text-zinc-500 hover:text-zinc-300 transition-colors">
-      <i class="ph ${t.icon} text-xl"></i><span class="text-[9px] font-bold">${t.label}</span><span class="tab-ind opacity-0 w-1 h-1 rounded-full bg-yellow-400"></span></button>`);
+  if (t.mobile) {
+    mobileNav.insertAdjacentHTML('beforeend',
+      `<button data-nav="${t.id}" onclick="switchTab('${t.id}')" class="tab-btn flex flex-col items-center justify-center gap-1 text-zinc-500 hover:text-white transition-colors">
+        <i class="ph ${t.icon} text-xl"></i>
+        <span class="text-[9px] font-bold tracking-tight">${t.label}</span>
+        <span class="tab-ind opacity-0 w-1 h-1 rounded-full bg-white"></span>
+      </button>`);
+  }
   desktopNav.insertAdjacentHTML('beforeend',
-    `<button data-nav="${t.id}" onclick="switchTab('${t.id}')" title="${t.label}" class="tab-btn w-full py-3 grid place-items-center text-zinc-500 hover:text-white transition-colors">
-      <i class="ph ${t.icon} text-xl"></i></button>`);
+    `<button data-nav="${t.id}" onclick="switchTab('${t.id}')" title="${t.label}" class="tab-btn w-10 h-10 rounded-xl grid place-items-center text-zinc-500 hover:text-white hover:bg-zinc-900 transition-colors">
+      <i class="ph ${t.icon} text-xl"></i>
+    </button>`);
 });
 
 // ---------- create: file pickers ----------
@@ -565,7 +686,7 @@ fileInput.addEventListener('change', () => {
   pickedFile = f;
   document.getElementById('file-label').textContent = f.name;
   document.getElementById('file-meta').textContent = fmtBytes(f.size);
-  dropArea.classList.add('border-yellow-400/50');
+  dropArea.classList.add('border-white');
 });
 let refFile = null;
 document.getElementById('input-reference-file').addEventListener('change', (e) => {
@@ -580,8 +701,13 @@ async function submitProject(ev) {
   err.classList.add('hidden');
   const url = document.getElementById('input-url').value.trim();
   const refUrl = document.getElementById('input-reference').value.trim();
-  if (!pickedFile && !url) { err.textContent = 'Pick a video file or paste a public video link.'; err.classList.remove('hidden'); return; }
-  btn.disabled = true; btn.innerHTML = '<i class="ph ph-circle-notch animate-spin"></i> Uploading…';
+  if (!pickedFile && !url) {
+    err.textContent = 'Pick a video file or paste a public video link.';
+    err.classList.remove('hidden');
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ph ph-circle-notch animate-spin"></i> Uploading & Queuing…';
   try {
     const fd = new FormData();
     if (pickedFile) fd.append('file', pickedFile);
@@ -591,21 +717,26 @@ async function submitProject(ev) {
     const res = await fetch('/api/projects', { method: 'POST', body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
-    showToast('Project created' + (data.reference_job_id ? ' — reference analysis queued' : ''), 'success');
+    showToast('Project queued for AI processing' + (data.reference_job_id ? ' (Reference match active)' : ''), 'success');
     // reset form
     pickedFile = null; refFile = null;
-    document.getElementById('input-file').value = ''; document.getElementById('input-reference-file').value = '';
+    document.getElementById('input-file').value = '';
+    document.getElementById('input-reference-file').value = '';
     document.getElementById('file-label').textContent = 'Tap to pick a video (MP4, MOV, WEBM)';
-    document.getElementById('file-meta').textContent = 'or paste a public link below';
-    document.getElementById('input-url').value = ''; document.getElementById('input-reference').value = '';
+    document.getElementById('file-meta').textContent = 'or paste a YouTube / TikTok public link below';
+    document.getElementById('input-url').value = '';
+    document.getElementById('input-reference').value = '';
     document.getElementById('ref-file-label').textContent = '';
-    dropArea.classList.remove('border-yellow-400/50');
+    dropArea.classList.remove('border-white');
     if (data.project_id) openProject(data.project_id, data.reference_job_id);
     else loadProjects();
+    startPolling();
   } catch (e) {
-    err.textContent = e.message; err.classList.remove('hidden');
+    err.textContent = e.message;
+    err.classList.remove('hidden');
   } finally {
-    btn.disabled = false; btn.innerHTML = '<i class="ph-fill ph-magic-wand text-base"></i> Create project & analyze';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ph-bold ph-magic-wand text-base"></i> Auto-Clip & Generate';
   }
 }
 
@@ -622,55 +753,62 @@ async function pollActiveJobs() {
     const active = jobs.filter(j => ['queued', 'processing'].includes(j.status));
     renderActiveJobs(active, jobs);
     if (active.length === 0 && pollTimer) {
-      clearInterval(pollTimer); pollTimer = null;
+      clearInterval(pollTimer);
+      pollTimer = null;
       setTimeout(() => { pollActiveJobs(); pollTimer = setInterval(pollActiveJobs, 8000); }, 500);
     }
   } catch {}
 }
 
 function jobStatusBadge(job) {
-  const map = { queued: ['ph-hourglass', 'text-zinc-400', 'Queued'], processing: ['ph-circle-notch animate-spin', 'text-yellow-400', 'Processing'],
-    completed: ['ph-check-circle', 'text-emerald-400', 'Completed'], failed: ['ph-x-circle', 'text-red-400', 'Failed'],
-    cancelled: ['ph-prohibit', 'text-zinc-500', 'Cancelled'] };
-  const [icon, color, label] = map[job.status] || map.queued;
-  return `<i class="ph ${icon} ${color}"></i><span class="${color}">${label}</span>`;
+  const map = {
+    queued: ['ph-hourglass text-zinc-400', 'Queued'],
+    processing: ['ph-circle-notch animate-spin text-white', 'Processing'],
+    completed: ['ph-check-circle text-emerald-400', 'Completed'],
+    failed: ['ph-x-circle text-red-400', 'Failed'],
+    cancelled: ['ph-prohibit text-zinc-500', 'Cancelled']
+  };
+  const [icon, label] = map[job.status] || map.queued;
+  return `<span class="flex items-center gap-1.5 text-xs font-bold"><i class="ph ${icon}"></i> <span>${label}</span></span>`;
 }
 
 function renderActiveJobs(active, allJobs) {
   const wrap = document.getElementById('active-jobs');
   if (!active.length) {
-    // Show recently finished jobs for 1 render cycle
     const recent = (allJobs || []).filter(j => ['completed', 'failed'].includes(j.status)).slice(0, 2);
     wrap.innerHTML = recent.length ? recent.map(j => `
-      <div class="flex items-center gap-3 p-3.5 rounded-xl bg-ink-900 border border-white/5">
+      <div class="flex items-center gap-3 p-4 rounded-xl bg-zinc-900 border border-zinc-800">
         ${jobStatusBadge(j)}
-        <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-zinc-200 truncate">${esc(j.step || j.kind)}</p>
-          ${j.error ? `<p class="text-[10px] text-red-400/90 truncate">${esc(j.error)}</p>` : ''}</div>
-        ${j.status === 'completed' ? `<button onclick="switchTab('clips')" class="text-[11px] font-bold text-yellow-400 hover:text-yellow-300">See clips</button>` :
-          `<button onclick="retryJob('${j.id}')" class="text-[11px] font-bold text-zinc-400 hover:text-white">Retry</button>`}
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-bold text-white truncate">${esc(j.step || j.kind)}</p>
+          ${j.error ? `<p class="text-[10px] text-red-400 truncate mt-0.5">${esc(j.error)}</p>` : ''}
+        </div>
+        ${j.status === 'completed'
+          ? `<button onclick="switchTab('clips')" class="text-xs font-black text-white hover:underline px-2 py-1">View Clips →</button>`
+          : `<button onclick="retryJob('${j.id}')" class="text-xs font-bold text-zinc-300 hover:text-white px-2 py-1 bg-zinc-800 rounded-lg">Retry</button>`}
       </div>`).join('') : '';
     return;
   }
   wrap.innerHTML = active.map(j => `
-    <div class="p-4 rounded-xl bg-ink-900 border border-yellow-400/20">
+    <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-xl">
       <div class="flex items-center gap-3">
-        <i class="ph ph-circle-notch animate-spin text-yellow-400 text-lg"></i>
+        <i class="ph-bold ph-circle-notch animate-spin text-white text-lg"></i>
         <div class="min-w-0 flex-1">
-          <p class="text-xs font-bold text-white truncate">${esc(j.step || 'Processing…')}</p>
-          <p class="text-[10px] text-zinc-500 mt-0.5">${j.kind === 'reference' ? 'Reference analysis' : 'Editing job'} · ${esc(j.aspect_ratio || '')} · ${esc(String(j.resolution || ''))}p</p>
+          <p class="text-xs font-black text-white truncate">${esc(j.step || 'Processing video…')}</p>
+          <p class="text-[10px] text-zinc-400 mt-0.5">${j.kind === 'reference' ? 'Reference style analysis' : 'Rendering clips'} · ${esc(j.aspect_ratio || '9:16')} · ${esc(String(j.resolution || '720'))}p</p>
         </div>
-        <button onclick="cancelJob('${j.id}')" class="text-[11px] font-bold text-zinc-500 hover:text-red-400 px-2 py-1">Cancel</button>
+        <button onclick="cancelJob('${j.id}')" class="text-xs font-bold text-zinc-400 hover:text-red-400 px-2.5 py-1 rounded-lg bg-zinc-800 transition-colors">Cancel</button>
       </div>
-      <div class="mt-2.5 h-1.5 rounded-full bg-white/10 overflow-hidden">
-        <div class="h-full bg-yellow-400 rounded-full transition-all duration-500" style="width:${Math.max(4, j.progress || 2)}%"></div>
+      <div class="mt-3 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+        <div class="h-full bg-white rounded-full transition-all duration-500" style="width:${Math.max(6, j.progress || 2)}%"></div>
       </div>
-      <p class="text-[10px] text-zinc-600 mt-1.5">You can leave this page — the job keeps running on the server.</p>
+      <p class="text-[10px] text-zinc-500 mt-2">Background rendering active. You can safely switch tabs or close the app.</p>
     </div>`).join('');
 }
 
 async function cancelJob(jobId) {
-  if (!(await confirmDialog('Cancel this job? Processed clips of this job will be removed.'))) return;
-  try { await api(`/api/jobs/${jobId}/cancel`, { method: 'POST' }); showToast('Cancelling…', 'info'); pollActiveJobs(); }
+  if (!(await confirmDialog('Cancel this render job?'))) return;
+  try { await api(`/api/jobs/${jobId}/cancel`, { method: 'POST' }); showToast('Cancelled', 'info'); pollActiveJobs(); }
   catch (e) { showToast(e.message, 'error'); }
 }
 async function retryJob(jobId) {
@@ -683,26 +821,23 @@ let projectsCache = [];
 async function loadProjects() {
   try {
     const { projects } = await api('/api/projects?limit=50');
-    projectsCache = projects;
+    projectsCache = projects || [];
     const list = document.getElementById('projects-list');
-    document.getElementById('projects-empty').classList.toggle('hidden', projects.length > 0);
-    list.innerHTML = projects.map(p => {
-      const statusColor = { draft: 'text-zinc-400', analyzing_reference: 'text-yellow-400', ready_to_edit: 'text-yellow-400',
-        processing: 'text-yellow-400', queued: 'text-zinc-400', completed: 'text-emerald-400', failed: 'text-red-400', cancelled: 'text-zinc-500' };
-      return `<button onclick="openProject('${p.id}')" class="w-full text-left p-4 rounded-2xl bg-ink-900 border border-white/5 hover:border-white/15 transition-colors">
-        <div class="flex items-start gap-3">
-          <div class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center flex-shrink-0">
-            <i class="ph ${p.reference_url || p.reference_file ? 'ph-shooting-star' : 'ph-video'} text-lg ${p.reference_url || p.reference_file ? 'text-yellow-400' : 'text-zinc-400'}"></i>
+    document.getElementById('projects-empty').classList.toggle('hidden', projectsCache.length > 0);
+    list.innerHTML = projectsCache.map(p => {
+      return `<button onclick="openProject('${p.id}')" class="w-full text-left p-4 rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all">
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0 text-white border border-zinc-700">
+            <i class="ph-bold ${p.reference_url || p.reference_file ? 'ph-sparkle' : 'ph-video'} text-lg"></i>
           </div>
           <div class="min-w-0 flex-1">
             <p class="text-sm font-bold text-white truncate">${esc(p.name)}</p>
-            <p class="text-[10px] text-zinc-500 mt-0.5">${fmtDate(p.created_at)} · ${p.source_duration ? fmtDur(p.source_duration) : '—'}${p.reference_platform ? ' · ref: ' + esc(p.reference_platform) : ''}</p>
+            <p class="text-[10px] text-zinc-400 mt-0.5">${fmtDate(p.created_at)} · ${p.source_duration ? fmtDur(p.source_duration) : '—'}${p.reference_platform ? ' · ref: ' + esc(p.reference_platform) : ''}</p>
             <div class="flex items-center gap-2 mt-1.5">
-              <span class="text-[10px] font-bold ${statusColor[p.status] || 'text-zinc-500'}">${esc((p.status || '').replace(/_/g, ' '))}</span>
-              ${p.last_job_id ? `<span class="text-[10px] text-zinc-600">job ${esc(p.last_job_id.slice(-6))}</span>` : ''}
+              <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">${esc((p.status || '').replace(/_/g, ' '))}</span>
             </div>
           </div>
-          <i class="ph ph-caret-right text-zinc-600"></i>
+          <i class="ph ph-caret-right text-zinc-500"></i>
         </div>
       </button>`;
     }).join('');
@@ -713,13 +848,13 @@ let currentProjectId = null;
 async function openProject(projectId, refJobId) {
   currentProjectId = projectId;
   document.getElementById('project-view').classList.replace('hidden', 'block');
-  document.getElementById('pv-body').innerHTML = '<div class="h-24 rounded-2xl skeleton"></div><div class="h-40 rounded-2xl skeleton"></div>';
+  document.getElementById('pv-body').innerHTML = '<div class="h-28 rounded-2xl skeleton"></div><div class="h-44 rounded-2xl skeleton"></div>';
   document.getElementById('pv-title').textContent = 'Loading…';
   try {
     const { project } = await api(`/api/projects/${projectId}`);
     renderProject(project, refJobId);
   } catch (e) {
-    document.getElementById('pv-body').innerHTML = `<div class="p-6 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-300">${esc(e.message)}</div>`;
+    document.getElementById('pv-body').innerHTML = `<div class="p-6 rounded-2xl bg-zinc-900 border border-red-900/40 text-xs text-red-300">${esc(e.message)}</div>`;
   }
 }
 function closeProject() { document.getElementById('project-view').classList.replace('block', 'hidden'); currentProjectId = null; loadProjects(); }
@@ -737,63 +872,58 @@ function renderProject(p, refJobId) {
   const plan = (() => { try { return p.editing_plan ? JSON.parse(p.editing_plan) : null; } catch { return null; }})();
 
   const refSection = `
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+    <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
       <div class="flex items-center justify-between mb-3">
-        <p class="text-xs font-bold text-zinc-300 flex items-center gap-2"><i class="ph-fill ph-shooting-star text-yellow-400"></i> Reference video</p>
-        <button onclick="addReference('${p.id}')" class="text-[11px] font-bold text-yellow-400 hover:text-yellow-300">${p.reference_url || p.reference_file ? 'Change' : '+ Add reference'}</button>
+        <p class="text-xs font-bold text-white flex items-center gap-2"><i class="ph-bold ph-sparkle text-white"></i> Reference Style</p>
+        <button onclick="addReference('${p.id}')" class="text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 px-2.5 py-1 rounded-lg">${p.reference_url || p.reference_file ? 'Change Reference' : '+ Add Reference'}</button>
       </div>
-      ${refJobId ? `<div id="ref-job-watcher" data-job="${refJobId}" class="text-[11px] text-zinc-400 flex items-center gap-2"><i class="ph ph-circle-notch animate-spin"></i> Analyzing reference…</div>` : ''}
-      ${(p.reference_url && !profile) ? `<p class="text-[11px] text-zinc-500 break-all"><i class="ph ph-link"></i> ${esc(p.reference_url)}</p>` : ''}
-      ${(p.reference_file && !profile) ? `<p class="text-[11px] text-zinc-500"><i class="ph ph-paperclip"></i> Uploaded reference file${p.reference_available ? '' : ' (missing on server — upload again)'}</p>` : ''}
+      ${refJobId ? `<div id="ref-job-watcher" data-job="${refJobId}" class="text-xs text-zinc-400 flex items-center gap-2"><i class="ph ph-circle-notch animate-spin text-white"></i> Analyzing style in background…</div>` : ''}
+      ${(p.reference_url && !profile) ? `<p class="text-xs text-zinc-500 break-all"><i class="ph ph-link"></i> ${esc(p.reference_url)}</p>` : ''}
       ${profile ? renderProfileCard(profile) : ''}
-      ${p.error ? `<p class="mt-2 text-[11px] text-red-400">${esc(p.error)}</p>` : ''}
+      ${p.error ? `<p class="mt-2 text-xs text-red-400">${esc(p.error)}</p>` : ''}
     </div>`;
 
   const activeJob = (p.jobs || []).find(j => ['queued', 'processing'].includes(j.status));
   const jobSection = activeJob ? `
-    <div class="p-4 rounded-2xl bg-ink-900 border border-yellow-400/25">
+    <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-700">
       <div class="flex items-center gap-3">
-        <i class="ph ph-circle-notch animate-spin text-yellow-400 text-lg"></i>
-        <p class="text-xs font-bold text-white flex-1">${esc(activeJob.step)}</p>
-        <button onclick="cancelJob('${activeJob.id}').then(loadProjectView)" class="text-[11px] font-bold text-zinc-500 hover:text-red-400">Cancel</button>
+        <i class="ph-bold ph-circle-notch animate-spin text-white text-lg"></i>
+        <p class="text-xs font-black text-white flex-1">${esc(activeJob.step)}</p>
+        <button onclick="cancelJob('${activeJob.id}').then(loadProjectView)" class="text-xs font-bold text-zinc-400 hover:text-red-400">Cancel</button>
       </div>
-      <div class="mt-2.5 h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full bg-yellow-400 transition-all duration-500" style="width:${Math.max(4, activeJob.progress)}%"></div></div>
+      <div class="mt-3 h-1.5 rounded-full bg-zinc-800 overflow-hidden"><div class="h-full bg-white transition-all duration-500" style="width:${Math.max(4, activeJob.progress)}%"></div></div>
     </div>` : '';
 
   const clipsSection = (p.clips || []).length ? `
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-3">Clips (${p.clips.length})</p>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+    <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+      <p class="text-xs font-black text-white mb-3">Generated Clips (${p.clips.length})</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         ${p.clips.map(c => clipCardHTML(c, true)).join('')}
       </div>
     </div>` : '';
 
   const editControls = `
-    <div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-      <p class="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-2"><i class="ph-fill ph-film-strip text-yellow-400"></i> Start editing</p>
-      ${p.source_available || p.source_url ? `
-      <div class="grid grid-cols-2 gap-2.5">
-        <div><label class="text-[10px] font-semibold text-zinc-500 uppercase">Aspect</label>
-          <select id="edit-aspect" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2 text-xs text-white">
+    <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+      <p class="text-xs font-black text-white mb-3 flex items-center gap-2"><i class="ph-bold ph-scissors text-white"></i> Cut & Re-Render</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Aspect</label>
+          <select id="edit-aspect" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
             <option value="9:16">9:16</option><option value="16:9">16:9</option><option value="1:1">1:1</option><option value="4:5">4:5</option></select></div>
-        <div><label class="text-[10px] font-semibold text-zinc-500 uppercase">Clips</label>
-          <select id="edit-num" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2 text-xs text-white">
+        <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Clips</label>
+          <select id="edit-num" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
             <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
-        <div><label class="text-[10px] font-semibold text-zinc-500 uppercase">Length</label>
-          <select id="edit-dur" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2 text-xs text-white">
+        <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Length</label>
+          <select id="edit-dur" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
             <option value="25">~25s</option><option value="45" selected>~45s</option><option value="60">~60s</option></select></div>
-        <div><label class="text-[10px] font-semibold text-zinc-500 uppercase">Quality</label>
-          <select id="edit-res" class="mt-1 w-full bg-ink-800 border border-ink-600 rounded-lg py-2 px-2 text-xs text-white">
+        <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Quality</label>
+          <select id="edit-res" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
             <option value="720">720p</option><option value="1080">1080p</option></select></div>
       </div>
-      <button onclick="startEdit('${p.id}')" class="mt-3 w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
-        <i class="ph-fill ph-magic-wand"></i> Generate ${profile ? 'styled' : ''} clips
+      <button onclick="startEdit('${p.id}')" class="mt-4 w-full py-3.5 bg-white hover:bg-zinc-200 text-black font-black rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+        <i class="ph-bold ph-magic-wand"></i> Render ${p.reference_profile ? 'Styled' : ''} Clips
       </button>
-      ${plan ? `<details class="mt-3"><summary class="text-[11px] font-bold text-zinc-500 cursor-pointer">Editing plan (AI)</summary>
-        <pre class="mt-2 text-[10px] text-zinc-500 bg-ink-950 rounded-xl p-3 overflow-x-auto whitespace-pre-wrap">${esc(JSON.stringify(plan, null, 2).slice(0, 3000))}</pre></details>` : ''}
-      ` : `
-      <p class="text-xs text-zinc-400">${p.source_url ? 'Source video will be downloaded from the link when editing starts.' : 'The source video file is missing on the server (cleaned up or lost). Re-create the project to continue.'}</p>
-      ${p.source_url ? `<button onclick="startEdit('${p.id}')" class="mt-3 w-full py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-bold rounded-xl text-sm">Download & edit from link</button>` : ''}`}
+      ${plan ? `<details class="mt-3"><summary class="text-xs font-bold text-zinc-400 hover:text-white cursor-pointer">View AI Editing Plan</summary>
+        <pre class="mt-2 text-[10px] text-zinc-400 bg-black rounded-xl p-3 overflow-x-auto whitespace-pre-wrap border border-zinc-800">${esc(JSON.stringify(plan, null, 2).slice(0, 3000))}</pre></details>` : ''}
     </div>`;
 
   document.getElementById('pv-body').innerHTML = jobSection + editControls + refSection + clipsSection;
@@ -811,16 +941,6 @@ function watchProjectJobs(projectId) {
     try {
       const { project } = await api(`/api/projects/${projectId}`);
       const activeJob = (project.jobs || []).find(j => ['queued', 'processing'].includes(j.status));
-      const refJobEl = document.getElementById('ref-job-watcher');
-      if (refJobEl) {
-        const { job } = await api(`/api/jobs/${refJobEl.dataset.job}`);
-        if (job && ['completed', 'failed', 'cancelled'].includes(job.status)) {
-          refJobEl.innerHTML = job.status === 'completed'
-            ? '<i class="ph-fill ph-check-circle text-emerald-400"></i> Reference analyzed'
-            : `<span class="text-red-400">Reference failed: ${esc(job.error || '')}</span>`;
-          if (job.status === 'completed') openProject(projectId);
-        }
-      }
       if (!activeJob) { clearInterval(projectWatchTimer); openProject(projectId); }
     } catch {}
   }, 3000);
@@ -829,30 +949,21 @@ function watchProjectJobs(projectId) {
 function renderProfileCard(profile) {
   const rows = [
     ['Editing style', profile.editing_style], ['Hook structure', profile.hook_structure],
-    ['Avg shot', profile.avg_shot_duration_sec ? profile.avg_shot_duration_sec + 's' : null],
     ['Transitions', profile.scene_transitions], ['Camera', profile.camera_movement],
-    ['Zooms', profile.zoom_effects], ['Captions', profile.caption_style],
-    ['Caption spot', profile.caption_position], ['Music', profile.music],
-    ['SFX', Array.isArray(profile.sound_effects) ? profile.sound_effects.join(', ') : profile.sound_effects],
-    ['Color grade', profile.color_grade], ['Aspect', profile.aspect_ratio],
-    ['Pacing', profile.pacing], ['Ending', profile.ending_style],
+    ['Pacing', profile.pacing], ['Ending', profile.ending_style]
   ].filter(r => r[1] && String(r[1]).toLowerCase() !== 'unknown');
-  return `<details open class="mt-3">
-    <summary class="text-[11px] font-bold text-yellow-400 cursor-pointer">AI analysis ready — view profile</summary>
-    <div class="mt-2 space-y-1.5 max-h-64 overflow-y-auto scrollbar-none">
-      ${rows.map(r => `<div class="flex justify-between gap-3 py-1.5 border-b border-white/5 text-[11px]">
-        <span class="text-zinc-500 flex-shrink-0">${esc(r[0])}</span><span class="text-zinc-200 text-right">${esc(String(r[1]).slice(0, 90))}</span></div>`).join('')}
-      ${profile.editing_plan_hint ? `<p class="text-[11px] text-zinc-400 leading-relaxed pt-2">${esc(profile.editing_plan_hint)}</p>` : ''}
-    </div></details>`;
+  return `<div class="mt-3 bg-black border border-zinc-800 rounded-xl p-3.5 space-y-2">
+    ${rows.map(r => `<div class="flex justify-between gap-3 text-xs"><span class="text-zinc-500 font-medium">${esc(r[0])}</span><span class="text-white text-right font-bold">${esc(String(r[1]).slice(0, 90))}</span></div>`).join('')}
+  </div>`;
 }
 
 function addReference(projectId) {
-  const url = prompt('Paste a public TikTok / Instagram Reel / YouTube Shorts URL (leave empty to upload a file instead):');
-  if (url === null) return;
+  const url = prompt('Paste a public TikTok / Reel / Shorts URL:');
+  if (!url) return;
   const fd = new FormData();
-  fd.append('reference_url', url || '');
+  fd.append('reference_url', url);
   api(`/api/projects/${projectId}/reference`, { method: 'POST', body: fd })
-    .then(r => { showToast('Reference analysis queued', 'success'); openProject(projectId, r.reference_job_id); })
+    .then(r => { showToast('Reference queued', 'success'); openProject(projectId, r.reference_job_id); })
     .catch(e => showToast(e.message, 'error'));
 }
 
@@ -875,7 +986,7 @@ async function startEdit(projectId) {
 
 async function deleteCurrentProject() {
   if (!currentProjectId) return;
-  if (!(await confirmDialog('Delete this project, its jobs and clips? This cannot be undone.'))) return;
+  if (!(await confirmDialog('Delete this project and its clips?'))) return;
   try { await api(`/api/projects/${currentProjectId}`, { method: 'DELETE' }); showToast('Project deleted', 'success'); closeProject(); }
   catch (e) { showToast(e.message, 'error'); }
 }
@@ -886,66 +997,76 @@ function setClipFilter(f) {
   clipFilter = f;
   document.querySelectorAll('.clip-filter').forEach(b => {
     const active = b.dataset.f === f;
-    b.classList.toggle('bg-white', active); b.classList.toggle('text-black', active);
-    b.classList.toggle('text-zinc-400', !active); b.classList.toggle('bg-white/5', !active);
+    b.classList.toggle('bg-white', active);
+    b.classList.toggle('text-black', active);
+    b.classList.toggle('text-zinc-400', !active);
   });
   renderClips();
 }
+
 async function loadClips() {
   try {
     const { clips } = await api('/api/clips?limit=200');
-    clipsCache = clips;
-    document.getElementById('clips-empty').classList.toggle('hidden', clips.length > 0);
+    clipsCache = clips || [];
+    document.getElementById('clips-empty').classList.toggle('hidden', clipsCache.length > 0);
     renderClips();
   } catch {}
 }
+
 function statusChip(c) {
-  const map = { ready: ['bg-zinc-700 text-zinc-200', 'Ready'], scheduled: ['bg-blue-500/20 text-blue-300', 'Scheduled'],
-    posted: ['bg-emerald-500/20 text-emerald-300', 'Posted'], failed: ['bg-red-500/20 text-red-300', 'Failed'] };
+  const map = {
+    ready: ['bg-zinc-800 text-white border-zinc-700', 'Ready'],
+    scheduled: ['bg-zinc-800 text-zinc-300 border-zinc-700', 'Scheduled'],
+    posted: ['bg-white text-black border-white', 'Posted'],
+    failed: ['bg-red-950 text-red-400 border-red-900', 'Failed']
+  };
   const [cls, label] = map[c.status] || map.ready;
-  return `<span class="px-2 py-0.5 rounded-md text-[9px] font-bold ${cls}">${label}</span>`;
+  return `<span class="px-2 py-0.5 rounded-md text-[9px] font-bold border ${cls}">${label}</span>`;
 }
+
 function clipCardHTML(c, compact = false) {
-  const thumb = c.file_available ? `<img src="/api/clips/${c.id}/thumb" loading="lazy" class="w-full h-full object-cover" onerror="this.style.display='none'">` : '';
-  return `<div class="rounded-2xl bg-ink-900 border border-white/5 overflow-hidden ${c.file_available ? 'cursor-pointer' : 'opacity-60'}" ${c.file_available ? `onclick="openModal('${c.id}')"` : ''}>
-    <div class="aspect-[9/16] bg-ink-800 relative">
+  const thumb = c.file_available
+    ? `<img src="/api/clips/${c.id}/thumb" loading="lazy" class="w-full h-full object-cover" onerror="this.style.display='none'">`
+    : '';
+  return `<div class="rounded-2xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 overflow-hidden transition-all shadow-md ${c.file_available ? 'cursor-pointer' : 'opacity-60'}" ${c.file_available ? `onclick="openModal('${c.id}')"` : ''}>
+    <div class="aspect-[9/16] bg-black relative">
       ${thumb}
-      ${!c.file_available ? `<div class="absolute inset-0 grid place-items-center text-center p-3"><div><i class="ph ph-video-slash text-2xl text-zinc-600"></i><p class="text-[10px] text-zinc-600 mt-1.5">File missing — open project & re-render</p></div></div>` : ''}
-      <div class="absolute top-2 left-2">${statusChip(c)}</div>
-      ${c.score ? `<div class="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 text-[9px] font-bold text-yellow-400">${c.score}</div>` : ''}
-      ${c.duration ? `<div class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 text-[9px] font-bold text-white">${fmtDur(c.duration)}</div>` : ''}
+      ${!c.file_available ? `<div class="absolute inset-0 flex items-center justify-center text-center p-3"><div><i class="ph-bold ph-video-camera-slash text-2xl text-zinc-600"></i><p class="text-[10px] text-zinc-500 mt-1">Re-render in project</p></div></div>` : ''}
+      <div class="absolute top-2.5 left-2.5">${statusChip(c)}</div>
+      ${c.score ? `<div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/80 text-[10px] font-black text-white border border-zinc-700">${c.score}</div>` : ''}
+      ${c.duration ? `<div class="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/80 text-[10px] font-bold text-zinc-300">${fmtDur(c.duration)}</div>` : ''}
     </div>
-    <div class="p-3">
-      <p class="text-[11px] font-bold text-white line-clamp-2 leading-snug">${esc(c.hook_text || c.title || 'Untitled clip')}</p>
-      <p class="text-[9px] text-zinc-600 mt-1 truncate">${esc(c.caption || '')}</p>
-      <div class="flex items-center gap-1 mt-2 flex-wrap">
+    <div class="p-3.5">
+      <p class="text-xs font-bold text-white line-clamp-2 leading-snug">${esc(c.hook_text || c.title || 'Untitled clip')}</p>
+      <p class="text-[10px] text-zinc-400 mt-1 truncate">${esc(c.caption || '')}</p>
+      <div class="flex items-center gap-1.5 mt-3 pt-2 border-t border-zinc-800/80">
         ${c.file_available ? `
-        <button onclick="event.stopPropagation(); openModal('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors" title="Play"><i class="ph-fill ph-play text-xs"></i></button>
-        <button onclick="event.stopPropagation(); openEditModal('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors" title="Edit text"><i class="ph ph-pencil-simple text-xs"></i></button>
-        <button onclick="event.stopPropagation(); postNow('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors" title="Post now"><i class="ph-fill ph-paper-plane-tilt text-xs"></i></button>
-        <button onclick="event.stopPropagation(); scheduleClip('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors" title="Schedule"><i class="ph ph-calendar-plus text-xs"></i></button>
-        <button onclick="event.stopPropagation(); deleteClip('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-zinc-500 transition-colors ml-auto" title="Delete"><i class="ph ph-trash text-xs"></i></button>` :
-        `<button onclick="event.stopPropagation(); deleteClip('${c.id}')" class="w-7 h-7 grid place-items-center rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-zinc-500 transition-colors" title="Delete"><i class="ph ph-trash text-xs"></i></button>`}
+        <button onclick="event.stopPropagation(); openModal('${c.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors" title="Play Preview"><i class="ph-bold ph-play text-xs"></i></button>
+        <button onclick="event.stopPropagation(); openEditModal('${c.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors" title="Edit Text"><i class="ph-bold ph-pencil-simple text-xs"></i></button>
+        <button onclick="event.stopPropagation(); postNow('${c.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white hover:bg-zinc-200 text-black transition-colors" title="Post Now"><i class="ph-bold ph-paper-plane-tilt text-xs"></i></button>
+        <button onclick="event.stopPropagation(); scheduleClip('${c.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white transition-colors" title="Schedule"><i class="ph-bold ph-calendar text-xs"></i></button>` : ''}
+        <button onclick="event.stopPropagation(); deleteClip('${c.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-red-950/60 hover:text-red-400 text-zinc-400 transition-colors ml-auto" title="Delete"><i class="ph-bold ph-trash text-xs"></i></button>
       </div>
     </div>
   </div>`;
 }
-let _clipCardsBound = false;
-function bindClipCards() {
-  // clicks are bound inline; nothing needed here for now
-}
+
+function bindClipCards() {}
+
 function renderClips() {
   const filtered = clipFilter === 'all' ? clipsCache : clipsCache.filter(c => c.status === clipFilter);
   document.getElementById('clips-list').innerHTML = filtered.map(c => clipCardHTML(c)).join('');
 }
+
 async function postNow(clipId) {
   try {
     const res = await api(`/api/clips/${clipId}/post`, { method: 'POST' });
-    if (res.success) showToast(res.message || 'Publish queued to your connected platforms', 'success');
-    else showToast(res.error || 'Publishing failed', 'error');
+    if (res.success) showToast(res.message || 'Publish queued', 'success');
+    else showToast(res.error || 'Publish failed', 'error');
     loadClips();
   } catch (e) { showToast(e.message, 'error'); }
 }
+
 function scheduleClip(clipId) {
   const when = prompt('Schedule for (YYYY-MM-DD HH:MM):', new Date(Date.now() + 3600e3).toISOString().slice(0, 16));
   if (!when) return;
@@ -953,8 +1074,9 @@ function scheduleClip(clipId) {
     .then(() => { showToast('Scheduled ✓', 'success'); loadClips(); })
     .catch(e => showToast(e.message, 'error'));
 }
+
 async function deleteClip(clipId) {
-  if (!(await confirmDialog('Delete this clip and its files?'))) return;
+  if (!(await confirmDialog('Delete this clip?'))) return;
   try { await api(`/api/clips/${clipId}`, { method: 'DELETE' }); showToast('Clip deleted', 'success'); loadClips(); }
   catch (e) { showToast(e.message, 'error'); }
 }
@@ -1020,28 +1142,20 @@ async function loadHistory() {
   const { items, total, limit, offset } = await api(`/api/history?search=${encodeURIComponent(search)}&status=${status}&days=${days}&limit=${historyState.limit}&offset=${historyState.page * historyState.limit}`);
   const list = document.getElementById('history-list');
   if (!items.length) {
-    list.innerHTML = `<div class="text-center py-14"><i class="ph ph-clock-counter-clockwise text-4xl text-zinc-700"></i><p class="mt-3 text-sm font-semibold text-zinc-400">Nothing here yet</p><p class="text-xs text-zinc-600 mt-1">Finished projects appear here — permanently.</p></div>`;
+    list.innerHTML = `<div class="text-center py-16 bg-zinc-900/40 rounded-2xl border border-zinc-800/60"><i class="ph ph-clock text-3xl text-zinc-600"></i><p class="mt-2 text-xs font-bold text-zinc-400">No jobs found</p></div>`;
   } else {
     list.innerHTML = items.map(h => {
-      const badge = { completed: ['ph-check-circle text-emerald-400', 'Completed'], failed: ['ph-x-circle text-red-400', 'Failed'],
-        processing: ['ph-circle-notch animate-spin text-yellow-400', 'Processing'], queued: ['ph-hourglass text-zinc-400', 'Queued'],
-        cancelled: ['ph-prohibit text-zinc-500', 'Cancelled'] }[h.status] || ['ph-question text-zinc-500', h.status];
-      return `<div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
-        <div class="flex items-start gap-3">
-          <i class="ph ${badge[0]} text-lg mt-0.5"></i>
+      return `<div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
+        <div class="flex items-center gap-3">
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-white truncate">${esc(h.project_name || h.title || 'Project')}</p>
-            <p class="text-[10px] text-zinc-500 mt-0.5">
-              ${fmtDate(h.created_at)}${h.clip_count ? ` · ${h.clip_count} clip${h.clip_count === 1 ? '' : 's'}` : ''}
-              ${h.duration_sec ? ` · ${fmtDur(h.duration_sec)}` : ''}${h.total_size ? ` · ${fmtBytes(h.total_size)}` : ''}
-              ${h.reference_platform ? ` · ref: ${esc(h.reference_platform)}` : ''}
-            </p>
-            ${h.error ? `<p class="text-[10px] text-red-400/90 mt-1 line-clamp-2">${esc(h.error)}</p>` : ''}
+            <p class="text-xs font-bold text-white truncate">${esc(h.project_name || h.title || 'Video Job')}</p>
+            <p class="text-[10px] text-zinc-400 mt-0.5">${fmtDate(h.created_at)}${h.clip_count ? ` · ${h.clip_count} clips` : ''} · status: <span class="uppercase text-white font-bold">${esc(h.status)}</span></p>
+            ${h.error ? `<p class="text-[10px] text-red-400 mt-1 line-clamp-2">${esc(h.error)}</p>` : ''}
           </div>
           <div class="flex items-center gap-1.5 flex-shrink-0">
-            ${h.project_id ? `<button onclick="openProject('${h.project_id}')" class="px-3 py-1.5 text-[11px] font-bold text-yellow-400 hover:text-yellow-300 bg-yellow-400/10 rounded-lg">Open</button>` : ''}
-            ${['failed', 'cancelled'].includes(h.status) && h.project_id ? `<button onclick="retryJob('${h.id}')" class="px-3 py-1.5 text-[11px] font-bold text-zinc-300 bg-white/5 hover:bg-white/10 rounded-lg">Retry</button>` : ''}
-            ${!['processing', 'queued'].includes(h.status) ? `<button onclick="deleteHistoryJob('${h.id}')" class="w-8 h-8 grid place-items-center rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-zinc-500"><i class="ph ph-trash text-xs"></i></button>` : ''}
+            ${h.project_id ? `<button onclick="openProject('${h.project_id}')" class="px-3 py-1.5 text-xs font-bold text-black bg-white hover:bg-zinc-200 rounded-lg">Open</button>` : ''}
+            ${['failed', 'cancelled'].includes(h.status) && h.project_id ? `<button onclick="retryJob('${h.id}')" class="px-3 py-1.5 text-xs font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg">Retry</button>` : ''}
+            ${!['processing', 'queued'].includes(h.status) ? `<button onclick="deleteHistoryJob('${h.id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 hover:text-red-400 text-zinc-400"><i class="ph-bold ph-trash text-xs"></i></button>` : ''}
           </div>
         </div>
       </div>`;
@@ -1049,12 +1163,13 @@ async function loadHistory() {
   }
   const page = Math.floor(offset / limit) + 1;
   const pages = Math.max(1, Math.ceil(total / limit));
-  document.getElementById('history-page-info').textContent = total ? `Page ${page} of ${pages} · ${total} item${total === 1 ? '' : 's'}` : '';
+  document.getElementById('history-page-info').textContent = total ? `Page ${page} of ${pages} (${total} total)` : '';
   document.getElementById('history-prev').disabled = offset === 0;
   document.getElementById('history-next').disabled = offset + limit >= total;
 }
+
 async function deleteHistoryJob(jobId) {
-  if (!(await confirmDialog('Delete this history entry and its clips?'))) return;
+  if (!(await confirmDialog('Delete this job record?'))) return;
   try { await api(`/api/jobs/${jobId}`, { method: 'DELETE' }); showToast('Deleted', 'success'); loadHistory(); }
   catch (e) { showToast(e.message, 'error'); }
 }
@@ -1067,23 +1182,26 @@ async function loadAnalytics() {
     document.getElementById('stat-posted').textContent = d.posted;
     document.getElementById('stat-scheduled').textContent = d.scheduled;
     document.getElementById('stat-success').textContent = d.success_rate != null ? d.success_rate + '%' : '—';
-    document.getElementById('stat-avg-score').textContent = d.avg_score ? 'Avg hook score ' + d.avg_score : '';
+    document.getElementById('stat-avg-score').textContent = d.avg_score ? 'Average Virality Score ' + d.avg_score : '';
     const max = Math.max(1, ...d.per_day.map(x => x.count));
     document.getElementById('week-chart').innerHTML = d.per_day.map(x => `
       <div class="flex-1 flex flex-col items-center gap-1.5">
-        <div class="w-full rounded-t-md bg-yellow-400/80 transition-all" style="height:${Math.max(4, (x.count / max) * 72)}px" title="${x.count}"></div>
-        <span class="text-[8px] text-zinc-600 font-bold">${x.day.slice(8)}</span>
+        <div class="w-full rounded-t-md bg-white transition-all" style="height:${Math.max(4, (x.count / max) * 80)}px" title="${x.count}"></div>
+        <span class="text-[9px] text-zinc-500 font-bold">${x.day.slice(8)}</span>
       </div>`).join('');
     const pp = d.platform_posts;
     document.getElementById('platform-posts').innerHTML = [
-      ['Instagram', pp.ig, 'ph-instagram-logo'], ['TikTok', pp.tiktok, 'ph-tiktok-logo'], ['YouTube', pp.youtube, 'ph-youtube-logo'], ['Failed attempts', pp.failed, 'ph-x-circle'],
-    ].map(([n, v, i]) => `<div class="flex items-center gap-3 py-1.5"><i class="ph ${i} text-lg text-zinc-400"></i><span class="text-xs text-zinc-300 flex-1">${n}</span><span class="text-xs font-bold text-white">${v}</span></div>`).join('');
+      ['Instagram Reels', pp.ig, 'ph-instagram-logo'],
+      ['TikTok', pp.tiktok, 'ph-tiktok-logo'],
+      ['YouTube Shorts', pp.youtube, 'ph-youtube-logo'],
+      ['Failed Posts', pp.failed, 'ph-x-circle'],
+    ].map(([n, v, i]) => `<div class="flex items-center justify-between py-2 border-b border-zinc-800 text-xs"><span class="text-zinc-300 flex items-center gap-2"><i class="ph ${i} text-sm text-zinc-400"></i> ${n}</span><span class="font-bold text-white">${v}</span></div>`).join('');
     const acc = d.connections || {};
     document.getElementById('destinations').innerHTML = ['buffer', 'instagram', 'tiktok', 'youtube'].map(p => {
       const s = acc[p] || { connected: false };
-      return `<div class="flex items-center justify-between py-1.5">
-        <span class="text-xs text-zinc-300 capitalize flex items-center gap-2"><i class="ph ph-${p === 'buffer' ? 'buffer-logo' : p + '-logo'} text-base"></i> ${p}</span>
-        ${s.connected ? '<span class="text-[10px] font-bold text-emerald-400">Connected</span>' : '<span class="text-[10px] font-bold text-zinc-600">Not connected</span>'}</div>`;
+      return `<div class="flex items-center justify-between py-2 border-b border-zinc-800 text-xs">
+        <span class="text-zinc-300 capitalize flex items-center gap-2"><i class="ph ph-${p === 'buffer' ? 'buffer-logo' : p + '-logo'} text-sm text-zinc-400"></i> ${p}</span>
+        ${s.connected ? '<span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full">Connected</span>' : '<span class="text-[10px] font-bold text-zinc-600">Not Connected</span>'}</div>`;
     }).join('');
   } catch {}
 }
@@ -1093,42 +1211,44 @@ async function loadAccounts() {
   try {
     const { accounts, oauth_configured } = await api('/api/accounts');
     const items = [
-      ['instagram', 'Instagram', 'ph-instagram-logo', 'Publish Reels · needs Meta app + IG professional account'],
-      ['tiktok', 'TikTok', 'ph-tiktok-logo', 'Post videos · needs TikTok developer app'],
-      ['youtube', 'YouTube', 'ph-youtube-logo', 'Upload Shorts · needs Google OAuth client'],
-      ['buffer', 'Buffer', 'ph-buffer-logo', 'One token → all your channels'],
+      ['buffer', 'Buffer', 'ph-buffer-logo', 'One token → post to TikTok, IG & YouTube at once'],
+      ['instagram', 'Instagram', 'ph-instagram-logo', 'Direct Meta Reels API'],
+      ['tiktok', 'TikTok', 'ph-tiktok-logo', 'Direct TikTok Developer API'],
+      ['youtube', 'YouTube Shorts', 'ph-youtube-logo', 'Direct Google YouTube API'],
     ];
     document.getElementById('accounts-list').innerHTML = items.map(([id, name, icon, desc]) => {
       const s = accounts[id];
       const connected = s && s.connected;
-      return `<div class="p-4 rounded-2xl bg-ink-900 border border-white/5">
+      return `<div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
         <div class="flex items-center gap-3">
-          <i class="ph-fill ${icon} text-2xl ${connected ? 'text-emerald-400' : 'text-zinc-500'}"></i>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-bold text-white flex items-center gap-2">${name}
-              ${connected ? `<span class="text-[9px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">Connected</span>`
-                : s && s.status === 'expired' ? `<span class="text-[9px] font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded-full">Expired</span>` : ''}</p>
-            <p class="text-[10px] text-zinc-500 truncate">${connected ? esc(s.display_name || '') + ' · ' : ''}${desc}</p>
+          <div class="w-10 h-10 rounded-xl bg-zinc-800 text-white flex items-center justify-center">
+            <i class="ph-bold ${icon} text-lg"></i>
           </div>
-          <div class="flex gap-1.5">
-            ${connected ? `<button onclick="refreshAccount('${id}')" class="w-8 h-8 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400" title="Refresh token"><i class="ph ph-arrows-clockwise text-xs"></i></button>
-              <button onclick="disconnectAccount('${id}')" class="px-3 py-2 text-[11px] font-bold text-red-400 hover:bg-red-500/10 rounded-lg">Disconnect</button>`
-              : id !== 'buffer' ? `<a href="/auth/${id}/login" class="px-3.5 py-2 text-[11px] font-bold rounded-lg ${oauth_configured[id] ? 'bg-white text-black hover:bg-zinc-200' : 'bg-white/5 text-zinc-500 cursor-not-allowed'}">${oauth_configured[id] ? 'Connect' : 'Needs server setup'}</a>`
-              : `<span class="text-[10px] text-zinc-600">Use the form below</span>`}
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-black text-white flex items-center gap-2">${name}
+              ${connected ? `<span class="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded-full">Connected</span>` : ''}</p>
+            <p class="text-[10px] text-zinc-400 truncate">${connected ? esc(s.display_name || '') + ' · ' : ''}${desc}</p>
+          </div>
+          <div>
+            ${connected
+              ? `<button onclick="disconnectAccount('${id}')" class="px-3 py-1.5 text-xs font-bold text-zinc-400 hover:text-red-400 bg-zinc-800 rounded-lg">Disconnect</button>`
+              : id !== 'buffer' ? `<a href="/auth/${id}/login" class="px-3 py-1.5 text-xs font-bold rounded-lg ${oauth_configured[id] ? 'bg-white text-black hover:bg-zinc-200' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'}">${oauth_configured[id] ? 'Connect' : 'Setup Required'}</a>`
+              : `<span class="text-[10px] text-zinc-500 font-bold">Use form below</span>`}
           </div>
         </div>
       </div>`;
     }).join('');
   } catch {}
 }
+
 async function connectBuffer() {
   const token = document.getElementById('buffer-token-input').value.trim();
   const st = document.getElementById('buffer-status');
-  if (!token) { st.innerHTML = '<span class="text-red-400">Paste your token first.</span>'; return; }
-  st.innerHTML = '<span class="text-zinc-500">Verifying token…</span>';
+  if (!token) { st.innerHTML = '<span class="text-red-400">Paste your Buffer token first.</span>'; return; }
+  st.innerHTML = '<span class="text-zinc-400">Verifying channels…</span>';
   try {
     const res = await api('/api/accounts/buffer', { method: 'POST', json: { access_token: token } });
-    st.innerHTML = `<span class="text-emerald-400">✓ Connected — ${(res.channels || []).length} channel(s)</span>`;
+    st.innerHTML = `<span class="text-emerald-400">✓ Connected — ${(res.channels || []).length} channels linked</span>`;
     document.getElementById('buffer-token-input').value = '';
     renderBufferChannels(res.channels || []);
     loadAccounts();
@@ -1136,21 +1256,11 @@ async function connectBuffer() {
 }
 function renderBufferChannels(channels) {
   document.getElementById('buffer-channels').innerHTML = (channels || []).map(c =>
-    `<div class="flex items-center gap-2 text-[11px] text-zinc-400"><i class="ph ph-dot text-emerald-400"></i> ${esc((c.service || '').capitalize())} · ${esc(c.name || '')}</div>`).join('');
-}
-async function loadBufferChannels() {
-  try {
-    const d = await api('/api/accounts/buffer/channels');
-    if (d.connected) renderBufferChannels(d.channels);
-  } catch {}
+    `<div class="flex items-center gap-2 text-xs text-zinc-300 py-1"><i class="ph-fill ph-check-circle text-emerald-400"></i> ${esc(c.service || '')}: ${esc(c.name || '')}</div>`).join('');
 }
 async function disconnectAccount(p) {
-  if (!(await confirmDialog(`Disconnect ${p}? Scheduled posts to it will fail until reconnected.`))) return;
+  if (!(await confirmDialog(`Disconnect ${p}?`))) return;
   try { await api(`/api/accounts/${p}/disconnect`, { method: 'POST' }); showToast('Disconnected', 'success'); loadAccounts(); }
-  catch (e) { showToast(e.message, 'error'); }
-}
-async function refreshAccount(p) {
-  try { await api(`/api/accounts/${p}/refresh`, { method: 'POST' }); showToast('Token refreshed', 'success'); loadAccounts(); }
   catch (e) { showToast(e.message, 'error'); }
 }
 
@@ -1158,73 +1268,78 @@ async function refreshAccount(p) {
 let prefsCache = {};
 async function loadSettings() {
   try {
-    const { prefs, secrets, accounts, max_upload_mb } = await api('/api/settings');
-    prefsCache = prefs;
-    document.getElementById('pref-aspect').value = prefs.default_aspect_ratio;
-    document.getElementById('pref-num').value = prefs.default_num_clips;
-    document.getElementById('pref-caps').value = prefs.caption_style;
-    document.getElementById('pref-intensity').value = prefs.editing_intensity;
+    const { prefs, secrets } = await api('/api/settings');
+    prefsCache = prefs || {};
+    document.getElementById('pref-aspect').value = prefs.default_aspect_ratio || '9:16';
+    document.getElementById('pref-num').value = prefs.default_num_clips || 3;
+    document.getElementById('pref-caps').value = prefs.caption_style || 'karaoke';
+    document.getElementById('pref-intensity').value = prefs.editing_intensity || 'balanced';
     document.getElementById('pref-trim-silence').checked = !!prefs.trim_silence;
-    document.getElementById('pref-autopublish').checked = !!prefs.auto_publish;
-    document.getElementById('pref-review').checked = !!prefs.review_mode;
-    document.getElementById('pref-interval').value = prefs.schedule_interval_hours;
+    document.getElementById('pref-interval').value = prefs.schedule_interval_hours || 3;
     document.getElementById('pref-hashtags').value = prefs.default_hashtags || '';
-    document.getElementById('pref-notify').checked = !!prefs.notify_enabled;
     document.getElementById('setting-gemini-model').value = prefs.gemini_model || '';
-    renderGeminiState(secrets);
+    renderGeminiState(secrets || {});
     loadScheduled();
     loadStorage();
   } catch {}
 }
+
 function renderGeminiState(secrets) {
   const g = secrets.gemini_api_key || { set: false };
-  document.getElementById('gemini-key-label').textContent = g.set ? 'Key saved ✓' : 'No key saved';
-  document.getElementById('gemini-key-masked').textContent = g.set ? g.masked : 'AI features need a Gemini API key';
+  document.getElementById('gemini-key-label').textContent = g.set ? 'API Key Saved ✓' : 'No API Key Saved';
+  document.getElementById('gemini-key-masked').textContent = g.set ? g.masked : 'Add your Gemini key from Google AI Studio';
   document.getElementById('gemini-key-actions').innerHTML = g.set
-    ? `<button onclick="showGeminiInput()" class="px-2.5 py-1.5 text-[10px] font-bold text-zinc-300 bg-white/5 hover:bg-white/10 rounded-lg">Update</button>
-       <button onclick="removeGeminiKey()" class="px-2.5 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-500/10 rounded-lg">Remove</button>
-       <button onclick="testGeminiKey()" class="px-2.5 py-1.5 text-[10px] font-bold text-yellow-400 hover:bg-yellow-400/10 rounded-lg">Test</button>`
-    : `<button onclick="showGeminiInput()" class="px-2.5 py-1.5 text-[10px] font-bold bg-yellow-400 hover:bg-yellow-300 text-black rounded-lg">Add key</button>`;
-  // header badge
+    ? `<button onclick="showGeminiInput()" class="px-2.5 py-1.5 text-xs font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg">Change</button>
+       <button onclick="removeGeminiKey()" class="px-2.5 py-1.5 text-xs font-bold text-zinc-400 hover:text-red-400 bg-zinc-800 rounded-lg">Remove</button>
+       <button onclick="testGeminiKey()" class="px-2.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-zinc-200 rounded-lg">Test</button>`
+    : `<button onclick="showGeminiInput()" class="px-3 py-1.5 text-xs font-black bg-white hover:bg-zinc-200 text-black rounded-lg">Add Key</button>`;
   const badge = document.getElementById('gemini-status');
   badge.innerHTML = g.set
-    ? `<i class="ph-fill ph-sparkle text-yellow-400"></i><span class="text-zinc-300 hidden sm:inline">AI ready</span>`
-    : `<i class="ph ph-warning text-zinc-500"></i><span class="text-red-400 hidden sm:inline">Add AI key</span>`;
-  badge.className = 'cursor-pointer px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 ' + (g.set ? 'bg-yellow-400/10' : 'bg-red-500/10');
+    ? `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-zinc-200 font-bold">AI Ready</span>`
+    : `<span class="w-2 h-2 rounded-full bg-zinc-500"></span><span class="text-zinc-400">Add AI Key</span>`;
 }
 function showGeminiInput() { document.getElementById('gemini-key-input-wrap').classList.remove('hidden'); }
 function hideGeminiInput() { document.getElementById('gemini-key-input-wrap').classList.add('hidden'); document.getElementById('gemini-test-result').textContent = ''; }
+
 async function saveGeminiKey() {
   const key = document.getElementById('gemini-key-input').value.trim();
   const out = document.getElementById('gemini-test-result');
-  if (!key) { out.innerHTML = '<span class="text-red-400">Paste a key first.</span>'; return; }
-  out.innerHTML = '<span class="text-zinc-500">Saving & testing…</span>';
+  if (!key) { out.innerHTML = '<span class="text-red-400">Paste your Gemini key.</span>'; return; }
+  out.innerHTML = '<span class="text-zinc-400">Verifying key with Google Gemini…</span>';
   try {
     const res = await api('/api/settings/gemini', { method: 'POST', json: { api_key: key } });
-    if (res.test && res.test.ok) out.innerHTML = `<span class="text-emerald-400">✓ Key verified (${esc(res.test.model || 'gemini')})</span>`;
-    else out.innerHTML = `<span class="text-yellow-400">Saved, but test failed: ${esc((res.test && res.test.error) || '?')}</span>`;
-    document.getElementById('gemini-key-input').value = '';
-    setTimeout(() => { hideGeminiInput(); loadSettings(); }, 1200);
+    if (res.test && res.test.ok) {
+      out.innerHTML = `<span class="text-emerald-400">✓ Verified with ${esc(res.test.model || 'gemini')}</span>`;
+      document.getElementById('gemini-key-input').value = '';
+      setTimeout(() => { hideGeminiInput(); loadSettings(); }, 1200);
+    } else {
+      out.innerHTML = `<span class="text-red-400">Saved, but test error: ${esc((res.test && res.test.error) || 'Failed')}</span>`;
+    }
   } catch (e) { out.innerHTML = `<span class="text-red-400">${esc(e.message)}</span>`; }
 }
+
 async function testGeminiKey() {
   const out = document.getElementById('gemini-test-result');
-  out.innerHTML = '<span class="text-zinc-500">Testing connection…</span>';
+  showGeminiInput();
+  out.innerHTML = '<span class="text-zinc-400">Testing Gemini API connection…</span>';
   try {
     const r = await api('/api/settings/gemini/test', { method: 'POST' });
-    out.innerHTML = r.ok ? `<span class="text-emerald-400">✓ Working with ${esc(r.model)}</span>` : `<span class="text-red-400">${esc(r.error)}</span>`;
+    out.innerHTML = r.ok ? `<span class="text-emerald-400">✓ Active and ready (${esc(r.model)})</span>` : `<span class="text-red-400">${esc(r.error)}</span>`;
   } catch (e) { out.innerHTML = `<span class="text-red-400">${esc(e.message)}</span>`; }
 }
+
 async function removeGeminiKey() {
-  if (!(await confirmDialog('Remove your saved Gemini API key? AI features will stop working until you add one.'))) return;
+  if (!(await confirmDialog('Remove your saved Gemini key?'))) return;
   try { await api('/api/settings/gemini', { method: 'DELETE' }); showToast('Key removed', 'success'); loadSettings(); }
   catch (e) { showToast(e.message, 'error'); }
 }
+
 async function saveModelOverride() {
   const v = document.getElementById('setting-gemini-model').value.trim();
   await api('/api/settings', { method: 'POST', json: { prefs: { gemini_model: v } } });
-  showToast('Model override saved', 'success');
+  showToast('Saved model preference', 'success');
 }
+
 async function savePrefs() {
   const body = { prefs: {
     default_aspect_ratio: document.getElementById('pref-aspect').value,
@@ -1232,49 +1347,43 @@ async function savePrefs() {
     caption_style: document.getElementById('pref-caps').value,
     editing_intensity: document.getElementById('pref-intensity').value,
     trim_silence: document.getElementById('pref-trim-silence').checked,
-    auto_publish: document.getElementById('pref-autopublish').checked,
-    review_mode: document.getElementById('pref-review').checked,
     schedule_interval_hours: +document.getElementById('pref-interval').value || 3,
     default_hashtags: document.getElementById('pref-hashtags').value,
   }};
   await api('/api/settings', { method: 'POST', json: body });
-  showToast('Settings saved ✓', 'success');
+  showToast('Preferences saved ✓', 'success');
 }
-async function saveNotify() {
-  const on = document.getElementById('pref-notify').checked;
-  if (on && 'Notification' in window && Notification.permission !== 'granted') await Notification.requestPermission();
-  await api('/api/settings', { method: 'POST', json: { prefs: { notify_enabled: on } } });
-}
+
 async function loadScheduled() {
   try {
     const { scheduled } = await api('/api/scheduled');
-    const pending = scheduled.filter(s => s.status === 'pending');
-    document.getElementById('scheduled-list').innerHTML = pending.length ? pending.slice(0, 6).map(s => `
-      <div class="flex items-center gap-2.5 py-2 px-3 bg-ink-950 border border-ink-700 rounded-lg">
+    const pending = (scheduled || []).filter(s => s.status === 'pending');
+    document.getElementById('scheduled-list').innerHTML = pending.length ? pending.slice(0, 5).map(s => `
+      <div class="flex items-center gap-2.5 py-2 px-3 bg-zinc-950 border border-zinc-800 rounded-xl text-xs">
         <i class="ph ph-clock text-zinc-500"></i>
-        <div class="min-w-0 flex-1"><p class="text-[11px] font-semibold text-zinc-200 truncate">${esc(s.clip_title || s.hook_text || 'Clip')}</p>
-        <p class="text-[9px] text-zinc-600">${esc(s.scheduled_at.replace('T', ' '))} · ${esc(s.platform)}</p></div>
-        <button onclick="unschedule(${s.id})" class="text-[10px] font-bold text-zinc-500 hover:text-red-400">Cancel</button>
-      </div>`).join('') : '<p class="text-[11px] text-zinc-600">No scheduled posts.</p>';
+        <div class="min-w-0 flex-1"><p class="font-bold text-white truncate">${esc(s.clip_title || s.hook_text || 'Clip')}</p>
+        <p class="text-[10px] text-zinc-500">${esc(s.scheduled_at.replace('T', ' '))} · ${esc(s.platform)}</p></div>
+        <button onclick="unschedule(${s.id})" class="text-zinc-500 hover:text-red-400 text-xs font-bold">Cancel</button>
+      </div>`).join('') : '<p class="text-xs text-zinc-500">No scheduled posts queued.</p>';
   } catch {}
 }
+
 async function unschedule(id) {
   try { await api(`/api/scheduled/${id}`, { method: 'DELETE' }); showToast('Schedule cancelled', 'success'); loadScheduled(); }
   catch (e) { showToast(e.message, 'error'); }
 }
+
 async function loadStorage() {
   try {
     const s = await api('/api/storage');
-    const pct = Math.min(100, Math.round((s.db_mirror_bytes / (s.quota_mb * 1024 * 1024)) * 100));
     document.getElementById('storage-info').innerHTML = `
-      <div class="flex justify-between text-zinc-300"><span>Clips stored</span><span class="font-bold">${s.clips_count} (${fmtBytes(s.clips_bytes)})</span></div>
-      <div class="flex justify-between text-zinc-300"><span>Persistent mirror</span><span class="font-bold">${fmtBytes(s.db_mirror_bytes)} / ${s.quota_mb} MB</span></div>
-      <div class="h-1.5 rounded-full bg-white/10 overflow-hidden"><div class="h-full bg-yellow-400 rounded-full" style="width:${pct}%"></div></div>
-      ${s.missing_clips.length ? `<p class="text-[11px] text-yellow-400/90">${s.missing_clips.length} clip(s) missing files — open their projects to re-render.</p>` : ''}`;
+      <div class="flex justify-between text-zinc-400 text-xs"><span>Clips Saved</span><span class="font-bold text-white">${s.clips_count}</span></div>
+      <div class="flex justify-between text-zinc-400 text-xs"><span>Local Storage</span><span class="font-bold text-white">${fmtBytes(s.clips_bytes)}</span></div>`;
   } catch {}
 }
+
 async function runCleanupNow() {
-  try { const r = await api('/api/cleanup', { method: 'POST' }); showToast(`Cleanup done — ${r.removed} clip(s) removed`, 'success'); loadStorage(); }
+  try { const r = await api('/api/cleanup', { method: 'POST' }); showToast(`Cleaned up temp files`, 'success'); loadStorage(); }
   catch (e) { showToast(e.message, 'error'); }
 }
 
@@ -1282,45 +1391,38 @@ async function runCleanupNow() {
 function openProfile() {
   document.getElementById('profile-info').innerHTML =
     `<div class="flex items-center gap-3">
-       <div class="w-10 h-10 rounded-full bg-yellow-400 text-black grid place-items-center font-black text-sm">${(user.name || '?')[0].toUpperCase()}</div>
-       <div><p class="text-white font-bold text-sm">${esc(user.name)}</p><p class="text-zinc-500 text-[11px]">${esc(user.email)}</p></div>
+       <div class="w-10 h-10 rounded-full bg-white text-black font-black flex items-center justify-center text-sm">${(user.name || 'C')[0].toUpperCase()}</div>
+       <div>
+         <p class="text-white font-bold text-sm">${esc(user.name || 'Creator')}</p>
+         <p class="text-zinc-500 text-xs">${esc(user.email || 'Local Studio')}</p>
+       </div>
      </div>`;
   document.getElementById('profile-modal').classList.replace('hidden', 'flex');
 }
 function closeProfile() { document.getElementById('profile-modal').classList.replace('flex', 'hidden'); }
-async function changePassword() {
-  const st = document.getElementById('pw-status');
-  try {
-    await api('/api/auth/change-password', { method: 'POST', json: {
-      current: document.getElementById('pw-current').value,
-      new: document.getElementById('pw-new').value } });
-    st.innerHTML = '<span class="text-emerald-400">✓ Password updated</span>';
-    document.getElementById('pw-current').value = ''; document.getElementById('pw-new').value = '';
-  } catch (e) { st.innerHTML = `<span class="text-red-400">${esc(e.message)}</span>`; }
-}
-async function logout() {
-  try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
-  location.href = '/login';
-}
 
 // ---------- boot ----------
 (async function init() {
   const params = new URLSearchParams(location.search);
   switchTab(params.get('tab') || 'create');
   if (params.get('connected')) showToast(`${params.get('connected')[0].toUpperCase() + params.get('connected').slice(1)} connected ✓`, 'success');
-  if (params.get('error')) showToast('Account connection failed: ' + params.get('error'), 'error');
-  await Promise.all([loadProjects(), loadClips(), pollActiveJobs(), loadSettings()]);
+  if (params.get('error')) showToast('Connection failed: ' + params.get('error'), 'error');
+
+  // Load resources concurrently without uncaught rejection breaking startup
+  await Promise.allSettled([loadProjects(), loadClips(), pollActiveJobs(), loadSettings()]);
   startPolling();
-  // Default preferences into the create form
+
   try {
     const { prefs } = await api('/api/settings');
-    document.getElementById('select-aspect').value = prefs.default_aspect_ratio;
-    document.getElementById('select-num').value = prefs.default_num_clips;
-    document.getElementById('select-dur').value = prefs.default_clip_duration;
-    document.getElementById('select-res').value = prefs.default_resolution;
-    document.getElementById('select-caps').value = prefs.caption_style;
-    document.getElementById('select-intensity').value = prefs.editing_intensity;
-    document.getElementById('pref-trim').checked = !!prefs.trim_silence;
+    if (prefs) {
+      if (document.getElementById('select-aspect')) document.getElementById('select-aspect').value = prefs.default_aspect_ratio || '9:16';
+      if (document.getElementById('select-num')) document.getElementById('select-num').value = prefs.default_num_clips || 3;
+      if (document.getElementById('select-dur')) document.getElementById('select-dur').value = prefs.default_clip_duration || 45;
+      if (document.getElementById('select-res')) document.getElementById('select-res').value = prefs.default_resolution || '720';
+      if (document.getElementById('select-caps')) document.getElementById('select-caps').value = prefs.caption_style || 'karaoke';
+      if (document.getElementById('select-intensity')) document.getElementById('select-intensity').value = prefs.editing_intensity || 'balanced';
+      if (document.getElementById('pref-trim')) document.getElementById('pref-trim').checked = !!prefs.trim_silence;
+    }
   } catch {}
 })();
 

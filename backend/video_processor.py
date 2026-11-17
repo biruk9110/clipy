@@ -204,24 +204,24 @@ def get_hook_font(size: int):
 
 
 def create_hook_image(hook_text: str, output_path: Path, width=1080, height=200):
-    """Bold hook banner scaled to the output resolution."""
+    """Bold hook banner scaled to the output resolution in clean monochrome styling."""
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     margin_x = int(width * 0.04)
     margin_y = int(height * 0.07)
     card_rect = [margin_x, margin_y, width - margin_x, height - margin_y]
-    draw.rounded_rectangle(card_rect, radius=int(height * 0.12), fill=(15, 17, 26, 235),
-                           outline=(250, 204, 21, 245), width=max(3, int(height * 0.02)))
+    draw.rounded_rectangle(card_rect, radius=int(height * 0.16), fill=(0, 0, 0, 235),
+                           outline=(255, 255, 255, 230), width=max(3, int(height * 0.022)))
     hook_text = re.sub(
         "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U00002B00-\U00002BFF\U0000FE00-\U0000FE0F\U0000200D]+",
         "", hook_text or "").strip() or "Wait for it!"
 
     words = hook_text.split()
-    max_w = (width - margin_x * 2) - int(width * 0.055)
-    best_font_size = int(height * 0.28)
+    max_w = (width - margin_x * 2) - int(width * 0.06)
+    best_font_size = int(height * 0.38)
     best_lines = []
-    for test_size in [int(height * s) for s in (0.28, 0.26, 0.24, 0.22, 0.20, 0.18)]:
-        if test_size < 14:
+    for test_size in [int(height * s) for s in (0.42, 0.38, 0.34, 0.30, 0.26, 0.22)]:
+        if test_size < 16:
             continue
         cand_font = get_hook_font(test_size)
         cand_lines, cand_curr = [], []
@@ -245,9 +245,9 @@ def create_hook_image(hook_text: str, output_path: Path, width=1080, height=200)
     line_heights = []
     for line in lines:
         l_bbox = draw.textbbox((0, 0), line, font=font)
-        line_heights.append(max(l_bbox[3] - l_bbox[1], int(best_font_size * 0.85)))
+        line_heights.append(max(l_bbox[3] - l_bbox[1], int(best_font_size * 0.90)))
     total_text_h = sum(line_heights) + (len(lines) - 1) * line_spacing
-    curr_y = max(margin_y + int(height * 0.05), (height - total_text_h) / 2)
+    curr_y = max(margin_y + int(height * 0.06), (height - total_text_h) / 2)
     for i, line in enumerate(lines):
         line_bbox = draw.textbbox((0, 0), line, font=font)
         line_w = line_bbox[2] - line_bbox[0]
@@ -256,10 +256,9 @@ def create_hook_image(hook_text: str, output_path: Path, width=1080, height=200)
             w_bbox = draw.textbbox((0, 0), word + " ", font=font)
             w_width = w_bbox[2] - w_bbox[0]
             clean_w = word.strip('.,!?:;"\'()[]')
-            color = (250, 204, 21, 255) if (clean_w.isupper() and len(clean_w) > 1
-                                            and any(c.isalpha() for c in clean_w)) else (255, 255, 255, 255)
+            color = (255, 255, 255, 255)
             draw.text((curr_x, curr_y), word + " ", font=font, fill=color,
-                      stroke_width=3, stroke_fill=(0, 0, 0, 230))
+                      stroke_width=3, stroke_fill=(0, 0, 0, 240))
             curr_x += w_width
         curr_y += line_heights[i] + line_spacing
     img.save(str(output_path), "PNG")

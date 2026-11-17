@@ -112,6 +112,28 @@ def get_user(user_id: int) -> dict | None:
                   " FROM users WHERE id = ?", (user_id,))
 
 
+def get_or_create_default_user() -> dict:
+    """Returns the primary studio creator account, creating it if needed."""
+    user = db.one("SELECT id, name, email, status, is_admin, onboarding_done, storage_used, created_at FROM users ORDER BY id ASC LIMIT 1")
+    if user:
+        return dict(user)
+    now = datetime.now().isoformat(timespec="seconds")
+    row_id = db.insert("users", {
+        "name": "Creator",
+        "email": "creator@clipy.local",
+        "password_hash": "disabled",
+        "status": "active",
+        "is_admin": 1,
+        "onboarding_done": 1,
+        "storage_used": 0,
+        "created_at": now,
+    })
+    return get_user(row_id) or {
+        "id": 1, "name": "Creator", "email": "creator@clipy.local",
+        "status": "active", "is_admin": 1, "onboarding_done": 1, "storage_used": 0, "created_at": now
+    }
+
+
 # ---------------------------------------------------------------------------
 # Sessions (DB-backed -> survive server restarts and deployments)
 # ---------------------------------------------------------------------------
