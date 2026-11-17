@@ -92,6 +92,25 @@ class Database:
             return None
         return next(iter(row.values()), None)
 
+    def insert(self, table: str, values: dict) -> int:
+        """Insert a row and return the new row's auto-generated id."""
+        if not values:
+            raise ValueError("insert() requires at least one column value")
+        cols = ", ".join(values.keys())
+        marks = ", ".join("?" for _ in values)
+        if IS_PG:
+            return int(self.scalar(
+                f"INSERT INTO {table} ({cols}) VALUES ({marks}) RETURNING id",
+                tuple(values.values())))
+        conn, cur = self._open()
+        try:
+            cur.execute(self._q(f"INSERT INTO {table} ({cols}) VALUES ({marks})"),
+                        tuple(values.values()))
+            conn.commit()
+            return int(cur.lastrowid)
+        finally:
+            conn.close()
+
     def transaction(self):
         """Context manager exposing (conn, cur) that commits/rolls back."""
         return _Tx(self)
