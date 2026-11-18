@@ -45,13 +45,31 @@
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     .scrollbar-none::-webkit-scrollbar { display: none; }
     .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    body { background-image: radial-gradient(ellipse at 50% -20%, rgba(255,255,255,.075), transparent 52%); }
+    header.sticky { box-shadow: 0 1px 0 rgba(255,255,255,.025); }
+    main { max-width: 1120px !important; padding-top: 2rem !important; }
+    #tab-create > div:first-child { position: relative; padding: 1.25rem 1.4rem; border: 1px solid #27272a; border-radius: 1.25rem; background: linear-gradient(115deg, rgba(255,255,255,.045), rgba(255,255,255,.008) 55%, transparent); overflow: hidden; }
+    #tab-create > div:first-child:after { content: ''; position: absolute; right: 1.4rem; top: 50%; width: 3.4rem; height: 3.4rem; transform: translateY(-50%); border: 1px solid rgba(255,255,255,.08); border-radius: 1rem; background: rgba(255,255,255,.025); }
+    #tab-create > div:first-child h1 { font-size: clamp(1.6rem, 3vw, 2rem); letter-spacing: -.045em; }
+    #tab-create > div:first-child p { max-width: 38rem; font-size: .78rem; line-height: 1.6; }
+    #new-project-form > div { padding: 1.35rem; border-radius: 1.15rem; box-shadow: 0 12px 30px rgba(0,0,0,.18); transition: border-color .2s, transform .2s; }
+    #new-project-form > div:hover { border-color: #3f3f46; }
+    #new-project-form > div > p:first-child { font-size: .76rem; letter-spacing: .01em; }
+    #drop-area { min-height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-width: 1.5px; border-radius: 1rem; background-image: radial-gradient(circle at center, rgba(255,255,255,.035), transparent 68%); }
+    #drop-area:hover { border-color: #a1a1aa; }
+    #drop-area > div { width: 3.25rem; height: 3.25rem; border: 1px solid #3f3f46; box-shadow: 0 8px 24px rgba(0,0,0,.24); }
+    #input-url, #input-reference, #select-aspect, #select-num, #select-dur, #select-res, #select-caps, #select-intensity { min-height: 2.8rem; }
+    #btn-submit { border-radius: .9rem; min-height: 3.35rem; letter-spacing: -.01em; }
+    .tab-content { animation: tabEnter .24s ease both; }
+    @keyframes tabEnter { from { opacity: .65; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+    @media (max-width: 640px) { main { padding-top: 1.15rem !important; } #tab-create > div:first-child { padding: 1.1rem; } #tab-create > div:first-child:after { display: none; } #new-project-form > div { padding: 1rem; } #drop-area { min-height: 160px; } }
   </style>
 </head>
 <body class="bg-black text-zinc-200 antialiased min-h-screen selection:bg-white selection:text-black">
 
 <!-- ================= HEADER ================= -->
 <header class="sticky top-0 z-40 bg-black/90 backdrop-blur-md border-b border-zinc-800/80">
-  <div class="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
+  <div class="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
     <div class="flex items-center gap-2.5 mr-auto cursor-pointer" onclick="switchTab('create')">
       <div class="w-7 h-7 rounded-lg bg-white text-black flex items-center justify-center font-black text-sm shadow-sm">
         <i class="ph-bold ph-scissors"></i>
@@ -79,7 +97,7 @@
   <section id="tab-create" class="tab-content active space-y-5">
     <div>
       <h1 class="text-2xl font-black text-white tracking-tight">Create Clips</h1>
-      <p class="text-xs text-zinc-400 mt-1">Upload a video or paste a link. AI detects the best viral hooks and auto-cuts vertical clips.</p>
+      <p class="text-xs text-zinc-400 mt-1">Turn a source video into polished, ready-to-post clips.</p>
     </div>
 
     <form id="new-project-form" onsubmit="submitProject(event)" class="space-y-4">
@@ -445,6 +463,10 @@
         <p class="text-xs font-bold text-white mb-3 flex items-center gap-2">
           <i class="ph-bold ph-calendar text-white"></i> Auto-Posting Stagger
         </p>
+        <label class="mb-3 flex items-center justify-between gap-3 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 cursor-pointer">
+          <span><span class="block text-xs font-semibold text-zinc-200">Auto-post when rendering finishes</span><span class="block mt-0.5 text-[10px] text-zinc-500">Uses Buffer for connected channels</span></span>
+          <input id="pref-auto-publish" type="checkbox" onchange="savePrefs()" class="toggle w-10 h-5 shrink-0 bg-zinc-800 rounded-full relative cursor-pointer transition-all checked:bg-white before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-zinc-400 checked:before:bg-black before:transition-all checked:before:translate-x-5">
+        </label>
         <div>
           <label class="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Interval Between Posts (Hours)</label>
           <input id="pref-interval" type="number" min="0" step="0.5" onchange="savePrefs()" class="mt-1.5 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-xs text-white focus:border-white">
@@ -714,10 +736,17 @@ async function submitProject(ev) {
     if (url) fd.append('source_url', url);
     if (refUrl) fd.append('reference_url', refUrl);
     if (refFile) fd.append('reference_file', refFile);
+    fd.append('num_clips', document.getElementById('select-num').value);
+    fd.append('clip_duration', document.getElementById('select-dur').value);
+    fd.append('aspect_ratio', document.getElementById('select-aspect').value);
+    fd.append('resolution', document.getElementById('select-res').value);
+    fd.append('caption_style', document.getElementById('select-caps').value);
+    fd.append('editing_intensity', document.getElementById('select-intensity').value);
+    fd.append('trim_silence', String(document.getElementById('pref-trim').checked));
     const res = await fetch('/api/projects', { method: 'POST', body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Upload failed');
-    showToast('Project queued for AI processing' + (data.reference_job_id ? ' (Reference match active)' : ''), 'success');
+    showToast('Clip generation queued' + (data.reference_job_id ? ' · reference style will be applied' : ''), 'success');
     // reset form
     pickedFile = null; refFile = null;
     document.getElementById('input-file').value = '';
@@ -884,14 +913,17 @@ function renderProject(p, refJobId) {
     </div>`;
 
   const activeJob = (p.jobs || []).find(j => ['queued', 'processing'].includes(j.status));
+  const shownJob = activeJob || (p.jobs || []).find(j => j.kind !== 'reference') || {};
   const jobSection = activeJob ? `
-    <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-700">
+    <div id="live-render-status" data-job-id="${activeJob.id}" class="p-4 rounded-2xl bg-zinc-900 border border-zinc-700">
       <div class="flex items-center gap-3">
-        <i class="ph-bold ph-circle-notch animate-spin text-white text-lg"></i>
-        <p class="text-xs font-black text-white flex-1">${esc(activeJob.step)}</p>
+        <i id="live-render-icon" class="ph-bold ph-circle-notch animate-spin text-white text-lg"></i>
+        <p id="live-render-step" class="text-xs font-black text-white flex-1">${esc(activeJob.step)}</p>
+        <span id="live-render-percent" class="text-[10px] font-bold text-zinc-400">${Math.max(0, activeJob.progress || 0)}%</span>
         <button onclick="cancelJob('${activeJob.id}').then(loadProjectView)" class="text-xs font-bold text-zinc-400 hover:text-red-400">Cancel</button>
       </div>
-      <div class="mt-3 h-1.5 rounded-full bg-zinc-800 overflow-hidden"><div class="h-full bg-white transition-all duration-500" style="width:${Math.max(4, activeJob.progress)}%"></div></div>
+      <div class="mt-3 h-1.5 rounded-full bg-zinc-800 overflow-hidden"><div id="live-render-bar" class="h-full bg-white transition-all duration-500" style="width:${Math.max(4, activeJob.progress || 0)}%"></div></div>
+      <p class="mt-2 text-[10px] text-zinc-500">${shownJob.num_clips || 3} clips · ${shownJob.clip_duration || 45}s · ${shownJob.aspect_ratio || '9:16'} · ${shownJob.resolution || '720'}p · ${shownJob.caption_style || 'karaoke'} captions</p>
     </div>` : '';
 
   const clipsSection = (p.clips || []).length ? `
@@ -908,17 +940,27 @@ function renderProject(p, refJobId) {
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Aspect</label>
           <select id="edit-aspect" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
-            <option value="9:16">9:16</option><option value="16:9">16:9</option><option value="1:1">1:1</option><option value="4:5">4:5</option></select></div>
+            <option value="9:16" ${shownJob.aspect_ratio === '9:16' ? 'selected' : ''}>9:16</option><option value="16:9" ${shownJob.aspect_ratio === '16:9' ? 'selected' : ''}>16:9</option><option value="1:1" ${shownJob.aspect_ratio === '1:1' ? 'selected' : ''}>1:1</option><option value="4:5" ${shownJob.aspect_ratio === '4:5' ? 'selected' : ''}>4:5</option></select></div>
         <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Clips</label>
           <select id="edit-num" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
-            <option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+            ${[1,2,3,4,5,6].map(n => `<option value="${n}" ${Number(shownJob.num_clips || 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
         <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Length</label>
           <select id="edit-dur" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
-            <option value="25">~25s</option><option value="45" selected>~45s</option><option value="60">~60s</option></select></div>
+            ${[25,45,60,90].map(n => `<option value="${n}" ${Number(shownJob.clip_duration || 45) === n ? 'selected' : ''}>~${n}s</option>`).join('')}</select></div>
         <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Quality</label>
           <select id="edit-res" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
-            <option value="720">720p</option><option value="1080">1080p</option></select></div>
+            <option value="720" ${String(shownJob.resolution || '720') === '720' ? 'selected' : ''}>720p</option><option value="1080" ${String(shownJob.resolution) === '1080' ? 'selected' : ''}>1080p</option></select></div>
+        <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Captions</label>
+          <select id="edit-caps" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
+            ${[['karaoke','Karaoke'],['bold','Bold'],['minimal','Minimal'],['none','Off']].map(([v,l]) => `<option value="${v}" ${(shownJob.caption_style || 'karaoke') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div><label class="text-[10px] font-bold text-zinc-400 uppercase">Intensity</label>
+          <select id="edit-intensity" class="mt-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-2 text-xs text-white">
+            ${[['light','Light'],['balanced','Balanced'],['aggressive','Aggressive']].map(([v,l]) => `<option value="${v}" ${(shownJob.editing_intensity || 'balanced') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
       </div>
+      <label class="mt-3 flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 cursor-pointer">
+        <span class="text-[11px] font-semibold text-zinc-300">Remove silences</span>
+        <input id="edit-trim" type="checkbox" ${shownJob.trim_silence ? 'checked' : ''} class="toggle w-10 h-5 bg-zinc-800 rounded-full relative cursor-pointer transition-all checked:bg-white before:content-[''] before:absolute before:top-0.5 before:left-0.5 before:w-4 before:h-4 before:rounded-full before:bg-zinc-400 checked:before:bg-black before:transition-all checked:before:translate-x-5">
+      </label>
       <button onclick="startEdit('${p.id}')" class="mt-4 w-full py-3.5 bg-white hover:bg-zinc-200 text-black font-black rounded-xl text-xs transition-all flex items-center justify-center gap-2">
         <i class="ph-bold ph-magic-wand"></i> Render ${p.reference_profile ? 'Styled' : ''} Clips
       </button>
@@ -941,7 +983,14 @@ function watchProjectJobs(projectId) {
     try {
       const { project } = await api(`/api/projects/${projectId}`);
       const activeJob = (project.jobs || []).find(j => ['queued', 'processing'].includes(j.status));
-      if (!activeJob) { clearInterval(projectWatchTimer); openProject(projectId); }
+      if (!activeJob) { clearInterval(projectWatchTimer); openProject(projectId); return; }
+      const card = document.getElementById('live-render-status');
+      if (card && card.dataset.jobId === activeJob.id) {
+        const pct = Math.max(2, Math.min(99, Number(activeJob.progress) || 0));
+        document.getElementById('live-render-step').textContent = activeJob.step || 'Working…';
+        document.getElementById('live-render-percent').textContent = `${pct}%`;
+        document.getElementById('live-render-bar').style.width = `${pct}%`;
+      }
     } catch {}
   }, 3000);
 }
@@ -973,9 +1022,9 @@ async function startEdit(projectId) {
   fd.append('clip_duration', document.getElementById('edit-dur')?.value || 45);
   fd.append('aspect_ratio', document.getElementById('edit-aspect')?.value || '9:16');
   fd.append('resolution', document.getElementById('edit-res')?.value || '720');
-  fd.append('caption_style', document.getElementById('select-caps')?.value || 'karaoke');
-  fd.append('editing_intensity', 'balanced');
-  fd.append('trim_silence', document.getElementById('pref-trim')?.checked ?? true);
+  fd.append('caption_style', document.getElementById('edit-caps')?.value || 'karaoke');
+  fd.append('editing_intensity', document.getElementById('edit-intensity')?.value || 'balanced');
+  fd.append('trim_silence', document.getElementById('edit-trim')?.checked ?? true);
   try {
     await api(`/api/projects/${projectId}/edit`, { method: 'POST', body: fd });
     showToast('Editing job queued', 'success');
@@ -1276,6 +1325,7 @@ async function loadSettings() {
     document.getElementById('pref-intensity').value = prefs.editing_intensity || 'balanced';
     document.getElementById('pref-trim-silence').checked = !!prefs.trim_silence;
     document.getElementById('pref-interval').value = prefs.schedule_interval_hours || 3;
+    document.getElementById('pref-auto-publish').checked = !!prefs.auto_publish;
     document.getElementById('pref-hashtags').value = prefs.default_hashtags || '';
     document.getElementById('setting-gemini-model').value = prefs.gemini_model || '';
     renderGeminiState(secrets || {});
@@ -1347,6 +1397,7 @@ async function savePrefs() {
     caption_style: document.getElementById('pref-caps').value,
     editing_intensity: document.getElementById('pref-intensity').value,
     trim_silence: document.getElementById('pref-trim-silence').checked,
+    auto_publish: document.getElementById('pref-auto-publish').checked,
     schedule_interval_hours: +document.getElementById('pref-interval').value || 3,
     default_hashtags: document.getElementById('pref-hashtags').value,
   }};

@@ -25,15 +25,17 @@ footage — then renders real, playable clips with FFmpeg and publishes them on 
    bold / minimal captions, zoom punches, silence removal, -14 LUFS audio.
 4. **Publishing**: schedule or post now to Buffer, Instagram, TikTok and YouTube.
    Success is only reported when the platform confirms it.
-5. **Permanent workspace**: users, projects, clips, history, API keys and connected
-   accounts all live in a database (PostgreSQL on Render) and survive restarts.
+5. **Persistent workspace**: users, projects, clips, history, API keys and connected
+   accounts live in PostgreSQL when `DATABASE_URL` is configured.
 
 ## Deployment (Render)
 
-1. Create a **PostgreSQL** instance (free tier works) and a Web Service from this repo
-   (Docker runtime — build/start are automatic).
+1. Create a **PostgreSQL** instance and a Web Service from this repo (Docker runtime —
+   build/start are automatic). Use a persistent database plan for long-term history;
+   Render's free Postgres expires after 30 days.
 2. Set environment variables on the Web Service:
-   - `DATABASE_URL` — internal Postgres connection string (**required** for persistence)
+   - `DATABASE_URL` — internal Postgres connection string (**required**; without it,
+     Render uses temporary SQLite and the health endpoint reports non-persistent storage)
    - `SECRET_KEY` — any long random string; encrypts API keys & tokens at rest (**required**)
    - `GEMINI_API_KEY` — optional server-wide fallback; each user adds their own key in Settings
    - Optional OAuth: `INSTAGRAM_CLIENT_ID/SECRET`, `TIKTOK_CLIENT_KEY/SECRET`,
@@ -41,6 +43,12 @@ footage — then renders real, playable clips with FFmpeg and publishes them on 
    - Optional: `BUFFER_ACCESS_TOKEN`, `CLIPY_MAX_UPLOAD_MB`, `CLIPY_PERSIST_FILES`
 3. Deploy. First boot creates the schema and migrates any legacy data automatically.
 4. Health check: `/health`.
+
+Render's free web service sleeps after 15 minutes without traffic and can take about a
+minute to wake. Background rendering and scheduled auto-posts need the service awake;
+use an always-on paid web service for reliable processing. Vercel Functions have bounded
+execution time and temporary local storage, so this FastAPI + FFmpeg worker should stay
+on a persistent server host unless its job queue and media storage are redesigned.
 
 ## Run locally
 

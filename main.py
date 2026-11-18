@@ -128,7 +128,10 @@ async def health():
     except Exception as e:
         db_ok = False
     from backend.database import IS_PG
-    return {"ok": True, "database": "postgres" if IS_PG else "sqlite", "db_ok": db_ok}
+    return {"ok": db_ok, "database": "postgres" if IS_PG else "sqlite",
+            "db_ok": db_ok, "persistent_database": IS_PG,
+            "warning": "Set DATABASE_URL to PostgreSQL; SQLite on Render loses data on restart."
+            if os.getenv("RENDER") and not IS_PG else None}
 
 
 # ---------------------------------------------------------------------------
@@ -362,6 +365,13 @@ async def api_create_project(
     name: str = Form(""),
     reference_url: str = Form(""),
     reference_file: UploadFile = File(None),
+    num_clips: int = Form(3),
+    clip_duration: int = Form(45),
+    aspect_ratio: str = Form("9:16"),
+    resolution: str = Form("720"),
+    caption_style: str = Form("karaoke"),
+    editing_intensity: str = Form("balanced"),
+    trim_silence: bool = Form(True),
 ):
     user = require_user(request)
     if not rate_ok(f"proj:{user['id']}", 8, 60):
@@ -415,8 +425,26 @@ async def api_create_project(
     if reference_url.strip() or (reference_file and reference_file.filename):
         ref_job_id = _start_reference_analysis(user, project_id, reference_url.strip(),
                                                reference_file)
+    prefs = get_prefs(user["id"])
+    if aspect_ratio not in ("9:16", "16:9", "1:1", "4:5"):
+        aspect_ratio = prefs.get("default_aspect_ratio", "9:16")
+    if str(resolution) not in ("720", "1080"):
+        resolution = prefs.get("default_resolution", "720")
+    if caption_style not in ("karaoke", "bold", "minimal", "none"):
+        caption_style = prefs.get("caption_style", "karaoke")
+    if editing_intensity not in ("light", "balanced", "aggressive"):
+        editing_intensity = prefs.get("editing_intensity", "balanced")
+    job_id = create_job(
+        user["id"], project_id,
+        num_clips=max(1, min(10, num_clips or prefs.get("default_num_clips", 3))),
+        clip_duration=max(15, min(90, clip_duration or prefs.get("default_clip_duration", 45))),
+        aspect_ratio=aspect_ratio, resolution=resolution,
+        caption_style=caption_style, editing_intensity=editing_intensity,
+        trim_silence=bool(trim_silence),
+        interval_hours=float(prefs.get("schedule_interval_hours", 3)))
+    update_project(project_id, last_job_id=job_id, status="queued", error=None)
     return {"success": True, "project_id": project_id, "reference_job_id": ref_job_id,
-            "duration": duration}
+            "job_id": job_id, "duration": duration}
 
 
 def _start_reference_analysis(user: dict, project_id: str, ref_url: str,

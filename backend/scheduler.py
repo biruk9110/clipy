@@ -256,7 +256,8 @@ def process_job(job_id: str):
     resolution = job.get("resolution") or prefs.get("default_resolution", "720")
     caption_style = job.get("caption_style") or prefs.get("caption_style", "karaoke")
     intensity = job.get("editing_intensity") or prefs.get("editing_intensity", "balanced")
-    trim_silence = bool(job.get("trim_silence")) or bool(prefs.get("trim_silence"))
+    trim_silence = (bool(job.get("trim_silence")) if job.get("trim_silence") is not None
+                    else bool(prefs.get("trim_silence")))
     num_clips = int(job.get("num_clips") or prefs.get("default_num_clips", 3))
     clip_duration = int(job.get("clip_duration") or prefs.get("default_clip_duration", 45))
     interval_hours = float(job.get("interval_hours") or prefs.get("schedule_interval_hours", 3))
@@ -331,8 +332,8 @@ def process_job(job_id: str):
                 is_vertical_already=is_vertical,
                 aspect=aspect,
                 resolution=resolution,
-                caption_style=caption_style if prefs.get("captions_enabled", True) else "none",
-                captions_enabled=bool(prefs.get("captions_enabled", True)),
+                caption_style=caption_style,
+                captions_enabled=caption_style != "none",
                 hook_banner=bool(prefs.get("hook_banner", True)),
                 zoom_intensity=int(m.get("zoom_intensity") or (1 if intensity != "light" else 0)),
                 trim_silence=trim_silence and (dur > 90),
@@ -384,11 +385,6 @@ def process_job(job_id: str):
             "status": "ready",
         })
         created.append(clip_id)
-        if prefs.get("auto_publish") and i == 0:
-            try:
-                schedule_post(user_id, clip_id, "all", sched_time)
-            except Exception:
-                pass
 
     # ---- 5. Done ---------------------------------------------------------------
     if not created:
@@ -399,6 +395,18 @@ def process_job(job_id: str):
                completed_at=db.now())
     if project:
         update_project(project["id"], status="completed", last_job_id=job_id, error=None)
+
+    # Publish only after every clip is rendered and persisted. Buffer handles
+    # all connected Buffer channels; later clips follow the configured cadence.
+    if prefs.get("auto_publish"):
+        publish_start = datetime.now()
+        for i, clip_id in enumerate(created):
+            publish_at = (publish_start + timedelta(hours=i * interval_hours))
+            try:
+                schedule_post(user_id, clip_id, "all",
+                              publish_at.isoformat(timespec="seconds"))
+            except Exception as e:
+                print(f"[Worker] Could not schedule auto-post for {clip_id}: {e}")
 
     # Optional source cleanup (free disk space)
     try:
