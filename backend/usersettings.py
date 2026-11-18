@@ -143,9 +143,14 @@ def remove_secret(user_id: int, name: str):
 def secret_status(user_id: int) -> dict:
     """Safe summary for the frontend - masked indicator only, never plaintext."""
     data = _get_secrets_row(user_id)
+    from .config import HOST_SETTINGS
     out = {}
     for name in SECRET_NAMES:
         stored = data.get(name, "")
         raw = decrypt(stored) if stored else ""
-        out[name] = {"set": bool(raw), "masked": mask(raw)}
+        source = "user"
+        if not raw and name == "gemini_api_key":
+            raw = HOST_SETTINGS.get("gemini_api_key", "")
+            source = "server" if raw else "user"
+        out[name] = {"set": bool(raw), "masked": mask(raw), "source": source}
     return out

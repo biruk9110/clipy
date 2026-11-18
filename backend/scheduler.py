@@ -15,7 +15,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from .config import OUTPUT_DIR
+from .config import HOST_SETTINGS, OUTPUT_DIR
 from .database import db
 from .filestore import delete_file, file_exists, prune_db_mirror, save_from_stream, save_file
 from .gemini_director import build_editing_plan, pick_stream_moments, polish_short_video
@@ -493,10 +493,12 @@ def publish_clip(clip_id: str, user_id: int, platform: str = "all", manual: bool
 
     # Buffer first (covers IG/TikTok/YT in one step if connected)
     buffer_acc = accounts.get("buffer")
-    if buffer_acc and (platform in ("all", "buffer")):
+    if (buffer_acc or HOST_SETTINGS.get("buffer_access_token")) and (platform in ("all", "buffer")):
         attempted += 1
         acc = refresh_account_token(buffer_acc)
-        token = (acc.get("access_token") if isinstance(acc, dict) else str(acc or "")) or get_secret(user_id, "buffer_access_token")
+        token = ((acc.get("access_token") if isinstance(acc, dict) else str(acc or ""))
+                 or get_secret(user_id, "buffer_access_token")
+                 or HOST_SETTINGS.get("buffer_access_token", ""))
         if token:
             res = post_to_buffer(token, video_url, caption, final_tags)
             if res.get("success"):

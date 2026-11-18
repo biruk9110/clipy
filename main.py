@@ -794,12 +794,13 @@ async def api_connect_buffer(request: Request, data: dict):
 async def api_buffer_channels(request: Request):
     user = require_user(request)
     acc = get_account(user["id"], "buffer")
-    if not acc:
+    token = (acc or {}).get("access_token") or HOST_SETTINGS.get("buffer_access_token", "")
+    if not token:
         return {"connected": False, "channels": [], "error": "Buffer not connected"}
-    acc = refresh_account_token(acc)
+    acc = refresh_account_token(acc) if acc else None
     from backend.posters.buffer import get_buffer_profiles
-    profiles, err = get_buffer_profiles(acc.get("access_token", ""))
-    if not profiles and acc.get("meta", {}).get("channels"):
+    profiles, err = get_buffer_profiles((acc or {}).get("access_token") or token)
+    if not profiles and (acc or {}).get("meta", {}).get("channels"):
         profiles = acc["meta"]["channels"]
     return {"connected": bool(profiles), "channels": profiles, "error": err if not profiles else None}
 

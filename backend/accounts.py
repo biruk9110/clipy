@@ -127,4 +127,15 @@ def account_status_summary(user_id: int) -> dict:
             "expires_at": acc.get("expires_at"),
             "last_connected_at": acc.get("last_connected_at"),
         }
+    # A host-level Buffer token is useful for single-account deployments and
+    # survives database resets/redeploys without prompting the owner to reconnect.
+    from .config import HOST_SETTINGS
+    if "buffer" not in out and HOST_SETTINGS.get("buffer_access_token"):
+        out["buffer"] = {
+            "connected": True,
+            "display_name": "Buffer (server configuration)",
+            "status": "active",
+            "expires_at": None,
+            "last_connected_at": None,
+        }
     return out

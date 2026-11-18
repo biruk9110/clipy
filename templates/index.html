@@ -1336,9 +1336,12 @@ async function loadSettings() {
 
 function renderGeminiState(secrets) {
   const g = secrets.gemini_api_key || { set: false };
-  document.getElementById('gemini-key-label').textContent = g.set ? 'API Key Saved ✓' : 'No API Key Saved';
+  const serverManaged = g.source === 'server';
+  document.getElementById('gemini-key-label').textContent = g.set ? (serverManaged ? 'API Key Set on Host' : 'API Key Saved') : 'No API Key Saved';
   document.getElementById('gemini-key-masked').textContent = g.set ? g.masked : 'Add your Gemini key from Google AI Studio';
-  document.getElementById('gemini-key-actions').innerHTML = g.set
+  document.getElementById('gemini-key-actions').innerHTML = serverManaged
+    ? `<button onclick="testGeminiKey()" class="px-2.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-zinc-200 rounded-lg">Test</button>`
+    : g.set
     ? `<button onclick="showGeminiInput()" class="px-2.5 py-1.5 text-xs font-bold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg">Change</button>
        <button onclick="removeGeminiKey()" class="px-2.5 py-1.5 text-xs font-bold text-zinc-400 hover:text-red-400 bg-zinc-800 rounded-lg">Remove</button>
        <button onclick="testGeminiKey()" class="px-2.5 py-1.5 text-xs font-bold text-black bg-white hover:bg-zinc-200 rounded-lg">Test</button>`
