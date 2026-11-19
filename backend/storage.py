@@ -107,16 +107,17 @@ def create_job(user_id: int, project_id: str, num_clips: int = 3,
                clip_duration: int = 45, aspect_ratio: str = "9:16",
                resolution: str = "720", caption_style: str = "karaoke",
                editing_intensity: str = "balanced", trim_silence: bool = False,
-               interval_hours: float = 3.0, kind: str = "clips") -> str:
+               interval_hours: float = 3.0, kind: str = "clips",
+               pipeline: str = "default") -> str:
     job_id = db.new_id("job")
     db.execute(
         "INSERT INTO jobs (id, user_id, project_id, kind, status, step, progress, num_clips,"
         " clip_duration, aspect_ratio, resolution, caption_style, editing_intensity,"
-        " trim_silence, interval_hours, created_at)"
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        " trim_silence, interval_hours, pipeline, created_at)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (job_id, user_id, project_id, kind, "queued", "Queued for processing", 2,
          num_clips, clip_duration, aspect_ratio, resolution, caption_style,
-         editing_intensity, 1 if trim_silence else 0, interval_hours, db.now()))
+         editing_intensity, 1 if trim_silence else 0, interval_hours, pipeline or "default", db.now()))
     return job_id
 
 

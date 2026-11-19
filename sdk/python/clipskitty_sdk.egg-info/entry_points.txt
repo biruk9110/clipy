@@ -1,0 +1,2 @@
+[console_scripts]
+clipskitty-sdk = clipskitty_sdk.__main__:main

@@ -234,6 +234,7 @@ SCHEMA = [
         editing_plan TEXT,
         last_job_id TEXT,
         error TEXT,
+        pipeline TEXT DEFAULT 'default',
         created_at TEXT NOT NULL,
         updated_at TEXT
     )""",
@@ -257,6 +258,7 @@ SCHEMA = [
         error TEXT,
         cancel_requested INTEGER DEFAULT 0,
         attempts INTEGER DEFAULT 0,
+        pipeline TEXT DEFAULT 'default',
         created_at TEXT NOT NULL,
         started_at TEXT,
         completed_at TEXT
@@ -336,6 +338,9 @@ INDEXES = [
 ]
 
 LEGACY_COLUMNS = {
+    "projects": [
+        ("pipeline", "TEXT DEFAULT 'default'"),
+    ],
     "jobs": [
         ("user_id", "INTEGER NOT NULL DEFAULT 0"), ("project_id", "TEXT"),
         ("kind", "TEXT DEFAULT 'clips'"), ("clip_duration", "INTEGER DEFAULT 45"),
@@ -345,7 +350,7 @@ LEGACY_COLUMNS = {
         ("started_at", "TEXT"), ("num_clips", "INTEGER DEFAULT 3"),
         ("interval_hours", "REAL DEFAULT 3"), ("cancel_requested", "INTEGER DEFAULT 0"),
         ("step", "TEXT DEFAULT 'Queued'"), ("progress", "INTEGER DEFAULT 0"),
-        ("completed_at", "TEXT"),
+        ("completed_at", "TEXT"), ("pipeline", "TEXT DEFAULT 'default'"),
     ],
     "clips": [
         ("user_id", "INTEGER NOT NULL DEFAULT 0"), ("project_id", "TEXT"),

@@ -116,11 +116,12 @@ def _get_rest_profiles(token: str):
     except Exception as e:
         return [], f"Could not reach Buffer: {e}"
 
-def get_buffer_profiles(access_token: str):
+def get_buffer_profiles(access_token: str, cached_profiles: list = None):
     """
     Fetches all social channels connected to the user's Buffer account.
     First checks modern GraphQL API (which has TikTok, YouTube, Instagram Reels).
     If no channels found, falls back to legacy REST profiles.
+    If network query fails or returns empty, falls back to cached_profiles.
     """
     token = _clean_token(access_token)
     if not token:
@@ -135,6 +136,10 @@ def get_buffer_profiles(access_token: str):
     rest_profiles, rest_err = _get_rest_profiles(token)
     if rest_profiles:
         return rest_profiles, None
+
+    # 3. Fallback to cached profiles if available
+    if cached_profiles and isinstance(cached_profiles, list):
+        return cached_profiles, None
         
     # Both failed or returned empty
     err = gql_err or rest_err
@@ -232,7 +237,8 @@ def _post_rest_profiles(token: str, profile_ids: list, text: str, video_url: str
         return False, [], str(e)
 
 def post_to_buffer(token: str, video_url: str, caption: str, hashtags: list,
-                   schedule_timestamp: int = None, exclude_services: list = None):
+                   schedule_timestamp: int = None, exclude_services: list = None,
+                   cached_profiles: list = None):
     """
     Schedules/Posts a video clip to all connected channels on Buffer (Instagram, TikTok, YouTube, etc.).
     Supports both modern GraphQL channels and legacy REST channels.
@@ -242,7 +248,7 @@ def post_to_buffer(token: str, video_url: str, caption: str, hashtags: list,
     if not access_token:
         return {"success": False, "error": "No Buffer access token configured"}
 
-    profiles, prof_err = get_buffer_profiles(access_token)
+    profiles, prof_err = get_buffer_profiles(access_token, cached_profiles=cached_profiles)
     if not profiles:
         return {"success": False, "error": prof_err or "No connected channels found on your Buffer account"}
 

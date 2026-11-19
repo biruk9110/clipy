@@ -114,15 +114,24 @@ def download_video(url: str, output_dir: Path):
 
     strategies = [base_opts]
     if is_youtube:
-        strategies.insert(0, {
-            **base_opts,
-            "extractor_args": {"youtube": {
-                "player_client": ["ios", "mweb", "android"]}}})
-        strategies.append({
-            **base_opts,
-            "format": "bestvideo*+bestaudio/best",
-            "extractor_args": {"youtube": {
-                "player_client": ["tv", "tv_embedded", "web_embedded"]}}})
+        strategies = [
+            {
+                **base_opts,
+                "format": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best",
+                "extractor_args": {"youtube": {
+                    "player_client": ["android", "ios", "mweb"]}}},
+            {
+                **base_opts,
+                "format": "bestvideo*+bestaudio/best",
+                "extractor_args": {"youtube": {
+                    "player_client": ["tv_embedded", "web_embedded", "tv"]}}},
+            {
+                **base_opts,
+                "format": "best/bestvideo+bestaudio",
+                "extractor_args": {"youtube": {
+                    "player_client": ["android", "web"]}}},
+            base_opts,
+        ]
     elif is_tiktok:
         strategies.insert(0, {
             **base_opts,

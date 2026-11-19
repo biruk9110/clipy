@@ -372,6 +372,7 @@ async def api_create_project(
     caption_style: str = Form("karaoke"),
     editing_intensity: str = Form("balanced"),
     trim_silence: bool = Form(True),
+    pipeline: str = Form("default"),
 ):
     user = require_user(request)
     if not rate_ok(f"proj:{user['id']}", 8, 60):
@@ -441,8 +442,9 @@ async def api_create_project(
         aspect_ratio=aspect_ratio, resolution=resolution,
         caption_style=caption_style, editing_intensity=editing_intensity,
         trim_silence=bool(trim_silence),
-        interval_hours=float(prefs.get("schedule_interval_hours", 3)))
-    update_project(project_id, last_job_id=job_id, status="queued", error=None)
+        interval_hours=float(prefs.get("schedule_interval_hours", 3)),
+        pipeline=pipeline or "default")
+    update_project(project_id, last_job_id=job_id, status="queued", error=None, pipeline=pipeline or "default")
     return {"success": True, "project_id": project_id, "reference_job_id": ref_job_id,
             "job_id": job_id, "duration": duration}
 
@@ -532,7 +534,8 @@ async def api_start_edit(request: Request, project_id: str,
                          aspect_ratio: str = Form("9:16"), resolution: str = Form("720"),
                          caption_style: str = Form("karaoke"),
                          editing_intensity: str = Form("balanced"),
-                         trim_silence: bool = Form(True)):
+                         trim_silence: bool = Form(True),
+                         pipeline: str = Form("default")):
     user = require_user(request)
     project = get_project(project_id, user["id"])
     if not project:
@@ -551,9 +554,16 @@ async def api_start_edit(request: Request, project_id: str,
         caption_style=caption_style or "karaoke",
         editing_intensity=editing_intensity or "balanced",
         trim_silence=bool(trim_silence),
-        interval_hours=float(prefs.get("schedule_interval_hours", 3)))
-    update_project(project_id, last_job_id=job_id, status="queued", error=None)
+        interval_hours=float(prefs.get("schedule_interval_hours", 3)),
+        pipeline=pipeline or project.get("pipeline") or "default")
+    update_project(project_id, last_job_id=job_id, status="queued", error=None, pipeline=pipeline or project.get("pipeline") or "default")
     return {"success": True, "job_id": job_id}
+
+
+@app.get("/api/pipelines")
+async def api_list_pipelines():
+    from backend.plugin_manager import get_pipelines
+    return {"pipelines": get_pipelines()}
 
 
 @app.get("/api/jobs")

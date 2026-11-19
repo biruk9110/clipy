@@ -300,13 +300,45 @@ def process_job(job_id: str):
                            "transition": "hard_cut", "sfx_hint": "", "silence_gaps": []}],
                 "global": {}}
     else:
-        update_job(job_id, step="AI is searching for the best moments...", progress=45)
-        clip_target = max(10, min(60, int(dur / max(1, num_clips)))) if dur < 180 else clip_duration
-        min_d = max(8, int(clip_target * 0.7))
-        max_d = min(int(dur), max(min_d + 10, int(clip_target * 1.35)))
-        moments = pick_stream_moments(transcript_data["text"], dur, count=num_clips,
-                                      min_d=min_d, max_d=max_d, user_id=user_id, project=project)
-        plan = {"clips": moments, "global": {}}
+        pipeline = str(job.get("pipeline") or (project.get("pipeline") if project else "") or "").lower()
+        content_text = f"{real_title} {(project.get('name') if project else '')} {transcript_data.get('text', '')[:400]}".lower()
+        is_gta_plugin = "gta" in pipeline or "gaming" in pipeline or any(k in content_text for k in ("gta 6", "gta vi", "gta v", "gta5", "grand theft auto", "lossantos", "vice city"))
+
+        if is_gta_plugin:
+            update_job(job_id, step="GTA Plugin is detecting chases, stunts & chaos...", progress=45)
+            from .plugin_manager import detect_gta_moments
+            gta_moments = detect_gta_moments(
+                transcript_segments=transcript_data.get("segments", []),
+                duration=dur,
+                num_clips=num_clips,
+                clip_duration=clip_duration,
+            )
+            if gta_moments:
+                moments = gta_moments
+                if len(moments) < num_clips:
+                    needed = num_clips - len(moments)
+                    clip_target = max(10, min(60, int(dur / max(1, num_clips)))) if dur < 180 else clip_duration
+                    min_d = max(8, int(clip_target * 0.7))
+                    max_d = min(int(dur), max(min_d + 10, int(clip_target * 1.35)))
+                    extra = pick_stream_moments(transcript_data["text"], dur, count=needed,
+                                                min_d=min_d, max_d=max_d, user_id=user_id, project=project)
+                    moments.extend(extra)
+                plan = {"clips": moments[:num_clips], "global": {}}
+            else:
+                clip_target = max(10, min(60, int(dur / max(1, num_clips)))) if dur < 180 else clip_duration
+                min_d = max(8, int(clip_target * 0.7))
+                max_d = min(int(dur), max(min_d + 10, int(clip_target * 1.35)))
+                moments = pick_stream_moments(transcript_data["text"], dur, count=num_clips,
+                                              min_d=min_d, max_d=max_d, user_id=user_id, project=project)
+                plan = {"clips": moments, "global": {}}
+        else:
+            update_job(job_id, step="AI is searching for the best moments...", progress=45)
+            clip_target = max(10, min(60, int(dur / max(1, num_clips)))) if dur < 180 else clip_duration
+            min_d = max(8, int(clip_target * 0.7))
+            max_d = min(int(dur), max(min_d + 10, int(clip_target * 1.35)))
+            moments = pick_stream_moments(transcript_data["text"], dur, count=num_clips,
+                                          min_d=min_d, max_d=max_d, user_id=user_id, project=project)
+            plan = {"clips": moments, "global": {}}
 
     _check_cancel(job_id)
     clips_plan = plan.get("clips") or []
@@ -508,7 +540,8 @@ def publish_clip(clip_id: str, user_id: int, platform: str = "all", manual: bool
                  or get_secret(user_id, "buffer_access_token")
                  or HOST_SETTINGS.get("buffer_access_token", ""))
         if token:
-            res = post_to_buffer(token, video_url, caption, final_tags)
+            cached_channels = (buffer_acc.get("meta", {}).get("channels") if isinstance(buffer_acc, dict) else None)
+            res = post_to_buffer(token, video_url, caption, final_tags, cached_profiles=cached_channels)
             if res.get("success"):
                 succeeded += 1
                 urls["buffer"] = res.get("channels", [])
