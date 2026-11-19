@@ -227,6 +227,7 @@
 
   <!-- ================= TAB: CLIPS ================= -->
   <section id="tab-clips" class="tab-content space-y-5">
+    <div id="active-jobs-clips" class="space-y-3"></div>
     <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
         <h1 class="text-2xl font-black text-white tracking-tight">Your Clips</h1>
@@ -757,8 +758,9 @@ async function submitProject(ev) {
     document.getElementById('input-reference').value = '';
     document.getElementById('ref-file-label').textContent = '';
     dropArea.classList.remove('border-white');
-    if (data.project_id) openProject(data.project_id, data.reference_job_id);
-    else loadProjects();
+    // Switch to Clips tab immediately so the user sees live generation progress
+    switchTab('clips');
+    loadClips();
     startPolling();
   } catch (e) {
     err.textContent = e.message;
@@ -771,16 +773,25 @@ async function submitProject(ev) {
 
 // ---------- active jobs polling ----------
 let pollTimer = null;
+let prevActiveJobCount = 0;
 function startPolling() {
   if (pollTimer) return;
   pollActiveJobs();
-  pollTimer = setInterval(pollActiveJobs, 3000);
+  pollTimer = setInterval(pollActiveJobs, 2500);
 }
 async function pollActiveJobs() {
   try {
-    const { jobs } = await api('/api/jobs?limit=10');
-    const active = jobs.filter(j => ['queued', 'processing'].includes(j.status));
+    const { jobs } = await api('/api/jobs?limit=20');
+    const active = (jobs || []).filter(j => ['queued', 'processing'].includes(j.status));
     renderActiveJobs(active, jobs);
+    
+    // Auto-refresh clips the moment background jobs complete
+    if (prevActiveJobCount > 0 && active.length === 0) {
+      loadClips();
+      loadProjects();
+    }
+    prevActiveJobCount = active.length;
+
     if (active.length === 0 && pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;
@@ -802,23 +813,22 @@ function jobStatusBadge(job) {
 }
 
 function renderActiveJobs(active, allJobs) {
-  const wrap = document.getElementById('active-jobs');
+  const wraps = [document.getElementById('active-jobs'), document.getElementById('active-jobs-clips')].filter(Boolean);
   if (!active.length) {
-    const recent = (allJobs || []).filter(j => ['completed', 'failed'].includes(j.status)).slice(0, 2);
-    wrap.innerHTML = recent.length ? recent.map(j => `
-      <div class="flex items-center gap-3 p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-        ${jobStatusBadge(j)}
+    const recentFailed = (allJobs || []).filter(j => j.status === 'failed').slice(0, 1);
+    const html = recentFailed.length ? recentFailed.map(j => `
+      <div class="flex items-center gap-3 p-4 rounded-xl bg-zinc-900 border border-red-900/40">
+        <i class="ph-bold ph-warning-circle text-red-400 text-lg"></i>
         <div class="min-w-0 flex-1">
-          <p class="text-xs font-bold text-white truncate">${esc(j.step || j.kind)}</p>
+          <p class="text-xs font-bold text-white truncate">${esc(j.step || 'Render job failed')}</p>
           ${j.error ? `<p class="text-[10px] text-red-400 truncate mt-0.5">${esc(j.error)}</p>` : ''}
         </div>
-        ${j.status === 'completed'
-          ? `<button onclick="switchTab('clips')" class="text-xs font-black text-white hover:underline px-2 py-1">View Clips →</button>`
-          : `<button onclick="retryJob('${j.id}')" class="text-xs font-bold text-zinc-300 hover:text-white px-2 py-1 bg-zinc-800 rounded-lg">Retry</button>`}
+        <button onclick="retryJob('${j.id}')" class="text-xs font-bold text-zinc-300 hover:text-white px-3 py-1.5 bg-zinc-800 rounded-lg">Retry</button>
       </div>`).join('') : '';
+    wraps.forEach(w => w.innerHTML = html);
     return;
   }
-  wrap.innerHTML = active.map(j => `
+  const html = active.map(j => `
     <div class="p-4 rounded-2xl bg-zinc-900 border border-zinc-700 shadow-xl">
       <div class="flex items-center gap-3">
         <i class="ph-bold ph-circle-notch animate-spin text-white text-lg"></i>
@@ -833,6 +843,7 @@ function renderActiveJobs(active, allJobs) {
       </div>
       <p class="text-[10px] text-zinc-500 mt-2">Background rendering active. You can safely switch tabs or close the app.</p>
     </div>`).join('');
+  wraps.forEach(w => w.innerHTML = html);
 }
 
 async function cancelJob(jobId) {

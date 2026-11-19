@@ -489,9 +489,9 @@ async def api_get_project(request: Request, project_id: str):
             project["reference_profile_obj"] = None
     project["source_available"] = bool(project.get("source_file")) and file_exists(project["source_file"], user["id"])
     project["reference_available"] = bool(project.get("reference_file")) and file_exists(project["reference_file"], user["id"])
-    jobs = [j for j in list_jobs(user["id"], limit=10) if j.get("project_id") == project_id]
+    jobs = [j for j in list_jobs(user["id"], limit=50) if j.get("project_id") == project_id]
     project["jobs"] = jobs
-    clips = [c for c in list_clips(user["id"], limit=100) if c.get("project_id") == project_id]
+    clips = [c for c in list_clips(user["id"], limit=200) if c.get("project_id") == project_id or c.get("job_project") == project_id]
     for c in clips:
         c["file_available"] = bool(c.get("file_path")) and file_exists(c["file_path"], user["id"])
     project["clips"] = clips

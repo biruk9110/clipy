@@ -100,19 +100,27 @@ def recover_interrupted_jobs():
         project_id = job.get("project_id")
         project = db.one("SELECT * FROM projects WHERE id = ?", (project_id,)) if project_id else None
         src = (project or {}).get("source_file") or ""
-        has_src = bool(src) and file_exists(src)
+        src_url = (project or {}).get("source_url") or ""
+        has_src = (bool(src) and file_exists(src)) or bool(src_url)
         attempts = int(job.get("attempts") or 0)
-        if has_src and attempts < 2:
-            update_job(job["id"], status="queued", step="Re-queued after restart",
+        
+        # If it was simply queued and source is available, keep it queued for the dispatcher
+        if job["status"] == "queued" and has_src:
+            continue
+
+        if has_src and attempts < 3:
+            update_job(job["id"], status="queued", step="Queued for processing",
                        progress=2, cancel_requested=0, attempts=attempts + 1)
-            update_project(project_id, status="queued") if project_id else None
+            if project_id:
+                update_project(project_id, status="queued")
             print(f"[Worker] Re-queued interrupted job {job['id']}")
         else:
-            reason = ("Source video was lost during a server restart - please re-upload it."
+            reason = ("Source video or link was missing."
                       if not has_src else "Job interrupted repeatedly by server restarts.")
             update_job(job["id"], status="failed", step="Interrupted",
-                       error=f"Interrupted by a server restart. {reason}")
-            update_project(project_id, status="failed", error=reason) if project_id else None
+                       error=f"Interrupted: {reason}")
+            if project_id:
+                update_project(project_id, status="failed", error=reason)
             print(f"[Worker] Failed interrupted job {job['id']}")
 
 
