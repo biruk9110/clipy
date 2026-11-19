@@ -105,8 +105,17 @@ def download_video(url: str, output_dir: Path):
 
     def _short_err(e) -> str:
         msg = " ".join(str(e).split())
-        if "sign in to confirm" in msg.lower():
-            return "YouTube requested bot verification. Try another video, or upload the MP4 directly."
+        low = msg.lower()
+        if "sign in to confirm" in low or "confirm you're not a bot" in low:
+            return "YouTube requested bot verification — try a different video or paste a direct TikTok/Instagram link instead."
+        if "private video" in low:
+            return "This YouTube video is private or unavailable."
+        if "video unavailable" in low or "not available" in low:
+            return "Video is unavailable in your region or has been removed."
+        if "403" in msg or "forbidden" in msg.lower():
+            return "YouTube blocked the download (403). Try again in a moment or use a different video."
+        if "sabr" in low or "missing a url" in low:
+            return "YouTube format error — retrying with another client."
         return msg[:300] or type(e).__name__
 
     errors = []
@@ -115,22 +124,49 @@ def download_video(url: str, output_dir: Path):
     strategies = [base_opts]
     if is_youtube:
         strategies = [
+            # Strategy 1: mweb client - most reliable, avoids SABR
             {
                 **base_opts,
-                "format": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best",
+                "format": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080]",
                 "extractor_args": {"youtube": {
-                    "player_client": ["android", "ios", "mweb"]}}},
+                    "player_client": ["mweb"],
+                    "skip": ["hls", "dash"],
+                }},
+            },
+            # Strategy 2: ios client - good quality, avoids SABR
+            {
+                **base_opts,
+                "format": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+                "extractor_args": {"youtube": {
+                    "player_client": ["ios"],
+                }},
+            },
+            # Strategy 3: android with mp4 preference
+            {
+                **base_opts,
+                "format": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best",
+                "extractor_args": {"youtube": {
+                    "player_client": ["android"],
+                }},
+            },
+            # Strategy 4: tv_embedded - bypasses age restrictions
             {
                 **base_opts,
                 "format": "bestvideo*+bestaudio/best",
                 "extractor_args": {"youtube": {
-                    "player_client": ["tv_embedded", "web_embedded", "tv"]}}},
+                    "player_client": ["tv_embedded", "web_embedded"],
+                }},
+            },
+            # Strategy 5: any best format, any client
             {
                 **base_opts,
                 "format": "best/bestvideo+bestaudio",
                 "extractor_args": {"youtube": {
-                    "player_client": ["android", "web"]}}},
-            base_opts,
+                    "player_client": ["mweb", "ios", "android", "web"],
+                }},
+            },
+            # Strategy 6: absolute fallback - no format constraints
+            {**base_opts, "format": "best"},
         ]
     elif is_tiktok:
         strategies.insert(0, {
